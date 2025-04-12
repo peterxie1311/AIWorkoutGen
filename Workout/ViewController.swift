@@ -23,9 +23,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var restTimer           = UIView()
     var restTimerString     = ""
     
-    
-    
-    
     // Buttons --------------------------------------
     let addRepButton        = workoutDesigns.createStyledButton(title: "Generate Workout")
     let clearToDoList       = workoutDesigns.createStyledButton(title: "Clear Todo List")
@@ -54,26 +51,18 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     //scroll view ----------
     let scrollView  = UIScrollView()
     let contentView = UIView()
+    // replacing contentView with stack view for cleaner UI sorting
+    let contentStackView = UIStackView()
     
     //textfield ------
     let workoutcustomisation = UITextField()
     let workout_genre        = UITextField()
-    
     
     // setup stackview
     let stackView  = UIStackView()
     let stackScrollView = UIScrollView()
     var stackcheck = false
     
-    //PieChart ----------
-    //let workoutchart = PieChartView()
-    
-   
-    
-    
-   
-    
-
     override func viewDidLoad() {
         super.viewDidLoad()
         loadViews()
@@ -98,7 +87,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         toolbar.layer.masksToBounds = true
         toolbar.backgroundColor = .systemGray6
         toolbar.layer.shadowColor = UIColor.black.cgColor
-        toolbar.layer.shadowOpacity = 0.1
         toolbar.layer.shadowOffset = CGSize(width: 0, height: 2)
         toolbar.layer.shadowRadius = 4
         toolbar.translatesAutoresizingMaskIntoConstraints = false
@@ -107,7 +95,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         let viewWorkoutButton = createCustomButton(imageName: "dumbbell", action: #selector(goToViewWorkout))
         let startWorkoutButton = createCustomButton(imageName: "play", action: #selector(startWorkout))
         let finishWorkoutButton = createCustomButton(imageName: "stop", action: #selector(finishTimer))
-
         let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 
         toolbar.items = [
@@ -122,7 +109,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         NSLayoutConstraint.activate([
             toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -16),
+            toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: 20),
             toolbar.heightAnchor.constraint(equalToConstant: 55)
         ])
     }
@@ -374,7 +361,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
             let restTime     = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
             restTimeString  = restTimerPrefix + "\(round(-restTime))"
-            print("Rest Timer string! \(restTimeString)")
         }
         else {
             restTimeString  = restTimerPrefix + "0"

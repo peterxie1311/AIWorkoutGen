@@ -7,7 +7,7 @@ class workoutAIservice {
 
     
     // we are going to define this in the settings screen
-    private let apiKey = "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"
+    private let apiKey = SettingsManager.shared.getSetting(name: "GPT API Key")?.value ?? ""
     private let endpoint = "https://api.openai.com/v1/chat/completions"
 
     // Function to send a message to ChatGPT API
@@ -19,6 +19,7 @@ class workoutAIservice {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
+        print(apiKey)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 

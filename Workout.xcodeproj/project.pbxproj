@@ -81,6 +81,7 @@
 		DC9F16BF2CCA6A750091B6C0 /* WorkoutUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutUITests.swift; sourceTree = "<group>"; };
 		DC9F16C12CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		DC9F16D22CCB988F0091B6C0 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
+		DCADF3E82D9D430B00CC0C27 /* Workout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Workout.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -131,6 +132,7 @@
 		DC9F169A2CCA6A720091B6C0 /* Workout */ = {
 			isa = PBXGroup;
 			children = (
+				DCADF3E82D9D430B00CC0C27 /* Workout.entitlements */,
 				DC9F169B2CCA6A720091B6C0 /* AppDelegate.swift */,
 				DC2786652D14221100CE9026 /* workoutAIService.swift */,
 				DC9F169D2CCA6A720091B6C0 /* SceneDelegate.swift */,
@@ -504,11 +506,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Workout/Workout.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8372VJBM73;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Workout/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "We need your location to provide location-based features";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find nearby gyms";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -519,7 +524,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = pdawg.Workout;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pdawg.workout1311;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -532,11 +537,14 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Workout/Workout.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8372VJBM73;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Workout/Info.plist;
+				INFOPLIST_KEY_NSLocationAlwaysUsageDescription = "We need your location to provide location-based features";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "We need your location to find nearby gyms";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -547,7 +555,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = pdawg.Workout;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pdawg.workout1311;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

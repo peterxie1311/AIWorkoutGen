@@ -27,8 +27,8 @@
             filePath = "Workout/ViewController.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "595"
-            endingLineNumber = "595"
+            startingLineNumber = "581"
+            endingLineNumber = "581"
             landmarkName = "goToViewWorkout()"
             landmarkType = "7">
          </BreakpointContent>

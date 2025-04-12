@@ -101,7 +101,6 @@ class SetrepManager {
             print("Failed to load Setreps: \(error)")
         }
     }
-
     
     // Save Setreps to Core Data
     func saveSetreps() {
@@ -157,7 +156,6 @@ class SetrepManager {
             guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
             let context = appDelegate.persistentContainer.viewContext
 
-        
             let newSetrep         = Setrep(context: context)
             newSetrep.rep_qty     = Int64(qty)
             newSetrep.startTime   = startTime

@@ -70,8 +70,6 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         super.init(nibName: nil, bundle: nil)
     }
     
-   
-    
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -109,12 +107,6 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         return formatter.string(from: date)
     }
     
-
-    
-
-    
-
-    
     private func setupUI() {
         view.backgroundColor   = .systemBackground
         nameLabel.text         = WorkoutName
@@ -124,8 +116,6 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         weight_label.text      = weightprefix + String(weight)
         status.text            = statusPrefix + String(completed)
         
-        
-        
         // Setup UI Components
         nameLabel.font = UIFont.boldSystemFont(ofSize: 24)
         rep_qtyLabel.font = UIFont.systemFont(ofSize: 18)
@@ -133,13 +123,11 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         duration_secLabel.font = UIFont.systemFont(ofSize: 18)
         weight_label.font = UIFont.systemFont(ofSize: 18)
         
-        
         RepButton.setTitle(repButtonString, for: .normal)
         RepButton.addTarget(self, action: #selector(startworkout), for: .touchUpInside)
         
         changeRepWeightButton.addTarget(self, action:#selector(executechangerepweight), for: .touchUpInside)
         deleteRepButton.addTarget(self, action: #selector(deleteRep), for: .touchUpInside)
-        
         
         RepButton.isUserInteractionEnabled       = true
         deleteRepButton.isUserInteractionEnabled = true
@@ -152,24 +140,17 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         changeWorkoutName.translatesAutoresizingMaskIntoConstraints = false
         changeWorkoutName.isUserInteractionEnabled = true
         
-        
         changeRepWeight.borderStyle = .roundedRect
         changeRepWeight.placeholder = "Change rep weight"
         changeRepWeight.keyboardType = .numberPad
         changeRepWeight.delegate = self
         changeRepWeight.translatesAutoresizingMaskIntoConstraints = false
         
- 
         changeSetQTY.isUserInteractionEnabled = true
-        
-        
         changeSetQTY.borderStyle = .roundedRect
         changeSetQTY.placeholder = "Change Set QTY"
         changeSetQTY.keyboardType = .numberPad
         changeSetQTY.delegate = self
-
-        
-        changeRepWeight.translatesAutoresizingMaskIntoConstraints = false
         
         let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(dismissKeyboard))
             swipeDown.direction = .down
