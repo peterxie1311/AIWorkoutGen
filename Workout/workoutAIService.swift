@@ -19,7 +19,7 @@ class workoutAIservice {
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        print(apiKey)
+        print("API Key: \(apiKey)")
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
@@ -35,65 +35,67 @@ class workoutAIservice {
             return
         }
 
+        print("Request Body: \(String(describing: String(data: request.httpBody!, encoding: .utf8)))")
+
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
                 completion(.failure(error))
+                print("Error: \(error)")
                 return
             }
-         
+
+            if let response = response as? HTTPURLResponse {
+                print("Response status code: \(response.statusCode)")
+                if response.statusCode != 200 {
+                    completion(.failure(NSError(domain: "Invalid response", code: response.statusCode, userInfo: nil)))
+                    return
+                }
+            }
+
             if let data = data {
                 do {
-           
+                    print("Raw response data: \(String(data: data, encoding: .utf8) ?? "")")
+                    
                     if let responseDict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
                        let choices = responseDict["choices"] as? [[String: Any]],
                        let message = choices.first?["message"] as? [String: Any],
                        let content = message["content"] as? String {
 
-                       
+                        print("Raw response content: \(content)")
+
                         let cleanedContent = content
                             .replacingOccurrences(of: "```json", with: "")
                             .replacingOccurrences(of: "```", with: "")
                             .trimmingCharacters(in: .whitespacesAndNewlines)
-                     
                         
-                    
+                        print("Cleaned content: \(cleanedContent)")
+
                         if let jsonData = cleanedContent.data(using: .utf8),
                            let workouts = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]] {
-                          
+                            
                             for workout in workouts {
                                 if let workoutname = workout["workoutname"] as? String,
-                                   let setqty      = workout["setqty"] as? Int,
-                                   let repqty      = workout["repqty"] as? Int{
+                                   let setqty = workout["setqty"] as? Int,
+                                   let repqty = workout["repqty"] as? Int {
                                     
-                                    for _ in 1...setqty{
-                                        SetrepManager.shared.addSetrep(qty: repqty, startTime: Date(), finishTime:Date(), workoutName: workoutname, weight: 0)
+                                    for _ in 1...setqty {
+                                        SetrepManager.shared.addSetrep(qty: repqty, startTime: Date(), finishTime: Date(), workoutName: workoutname, weight: 0)
+                                        print(workoutname)
                                     }
-                                   
-                                }
-                                else{
-                               
                                 }
                             }
-                            
+
                             completion(.success(content))
-                          
                         }
                     }
                 } catch {
                     print("Error parsing response: \(error)")
+                    completion(.failure(error))
                 }
             }
-
-            
-
-           
         }
-        
-      
-
-             
-
 
         task.resume()
     }
+
 }

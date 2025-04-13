@@ -12,12 +12,12 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
     var startTime:Date
     var weight: Int64
     var WorkoutName:String
-    let startTimeButton:String = "Start Timer"
+    let startTimeButton:String  = "Start Timer"
     let finishTimeButton:String = "Finish Timer"
     let videoButtonLabel:String = "View Video"
-    let statusPrefix:String = "Status: "
-    let timerprefix:String = "Sec: "
-    let weightprefix:String = "Weight(kgs): "
+    let statusPrefix:String     = "Status: "
+    let timerprefix:String      = "Sec: "
+    let weightprefix:String     = "Weight(kgs): "
 
   //  let changeRepWeightButtonlabel:String = "Change Rep Weight"
     var repButtonString:String
@@ -34,17 +34,25 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
     var elapsedTime: TimeInterval = 0
     
     // UI Components
-    private let nameLabel = UILabel()
-    private let rep_qtyLabel = UILabel()
-    private let status = UILabel()
-    private let startTimeLabel = UILabel()
+    private let nameLabel         = UILabel()
+    private let rep_qtyLabel      = UILabel()
+    private let status            = UILabel()
+    private let startTimeLabel    = UILabel()
     private let duration_secLabel = UILabel()
-    private let weight_label = UILabel()
+    private let weight_label      = UILabel()
    // private let videoButton = UIButton()
-    private let RepButton = workoutDesigns.createStyledButton(title: "")
-    private let deleteRepButton = workoutDesigns.createStyledButton(title: "Delete")
-    private let changeRepWeightButton = workoutDesigns.createStyledButton(title: "Change")
-    
+    private var RepButton             = workoutDesigns.createStyledButton(title: "",
+                                                                          systemImageName: "dumbbell",
+                                                                          width: 25,
+                                                                          height: 50)
+    private var deleteRepButton       = workoutDesigns.createStyledButton(title: "Delete",
+                                                                          systemImageName: "trash",
+                                                                          width: 25,
+                                                                          height:50)
+    private var changeRepWeightButton = workoutDesigns.createStyledButton(title: "Change",
+                                                                          systemImageName: "pencil",
+                                                                          width: 25,
+                                                                          height: 50)
     // text input to change weight
     let changeRepWeight           = UITextField()
     let changeSetQTY              = UITextField()
@@ -163,6 +171,8 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
+       
+        
         view.addSubview(stackView)
         
         NSLayoutConstraint.activate([
@@ -171,6 +181,7 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
             stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
             stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
         ])
+        
     }
     
     

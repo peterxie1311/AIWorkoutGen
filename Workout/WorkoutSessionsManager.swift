@@ -21,7 +21,7 @@ class WorkoutSessionManager {
         let context = appDelegate.persistentContainer.viewContext
         
         // Assuming `setrep` is an NSSet containing related Setrep objects
-        let setrepSet = workoutSession.setrep
+        let _ = workoutSession.setrep
         
         // Create a fetch request for the related Setrep entity
         let fetchRequest: NSFetchRequest<Setrep> = Setrep.fetchRequest()

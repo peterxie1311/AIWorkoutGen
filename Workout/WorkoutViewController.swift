@@ -19,9 +19,15 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
     private let workoutLabel  = UILabel()
     private let endtimelabel  = UILabel()
     private let durationlabel = UILabel()
-    private let deleteButton  = workoutDesigns.createStyledButton(title: "Delete Sesh")
-    private let excludeButton = workoutDesigns.createStyledButton(title: "Exclude Workout")
-    private let AddSetRep     = workoutDesigns.createStyledButton(title: "Add Set")
+    private var deleteButton  = workoutDesigns.createStyledButton(title: "Delete Sesh",
+                                                                  width: 20,
+                                                                  height: 30)
+    private var excludeButton = workoutDesigns.createStyledButton(title: "Exclude Workout",
+                                                                  width: 20,
+                                                                  height: 30) 
+    private var AddSetRep     = workoutDesigns.createStyledButton(title: "Add Set",
+                                                                  width: 20,
+                                                                  height: 30)
     
     //table
     private let tableView = UITableView()
@@ -177,6 +183,13 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
             stackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
         ])
+        
+//        deleteButton = workoutDesigns.createStyledButton(title: "Delete Sesh",
+//                                                         width: stackView.frame.width,
+//                                                         height: 100)
+//        excludeButton =
+//        AddSetRep    = 
+        
             
         tableView.heightAnchor.constraint(equalToConstant: 400).isActive = true
             

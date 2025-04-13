@@ -2,16 +2,31 @@ import UIKit
 
 class SettingsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
     let tableView = UITableView()
-    
-    internal
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Settings"
         view.backgroundColor = .white
-        
+        setupStackView()
         setupTableView()
         initializeSettings() // Call to initialize settings
+    }
+    
+    func setupStackView(){
+        
+        let stackView = UIStackView(arrangedSubviews: [tableView])
+        stackView.axis                                      = .vertical
+        stackView.spacing                                   = 10
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(stackView )
+        NSLayoutConstraint.activate([
+                stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            ])
+        
     }
     
     func setupTableView() {
@@ -19,7 +34,7 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
         tableView.delegate = self
         tableView.register(SettingsTableViewCell.self, forCellReuseIdentifier: "SettingsCell")
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(tableView)
+       // view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -27,6 +42,8 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
+        
+        
     }
     
     func initializeSettings() {

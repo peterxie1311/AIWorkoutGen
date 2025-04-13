@@ -5,7 +5,7 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
     let setreps:[Setrep]
 
     private let AddSetLabel = UILabel()
-    private let addSetButton     = workoutDesigns.createStyledButton(title: "Add Set!")
+    private var addSetButton     = UIButton()
     private let workoutnameField = UITextField()
     private let setqtyField      = UITextField()
     private let repqtyField      = UITextField()
@@ -34,7 +34,7 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         var tmpSetQty         = 1
         var tmpRepWeight      = 0
         var retCode           = true
-        var tmpWorkoutSession = self.WorkoutSession
+        let tmpWorkoutSession = self.WorkoutSession
         var tmpSetRepArr         = self.setreps
         
         
@@ -116,6 +116,7 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         //addSetButton.setTitle("Delete Workout", for: .normal)
         addSetButton.addTarget(self, action: #selector(addSet), for: .touchUpInside)
         
+        
         workoutnameField.borderStyle = .roundedRect
         workoutnameField.placeholder = "Workout Name"
         workoutnameField.keyboardType = .alphabet
@@ -145,6 +146,9 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         stackView.axis = .vertical
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false
+        addSetButton = workoutDesigns.createStyledButton(title: "Add Set!",
+                                                         width: stackView.frame.width/2,
+                                                         height: 100)
         
         view.addSubview(stackView)
         

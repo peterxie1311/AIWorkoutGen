@@ -7,10 +7,10 @@ class workoutDesigns {
         containerView.backgroundColor = .systemBlue
         containerView.layer.cornerRadius = 16 // Adjust for desired roundness
         containerView.layer.masksToBounds = true
-        containerView.layer.borderWidth = 2
-        containerView.layer.borderColor = UIColor { traitCollection in
-            return traitCollection.userInterfaceStyle == .dark ? UIColor.white : UIColor.black
-        }.cgColor
+//        containerView.layer.borderWidth = 2
+//        containerView.layer.borderColor = UIColor { traitCollection in
+//            return traitCollection.userInterfaceStyle == .dark ? UIColor.white : UIColor.black
+//        }.cgColor
         
         // Add a label for the text
         let label = UILabel()
@@ -40,27 +40,40 @@ class workoutDesigns {
     
     static func createStyledButton(
         title: String,
+        systemImageName: String? = nil,
         backgroundColor: UIColor = .systemBlue,
         cornerRadius: CGFloat = 20,
-        width: CGFloat = 200,
-        height: CGFloat = 50
+        width: CGFloat ,
+        height: CGFloat
     ) -> UIButton {
         let button = UIButton(type: .system)
-        button.setTitle(title, for: .normal)
+       // width      = 20
+       // height     = 20
+        if let systemImageName = systemImageName {
+                let image = UIImage(systemName: systemImageName)
+                button.setImage(image, for: .normal)
+                button.tintColor = .white
+                button.imageView?.contentMode = .scaleAspectFit
+            button.semanticContentAttribute = .forceRightToLeft
+            button.setTitle(title + " ", for: .normal)
+                
+            } else {
+                button.setTitle(title, for: .normal)
+            }
         button.setTitleColor(.white, for: .normal)
         button.backgroundColor = backgroundColor
         
         // Styling for the button
         button.layer.cornerRadius = cornerRadius
-        button.layer.borderWidth = 2
+//        button.layer.borderWidth = 2
         button.layer.shadowOpacity = 0.2
         button.layer.shadowOffset = CGSize(width: 2, height: 2)
         button.layer.shadowRadius = 5
         
         // Set the border color dynamically based on the system appearance
-        button.layer.borderColor = UIColor { traitCollection in
-            return traitCollection.userInterfaceStyle == .dark ? UIColor.white : UIColor.black
-        }.cgColor
+//        button.layer.borderColor = UIColor { traitCollection in
+//            return traitCollection.userInterfaceStyle == .dark ? UIColor.white : UIColor.black
+//        }.cgColor
         
         // Auto Layout constraints
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -72,4 +85,54 @@ class workoutDesigns {
         return button
     }
 
+}
+
+
+extension UIViewController {
+    
+     func setupToolbar(toolbar: UIToolbar,
+                       settingsSelector: Selector,
+                       viewWorkoutSelector: Selector,
+                       startWorkoutSelector: Selector,
+                       finishWorkoutSelector: Selector) {
+        view.addSubview(toolbar)
+
+        toolbar.layer.cornerRadius = 20
+        toolbar.layer.masksToBounds = true
+        toolbar.backgroundColor = .systemGray6
+        toolbar.layer.shadowColor = UIColor.black.cgColor
+        toolbar.layer.shadowOffset = CGSize(width: 0, height: 2)
+        toolbar.layer.shadowRadius = 4
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
+
+        let settingsButton = createCustomButton(imageName: "gearshape", action: settingsSelector)
+        let viewWorkoutButton = createCustomButton(imageName: "dumbbell", action: viewWorkoutSelector)
+        let startWorkoutButton = createCustomButton(imageName: "play", action: startWorkoutSelector)
+        let finishWorkoutButton = createCustomButton(imageName: "stop", action: finishWorkoutSelector)
+        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+
+        toolbar.items = [
+            flexibleSpace, settingsButton,
+            flexibleSpace, viewWorkoutButton,
+            flexibleSpace, startWorkoutButton,
+            flexibleSpace, finishWorkoutButton,
+            flexibleSpace
+        ]
+
+
+        NSLayoutConstraint.activate([
+            toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
+            toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: 20),
+            toolbar.heightAnchor.constraint(equalToConstant: 55)
+        ])
+    }
+
+    private func createCustomButton(imageName: String, action: Selector) -> UIBarButtonItem {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: imageName, withConfiguration: UIImage.SymbolConfiguration(pointSize: 25)), for: .normal)
+        button.addTarget(self, action: action, for: .touchUpInside)
+        return UIBarButtonItem(customView: button)
+    }
+    
 }

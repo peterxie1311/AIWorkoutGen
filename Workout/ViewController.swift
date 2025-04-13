@@ -24,9 +24,19 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var restTimerString     = ""
     
     // Buttons --------------------------------------
-    let addRepButton        = workoutDesigns.createStyledButton(title: "Generate Workout")
-    let clearToDoList       = workoutDesigns.createStyledButton(title: "Clear Todo List")
-    let AddSetRepButton     = workoutDesigns.createStyledButton(title: "Add Set")
+    var addRepButton        = workoutDesigns.createStyledButton(title: "Generate Workout",
+                                                                systemImageName: "plus",
+                                                                width: 25,
+                                                                height: 50)
+    var clearToDoList       = workoutDesigns.createStyledButton(title: "Clear Todo List",
+                                                                systemImageName: "trash",
+                                                                width: 25,
+                                                                height: 50)
+    var AddSetRepButton     = workoutDesigns.createStyledButton(title: "Add Set",
+                                                                systemImageName: "list.clipboard",
+                                                                width: 25,
+                                                                height: 50)
+
     
     let toolbar = UIToolbar()
     
@@ -50,7 +60,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     //scroll view ----------
     let scrollView  = UIScrollView()
-    let contentView = UIView()
+    //let contentView = UIView()
     // replacing contentView with stack view for cleaner UI sorting
     let contentStackView = UIStackView()
     
@@ -73,53 +83,14 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        scrollView.contentSize = contentView.bounds.size
+        scrollView.contentSize = contentStackView.bounds.size
     }
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        scrollView.contentSize = contentView.bounds.size
+        scrollView.contentSize = contentStackView.bounds.size
     }
     
-    private func setupToolbar() {
-        view.addSubview(toolbar)
-
-        toolbar.layer.cornerRadius = 20
-        toolbar.layer.masksToBounds = true
-        toolbar.backgroundColor = .systemGray6
-        toolbar.layer.shadowColor = UIColor.black.cgColor
-        toolbar.layer.shadowOffset = CGSize(width: 0, height: 2)
-        toolbar.layer.shadowRadius = 4
-        toolbar.translatesAutoresizingMaskIntoConstraints = false
-
-        let settingsButton = createCustomButton(imageName: "gearshape", action: #selector(goToSettings))
-        let viewWorkoutButton = createCustomButton(imageName: "dumbbell", action: #selector(goToViewWorkout))
-        let startWorkoutButton = createCustomButton(imageName: "play", action: #selector(startWorkout))
-        let finishWorkoutButton = createCustomButton(imageName: "stop", action: #selector(finishTimer))
-        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-
-        toolbar.items = [
-            flexibleSpace, settingsButton,
-            flexibleSpace, viewWorkoutButton,
-            flexibleSpace, startWorkoutButton,
-            flexibleSpace, finishWorkoutButton,
-            flexibleSpace
-        ]
-
-
-        NSLayoutConstraint.activate([
-            toolbar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            toolbar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            toolbar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: 20),
-            toolbar.heightAnchor.constraint(equalToConstant: 55)
-        ])
-    }
-
-    private func createCustomButton(imageName: String, action: Selector) -> UIBarButtonItem {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: imageName, withConfiguration: UIImage.SymbolConfiguration(pointSize: 25)), for: .normal)
-        button.addTarget(self, action: action, for: .touchUpInside)
-        return UIBarButtonItem(customView: button)
-    }
+   
 
     
 
@@ -144,27 +115,30 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func loadViews() {
         view.backgroundColor = .systemBackground
         view.addSubview(scrollView)
-        scrollView.translatesAutoresizingMaskIntoConstraints  = false
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.addSubview(contentView)
+        scrollView.translatesAutoresizingMaskIntoConstraints       = false
+        contentStackView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.addSubview(contentStackView)
         
-        scrollView.isUserInteractionEnabled                = true
-        contentView.isUserInteractionEnabled               = true
+        scrollView.isUserInteractionEnabled                        = true
+        contentStackView.isUserInteractionEnabled                  = true
        
-        addRepButton.isUserInteractionEnabled              = true
-        AddSetRepButton.isUserInteractionEnabled           = true
-        clearToDoList.isUserInteractionEnabled             = true
+        addRepButton.isUserInteractionEnabled                      = true
+        AddSetRepButton.isUserInteractionEnabled                   = true
+        clearToDoList.isUserInteractionEnabled                     = true
         
 // Call Functions -------------------------------------------------
-        
+        loadConstraints() // it is important that we do load constraints first because we're adding all of our views here
         setupView()
         setuptextfields()
         setupButton()
-        setupToolbar()
+        setupToolbar(toolbar: toolbar,
+                     settingsSelector: #selector(goToSettings),
+                     viewWorkoutSelector: #selector(goToViewWorkout),
+                     startWorkoutSelector: #selector(startWorkout),
+                     finishWorkoutSelector: #selector(finishTimer))
         setupTodoList()
         setuptextfields()
         setupstackview()
-        loadConstraints()
         setupViewConstrains()
         addDoneButtonToKeyboard()
         
@@ -173,21 +147,21 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     func setupstackview() {
         stackScrollView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.axis = .horizontal // Align horizontally
-        stackView.distribution = .fillEqually // Distribute views evenly
-        stackView.spacing = 20 // Adjust space between the views
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis                                            = .horizontal // Align horizontally
+        stackView.distribution                                    = .fillEqually // Distribute views evenly
+        stackView.spacing                                         = 20 // Adjust space between the views
+        stackView.translatesAutoresizingMaskIntoConstraints       = false
 
         stackView.addArrangedSubview(gymcounters)
         stackView.addArrangedSubview(gymtimers)
         stackView.addArrangedSubview(restTimer)
         stackcheck = true
         
-        contentView.addSubview(stackScrollView)
+       // contentStackView.addSubview(stackScrollView)
         stackScrollView.addSubview(stackView)
 
         NSLayoutConstraint.activate([
-            stackScrollView.widthAnchor.constraint(equalTo: contentView.widthAnchor),
+            stackScrollView.widthAnchor.constraint(equalTo: contentStackView.widthAnchor),
             stackScrollView.heightAnchor.constraint(equalToConstant: 100),
             stackView.leadingAnchor.constraint(equalTo: stackScrollView.leadingAnchor),
             stackView.trailingAnchor.constraint(equalTo: stackScrollView.trailingAnchor),
@@ -224,12 +198,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func setuptextfields(){
         workoutcustomisation.placeholder = "Enter your workout customisations"
         workoutcustomisation.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(workoutcustomisation)
+       // contentView.addSubview(workoutcustomisation)
     }
     
     
     func setupTodoList() {
-        contentView.addSubview(todoList)
+      //  contentView.addSubview(todoList)
         // header
         
         //setup table header
@@ -285,6 +259,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     
     func setupButton() {
+        
         // Auto Layout constraints (if needed)
         addRepButton.translatesAutoresizingMaskIntoConstraints = false
         addRepButton.addTarget(self, action: #selector(addRep), for: .touchUpInside)
@@ -292,13 +267,10 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         AddSetRepButton.translatesAutoresizingMaskIntoConstraints = false
         AddSetRepButton.addTarget(self, action: #selector(goToAddSetVC), for: .touchUpInside)
         
-        contentView.addSubview(AddSetRepButton)
-        contentView.addSubview(addRepButton)
         // clear to do list array
         clearToDoList.setTitle("Clear List", for: .normal)
         clearToDoList.addTarget(self, action: #selector(clearRep), for: .touchUpInside)
         clearToDoList.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(clearToDoList)
         
     }
     
@@ -310,7 +282,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         mainTitleLabel.text = main_Title
         mainTitleLabel.font = UIFont.boldSystemFont(ofSize: 34)
         mainTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(mainTitleLabel)
+       // contentView.addSubview(mainTitleLabel)
         
 
         
@@ -378,54 +350,30 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             scrollView.bottomAnchor.constraint(equalTo: toolbar.topAnchor), // Adjusted to avoid overlapping
 
             // Content View Constraints
-            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+            contentStackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentStackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentStackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
         ])
 
         // Ensure the content view is at least as tall as the scroll view
-        let heightConstraint = contentView.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor)
+        let heightConstraint = contentStackView.heightAnchor.constraint(greaterThanOrEqualTo: scrollView.frameLayoutGuide.heightAnchor)
         heightConstraint.priority = .defaultLow
         heightConstraint.isActive = true
     }
 
     
     func loadConstraints() {
-        NSLayoutConstraint.activate([
-            // Constraints for mainTitleLabel
-            mainTitleLabel.centerXAnchor.constraint(equalTo: contentView .centerXAnchor),
-            mainTitleLabel.topAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.topAnchor, constant: 20),
-            
-            stackScrollView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            stackScrollView.topAnchor.constraint(equalTo: mainTitleLabel.bottomAnchor, constant: 40),
-
-            
-            
-            
-            // Constraints for workoutcustomisation
-            workoutcustomisation.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            workoutcustomisation.topAnchor.constraint(equalTo: stackScrollView.bottomAnchor, constant: 20), // Increase space
-            
-            // Constraints for addRepButton
-            addRepButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            addRepButton.topAnchor.constraint(equalTo: workoutcustomisation.bottomAnchor, constant: 20), // Increase space
-            
-            // Constraints for addRepButton
-            AddSetRepButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            AddSetRepButton.topAnchor.constraint(equalTo: addRepButton.bottomAnchor, constant: 20), // Increase space
-            
-            // Constraints for clearToDoList
-            clearToDoList.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            clearToDoList.topAnchor.constraint(equalTo: AddSetRepButton.bottomAnchor, constant: 20), // Increase space
-            
-            // Constraints for todoList
-            todoList.topAnchor.constraint(equalTo: clearToDoList.bottomAnchor, constant: 20), // Move todoList down further
-            todoList.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            todoList.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
-            todoList.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20)
-        ])
+        let viewsToAdd = [mainTitleLabel,stackScrollView,workoutcustomisation,addRepButton,AddSetRepButton,clearToDoList,todoList] //make sure to add all elements to this array otherwise they wont get added
+        
+        for view in viewsToAdd {
+            contentStackView.addArrangedSubview(view)
+        }
+        contentStackView.axis                                      = .vertical
+        contentStackView.spacing                                   = 10
+        contentStackView.translatesAutoresizingMaskIntoConstraints = false
+        
     }
 
 
