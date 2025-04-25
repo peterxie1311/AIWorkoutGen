@@ -55,6 +55,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         }
+        
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+                container.viewContext.automaticallyMergesChangesFromParent = true
+
+                // Pin the viewContext to the current generation to ensure consistency
+                do {
+                    try container.viewContext.setQueryGenerationFrom(.current)
+                } catch {
+                    fatalError("Failed to pin viewContext to the current generation: \(error)")
+                }
 
         return container
     }()

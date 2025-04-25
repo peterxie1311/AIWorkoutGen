@@ -4,8 +4,10 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
     let WorkoutSession:WorkoutSession
     let setreps:[Setrep]
 
-    private let AddSetLabel = UILabel()
-    private var addSetButton     = UIButton()
+    private let AddSetLabel      = UILabel()
+    private var addSetButton     = workoutDesigns.createStyledButton(title: "Add Set!",
+                                                                     width: 100,
+                                                                     height: 50)
     private let workoutnameField = UITextField()
     private let setqtyField      = UITextField()
     private let repqtyField      = UITextField()
@@ -35,8 +37,7 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         var tmpRepWeight      = 0
         var retCode           = true
         let tmpWorkoutSession = self.WorkoutSession
-        var tmpSetRepArr         = self.setreps
-        
+        var tmpSetRepArr      = self.setreps
         
         if let workoutNameText = workoutnameField.text, !workoutNameText.isEmpty {
             tmpWorkoutName = workoutNameText
@@ -117,38 +118,35 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         addSetButton.addTarget(self, action: #selector(addSet), for: .touchUpInside)
         
         
-        workoutnameField.borderStyle = .roundedRect
-        workoutnameField.placeholder = "Workout Name"
+        workoutnameField.borderStyle  = .roundedRect
+        workoutnameField.placeholder  = "Workout Name"
         workoutnameField.keyboardType = .alphabet
-        workoutnameField.delegate = self
+        workoutnameField.delegate     = self
         workoutnameField.translatesAutoresizingMaskIntoConstraints = false
-        workoutnameField.isUserInteractionEnabled = true
+        workoutnameField.isUserInteractionEnabled                  = true
         
-        setqtyField.borderStyle = .roundedRect
-        setqtyField.placeholder = "Set QTY"
+        setqtyField.borderStyle  = .roundedRect
+        setqtyField.placeholder  = "Set QTY"
         setqtyField.keyboardType = .numberPad
-        setqtyField.delegate = self
+        setqtyField.delegate     = self
         setqtyField.translatesAutoresizingMaskIntoConstraints = false
         
-        repqtyField.borderStyle = .roundedRect
-        repqtyField.placeholder = "Rep QTY"
+        repqtyField.borderStyle  = .roundedRect
+        repqtyField.placeholder  = "Rep QTY"
         repqtyField.keyboardType = .numberPad
-        repqtyField.delegate = self
+        repqtyField.delegate     = self
         repqtyField.translatesAutoresizingMaskIntoConstraints = false
         
-        weightField.borderStyle = .roundedRect
-        weightField.placeholder = "Weight (kg)"
+        weightField.borderStyle  = .roundedRect
+        weightField.placeholder  = "Weight (kg)"
         weightField.keyboardType = .numberPad
-        weightField.delegate = self
+        weightField.delegate     = self
         weightField.translatesAutoresizingMaskIntoConstraints = false
         
         let stackView = UIStackView(arrangedSubviews: [AddSetLabel,workoutnameField,setqtyField,repqtyField,weightField,addSetButton])
-        stackView.axis = .vertical
+        stackView.axis    = .vertical
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false
-        addSetButton = workoutDesigns.createStyledButton(title: "Add Set!",
-                                                         width: stackView.frame.width/2,
-                                                         height: 100)
         
         view.addSubview(stackView)
         

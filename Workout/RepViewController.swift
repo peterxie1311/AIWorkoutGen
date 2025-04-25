@@ -253,11 +253,12 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
     }
-
+    
     
     @objc private func deleteRep() {
         SetrepManager.shared.removeSetrep(repid: self.repid)
         SetrepManager.shared.loadSetreps()
+        navigationController?.popViewController(animated: true)
     }
     @objc private func startworkout(){
         if repButtonString == phase_1 {

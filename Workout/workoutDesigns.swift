@@ -7,6 +7,9 @@ class workoutDesigns {
         containerView.backgroundColor = .systemBlue
         containerView.layer.cornerRadius = 16 // Adjust for desired roundness
         containerView.layer.masksToBounds = true
+      // containerView.translatesAutoresizingMaskIntoConstraints = false
+       //containerView.widthAnchor.constraint(equalToConstant: 100).isActive = true
+       
 //        containerView.layer.borderWidth = 2
 //        containerView.layer.borderColor = UIColor { traitCollection in
 //            return traitCollection.userInterfaceStyle == .dark ? UIColor.white : UIColor.black
@@ -18,18 +21,119 @@ class workoutDesigns {
         label.numberOfLines = 0
         label.textColor = .white
         label.textAlignment = .center
-        label.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+        label.font = UIFont.systemFont(ofSize: 20, weight: .bold)
         label.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(label)
         
         // Constraints for the label
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-            label.centerYAnchor.constraint(equalTo: containerView.centerYAnchor)
+            label.centerYAnchor.constraint(equalTo: containerView.centerYAnchor),
+           
         ])
        
         return containerView
     }
+    
+    static func createLinearProgressBarView(
+        withText text: String,
+        duration: TimeInterval = 300
+    ) -> UIView {
+        
+        // Container view
+        let containerView = UIView()
+        containerView.backgroundColor = .systemBlue//UIColor(red: 15/255, green: 76/255, blue: 157/255, alpha: 1) // Deep blue like your UI
+        containerView.layer.cornerRadius = 16
+        containerView.layer.masksToBounds = true
+        
+        // Label
+        let label = UILabel()
+        label.text = text
+        label.textColor = .white
+        label.textAlignment = .center
+        label.font = UIFont.systemFont(ofSize: 25, weight: .bold)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(label)
+        
+        // Progress View
+        let progressView = UIProgressView(progressViewStyle: .default)
+        progressView.progressTintColor = .systemTeal // Matches your screenshot
+        progressView.trackTintColor = UIColor(red: 3/255, green: 34/255, blue: 82/255, alpha: 1) // Darker track like in image
+        progressView.layer.cornerRadius = 5
+        progressView.clipsToBounds = true
+        progressView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(progressView)
+        
+        // Constraints
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
+            label.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 12),
+            label.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
+            
+            progressView.topAnchor.constraint(equalTo: label.bottomAnchor, constant: 12),
+            progressView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 12),
+            progressView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -12),
+            progressView.heightAnchor.constraint(equalToConstant: 8),
+            progressView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12)
+        ])
+        
+        //func getRestTimerString()->String{
+           //var restTimeString = ""
+            
+           // if SetrepManager.shared.toDoHasCompletedSetRep() == true {
+                //let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
+              //  let restTime     = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
+            //    restTimeString  = restTimerPrefix + "\(round(-restTime))"
+            //}
+          //  else {
+            //    restTimeString  = restTimerPrefix + "0"
+            //}
+            
+    //        return restTimeString
+      //  }
+        
+        // Timer to update progress
+//        let startTime = Date()
+        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            
+             if SetrepManager.shared.toDoHasCompletedSetRep() == true {
+                 let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
+                 let restTime     = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
+                // label.text       = "\(round(-restTime))"
+                // restTimeString  = restTimerPrefix + "\(round(-restTime))"
+                 
+                 let clampedRestTime = max(0, -restTime) // Ensure it's not negative
+                 label.text = "Rest Time: \(Int(round(clampedRestTime))).0"
+
+                 // Calculate progress as how much of the rest duration has passed
+                 let progress = Float(min(clampedRestTime / duration, 1.0))
+                 progressView.setProgress(progress, animated: true)
+             }
+             else {
+               //  restTimeString  = restTimerPrefix + "0"
+                 label.text            = "Rest Time: 0.0"
+                 progressView.progress = 0
+             }
+            
+//            let elapsed = Date().timeIntervalSince(startTime)
+//            let progress = Float(elapsed / duration)
+//            progressView.setProgress(min(progress, 1.0), animated: true)
+//            
+//            // Update label with remaining time
+//            let remainingTime = max(duration - elapsed, 0)
+//           // label.text = "\(text): \(Int(remainingTime))s remaining"
+//            
+//            if elapsed >= duration {
+//                progressView.setProgress(1.0, animated: true)
+//            }
+        }
+        
+        RunLoop.current.add(timer, forMode: .common)
+        
+        return containerView
+    }
+
+
     
     static func updateLabelText(in view: UIView, newText: String) {
           // Look for the label in the container view by traversing the subviews

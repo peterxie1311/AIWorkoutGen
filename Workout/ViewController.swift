@@ -2,7 +2,6 @@ import UIKit
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate  {
  
- 
     // Setup Constants && Objects ---------------------------------
     
     // labels ------------------------------
@@ -10,6 +9,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     let mainTitleLabel      = UILabel()
     //Gym counter
     var gymcounters         = UIView()
+    // test counter
+    var restCounter          = workoutDesigns.createLinearProgressBarView(withText: "Rest Timer")
     
     // gym timers
     var gymtimerstring      = ""
@@ -19,9 +20,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     let startDatePrefic     = "Start Time: "
     
     // rest counter
-    let restTimerPrefix     = "Rest Time: "
-    var restTimer           = UIView()
-    var restTimerString     = ""
+    //let restTimerPrefix     = "Rest Time: "
+  //  var restTimer           = UIView()
+    //var restTimerString     = ""
     
     // Buttons --------------------------------------
     var addRepButton        = workoutDesigns.createStyledButton(title: "Generate Workout",
@@ -36,11 +37,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                                                                 systemImageName: "list.clipboard",
                                                                 width: 25,
                                                                 height: 50)
-
-    
     let toolbar = UIToolbar()
-    
-    
     
     // Table View ------------------------------
     let todoList = UITableView()
@@ -90,11 +87,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         scrollView.contentSize = contentStackView.bounds.size
     }
     
-   
-
-    
-
-    
     @objc private func reload() {
         DispatchQueue.main.async {
             SetrepManager.shared.loadSetreps() // Reload data if necessary
@@ -104,14 +96,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             self.workoutSessions = WorkoutSessionManager.shared.workoutSessions
             self.todoList.reloadData()
             self.updateTodoListVisibility()
-            workoutDesigns.updateLabelText(in: self.restTimer, newText: self.getRestTimerString())
+//            workoutDesigns.updateLabelText(in: self.restTimer, newText: self.getRestTimerString())
             let gymcounterstring = "#Gym: \(self.workoutSessions.count)\n\(WorkoutSessionManager.shared.checkOpenWorkouts())\n\(WorkoutSessionManager.shared.checkOpenWorkoutsThisWeek())"
             workoutDesigns.updateLabelText(in: self.gymcounters, newText: gymcounterstring)
         }
     }
   
-    
-    
     func loadViews() {
         view.backgroundColor = .systemBackground
         view.addSubview(scrollView)
@@ -132,17 +122,15 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         setuptextfields()
         setupButton()
         setupToolbar(toolbar: toolbar,
-                     settingsSelector: #selector(goToSettings),
-                     viewWorkoutSelector: #selector(goToViewWorkout),
-                     startWorkoutSelector: #selector(startWorkout),
-                     finishWorkoutSelector: #selector(finishTimer))
+                              settingsSelector: #selector(goToSettings),
+                              viewWorkoutSelector: #selector(goToViewWorkout),
+                              startWorkoutSelector: #selector(startWorkout),
+                              finishWorkoutSelector: #selector(finishTimer))
         setupTodoList()
         setuptextfields()
         setupstackview()
         setupViewConstrains()
         addDoneButtonToKeyboard()
-        
-        
     }
 
     func setupstackview() {
@@ -151,10 +139,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         stackView.distribution                                    = .fillEqually // Distribute views evenly
         stackView.spacing                                         = 20 // Adjust space between the views
         stackView.translatesAutoresizingMaskIntoConstraints       = false
-
+        
         stackView.addArrangedSubview(gymcounters)
         stackView.addArrangedSubview(gymtimers)
-        stackView.addArrangedSubview(restTimer)
+//        stackView.addArrangedSubview(restTimer)
+        
         stackcheck = true
         
        // contentStackView.addSubview(stackScrollView)
@@ -168,7 +157,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             stackView.topAnchor.constraint(equalTo: stackScrollView.topAnchor),
             stackView.bottomAnchor.constraint(equalTo: stackScrollView.bottomAnchor),
             stackView.heightAnchor.constraint(equalTo: stackScrollView.heightAnchor),
-            stackView.widthAnchor.constraint(equalTo: stackScrollView.widthAnchor, multiplier: 2) // Make it twice as wide for scrolling
+            stackView.widthAnchor.constraint(equalTo: stackScrollView.widthAnchor) // Make it twice as wide for scrolling
         ])
         
     }
@@ -198,17 +187,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     func setuptextfields(){
         workoutcustomisation.placeholder = "Enter your workout customisations"
         workoutcustomisation.translatesAutoresizingMaskIntoConstraints = false
-       // contentView.addSubview(workoutcustomisation)
     }
     
     
     func setupTodoList() {
-      //  contentView.addSubview(todoList)
-        // header
-        
         //setup table header
         let headerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: 40))
-       // headerView.backgroundColor = .lightGray
         
         let titles = ["Workout", "QTY", "Kgs", "Status"]
         let headerStackView = UIStackView()
@@ -237,8 +221,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         todoList.tableHeaderView = headerView
         
-        
-        
         // Setup
         todoList.register(TodoListCell.self, forCellReuseIdentifier: "todoListCell")
         todoList.delegate = self
@@ -259,7 +241,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     
     func setupButton() {
-        
         // Auto Layout constraints (if needed)
         addRepButton.translatesAutoresizingMaskIntoConstraints = false
         addRepButton.addTarget(self, action: #selector(addRep), for: .touchUpInside)
@@ -271,7 +252,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         clearToDoList.setTitle("Clear List", for: .normal)
         clearToDoList.addTarget(self, action: #selector(clearRep), for: .touchUpInside)
         clearToDoList.translatesAutoresizingMaskIntoConstraints = false
-        
     }
     
     func setupView() {
@@ -282,18 +262,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         mainTitleLabel.text = main_Title
         mainTitleLabel.font = UIFont.boldSystemFont(ofSize: 34)
         mainTitleLabel.translatesAutoresizingMaskIntoConstraints = false
-       // contentView.addSubview(mainTitleLabel)
-        
-
         
         let gymcounterstring = "#Gym: \(self.workoutSessions.count)\n\(WorkoutSessionManager.shared.checkOpenWorkouts())\n\(WorkoutSessionManager.shared.checkOpenWorkoutsThisWeek())"
-        //workoutDesigns.updateLabelText(in: gymcounters, newText: gymcounterstring)
         //need to implement update of gym counters
         gymcounters = workoutDesigns.createRoundedSquareView(withText: gymcounterstring)
         gymcounters.translatesAutoresizingMaskIntoConstraints = false
-      
-        
-        
         
         if WorkoutSessionManager.shared.getWorkoutSession() !== nil {
             continueWorkout()
@@ -311,41 +284,40 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 starttimestring = startDatePrefic + timeString + "\n"
                 gymtimerstring = starttimestring + timercounter
             } else {
-                 gymtimerstring = startDatePrefic
+                 gymtimerstring = startDatePrefic 
             }
             
-            print(gymtimerstring)
             
             gymtimers = workoutDesigns.createRoundedSquareView(withText: gymtimerstring)
             gymtimers.translatesAutoresizingMaskIntoConstraints = false
            // contentView.addSubview(gymtimers)
         }
-        if restTimerString == "" {
-            restTimer = workoutDesigns.createRoundedSquareView(withText: getRestTimerString())
-            restTimer.translatesAutoresizingMaskIntoConstraints = false
-        }
+//        if restTimerString == "" {
+  //          restTimer = workoutDesigns.createRoundedSquareView(withText: getRestTimerString())
+      //      restTimer.translatesAutoresizingMaskIntoConstraints = false
+    //    }
     }
     
-    func getRestTimerString()->String{
-       var restTimeString = ""
+    //func getRestTimerString()->String{
+       //var restTimeString = ""
         
-        if SetrepManager.shared.toDoHasCompletedSetRep() == true {
-            let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
-            let restTime     = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
-            restTimeString  = restTimerPrefix + "\(round(-restTime))"
-        }
-        else {
-            restTimeString  = restTimerPrefix + "0"
-        }
+       // if SetrepManager.shared.toDoHasCompletedSetRep() == true {
+            //let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
+          //  let restTime     = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
+        //    restTimeString  = restTimerPrefix + "\(round(-restTime))"
+        //}
+      //  else {
+        //    restTimeString  = restTimerPrefix + "0"
+        //}
         
-        return restTimeString
-    }
+//        return restTimeString
+  //  }
     
     func setupViewConstrains() {
         NSLayoutConstraint.activate([
             // Scroll View Constraints
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor,constant: 16),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor,constant: -16),
             scrollView.topAnchor.constraint(equalTo: view.topAnchor),
             scrollView.bottomAnchor.constraint(equalTo: toolbar.topAnchor), // Adjusted to avoid overlapping
 
@@ -365,7 +337,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     
     func loadConstraints() {
-        let viewsToAdd = [mainTitleLabel,stackScrollView,workoutcustomisation,addRepButton,AddSetRepButton,clearToDoList,todoList] //make sure to add all elements to this array otherwise they wont get added
+        let viewsToAdd = [mainTitleLabel,stackScrollView,restCounter,workoutcustomisation,addRepButton,AddSetRepButton,clearToDoList,todoList] //make sure to add all elements to this array otherwise they wont get added
         
         for view in viewsToAdd {
             contentStackView.addArrangedSubview(view)
@@ -389,7 +361,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             starttimestring = startDatePrefic + HelperFunctions.parseDateToStringTime(startTime) + "\n"
             gymtimerstring = starttimestring + timercounter
             workoutDesigns.updateLabelText(in: gymtimers, newText: gymtimerstring)
-            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
+//            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
             workoutDesigns.updateLabelText(in: gymcounters, newText: "#Gym: \(workoutSessions.count)\n\(WorkoutSessionManager.shared.checkOpenWorkouts())")
         } else {
             gymtimerstring = startDatePrefic
@@ -489,7 +461,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
            gymtimerstring = starttimestring + timercounter
         
             workoutDesigns.updateLabelText(in: gymtimers, newText: gymtimerstring)
-            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
+//            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
             SetrepManager.shared.clearSetreps()
             print(SetrepManager.shared.Setreps.count)
             reload()
@@ -506,7 +478,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             timercounter = "Time: \(minutes) mins" // Update the label with the new elapsed
             gymtimerstring = starttimestring + timercounter
             workoutDesigns.updateLabelText(in: gymtimers, newText: gymtimerstring)
-            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
+//            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
         }
         else{
             print("FAILED TO START TIME!")

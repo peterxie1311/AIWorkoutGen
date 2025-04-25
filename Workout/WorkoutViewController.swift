@@ -20,12 +20,15 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
     private let endtimelabel  = UILabel()
     private let durationlabel = UILabel()
     private var deleteButton  = workoutDesigns.createStyledButton(title: "Delete Sesh",
+                                                                  systemImageName: "trash",
                                                                   width: 20,
                                                                   height: 30)
     private var excludeButton = workoutDesigns.createStyledButton(title: "Exclude Workout",
+                                                                  systemImageName: "nosign",
                                                                   width: 20,
                                                                   height: 30) 
     private var AddSetRep     = workoutDesigns.createStyledButton(title: "Add Set",
+                                                                  systemImageName: "plus",
                                                                   width: 20,
                                                                   height: 30)
     

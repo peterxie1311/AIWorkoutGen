@@ -12,6 +12,7 @@
         <relationship name="workoutSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="WorkoutSession" inverseName="setrep" inverseEntity="WorkoutSession"/>
     </entity>
     <entity name="Setting" representedClassName="Setting" syncable="YES" codeGenerationType="class">
+        <attribute name="modDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="settingName" optional="YES" attributeType="String"/>
         <attribute name="value" optional="YES" attributeType="String"/>
     </entity>
