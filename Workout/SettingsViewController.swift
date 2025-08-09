@@ -50,11 +50,20 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
         // Check if any settings already exist
         let existingSettings = SettingsManager.shared.settings
         
+        var seenNames = Set<String>()
+
+        for setting in existingSettings {
+            if seenNames.contains(setting.settingName ?? " ") {
+                SettingsManager.shared.initSettings()
+                break
+            } else {
+                seenNames.insert(setting.settingName ?? " ")
+            }
+        }
+        
         if existingSettings.isEmpty {
             // No settings found, create default settings
             SettingsManager.shared.initSettings()
-        } else {
-            print("Settings already exist.")
         }
     }
     

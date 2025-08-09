@@ -40,6 +40,9 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
     private let startTimeLabel    = UILabel()
     private let duration_secLabel = UILabel()
     private let weight_label      = UILabel()
+    
+    private let personalBestLabelWeight = UILabel()
+    private let personalBestLabelReps   = UILabel()
    // private let videoButton = UIButton()
     private var RepButton             = workoutDesigns.createStyledButton(title: "",
                                                                           systemImageName: "dumbbell",
@@ -91,7 +94,6 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
     }
     
     @objc private func reload(){
-        print("Reloading!")
         let updatedRep = SetrepManager.shared.getSetrep(uuid: self.repid) ?? self.setRep
         self.completed = updatedRep.completed
         self.duration_sec = updatedRep.duration_sec
@@ -104,15 +106,24 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         self.setRep = updatedRep
         
         setupUI()
-        
-        
-        
     }
     
     private func parseDateToString(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter.string(from: date)
+    }
+    
+    private func getPersonalBest (workout: String) -> Setrep? {
+         var personalBest:Setrep? = nil
+            for session in WorkoutSessionManager.shared.workoutSessions{
+                for setrep in (session.setrep?.allObjects as? [Setrep]) ?? []{
+                    if setrep.workoutName == workout && setrep.weight > personalBest?.weight ?? 0 {
+                        personalBest = setrep
+                    }
+                }
+        }
+       return personalBest
     }
     
     private func setupUI() {
@@ -123,6 +134,14 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         duration_secLabel.text = timerprefix + "0"
         weight_label.text      = weightprefix + String(weight)
         status.text            = statusPrefix + String(completed)
+        
+        
+        if let personalBest:Setrep = getPersonalBest(workout: WorkoutName){
+            personalBestLabelReps.text = "Personal Best (Reps): " + String(personalBest.rep_qty)
+            personalBestLabelWeight.text = "Personal Best (Wgt): " + String(personalBest.weight)
+            
+        }
+        
         
         // Setup UI Components
         nameLabel.font = UIFont.boldSystemFont(ofSize: 24)
@@ -166,7 +185,7 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         
 
         // Add Subviews and Set Constraints
-        let stackView = UIStackView(arrangedSubviews: [nameLabel, rep_qtyLabel,status, weight_label,startTimeLabel, duration_secLabel,RepButton,deleteRepButton,changeWorkoutName,changeRepWeight,changeSetQTY,changeRepWeightButton])
+        let stackView = UIStackView(arrangedSubviews: [nameLabel, rep_qtyLabel,status, weight_label,startTimeLabel, duration_secLabel,personalBestLabelWeight,personalBestLabelReps,RepButton,deleteRepButton,changeWorkoutName,changeRepWeight,changeSetQTY,changeRepWeightButton])
         stackView.axis = .vertical
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false

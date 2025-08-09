@@ -85,11 +85,12 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
             }
             else {
                 
-                print("APPENDING EXISTING WORKOUT")
+        
                 
                 for _ in 1...tmpSetQty {
                     let tmpSetRep =  SetrepManager.shared.initSetRep(qty: Int(tmpRepQty), startTime: Date(), finishTime: Date(), workoutName: tmpWorkoutName, weight: Int64(tmpRepWeight))
-                    tmpSetRepArr.append(tmpSetRep)
+                        tmpSetRepArr.append(tmpSetRep)
+                    
                 }
                 
                 tmpWorkoutSession.setrep = NSSet(array: tmpSetRepArr)

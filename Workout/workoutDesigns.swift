@@ -183,7 +183,7 @@ class workoutDesigns {
         button.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             button.heightAnchor.constraint(equalToConstant: height),
-            button.widthAnchor.constraint(equalToConstant: width)
+//            button.widthAnchor.constraint(equalToConstant: width)
         ])
         
         return button
@@ -198,7 +198,8 @@ extension UIViewController {
                        settingsSelector: Selector,
                        viewWorkoutSelector: Selector,
                        startWorkoutSelector: Selector,
-                       finishWorkoutSelector: Selector) {
+                       finishWorkoutSelector: Selector,
+                       gymprogresstracker:Selector) {
         view.addSubview(toolbar)
 
         toolbar.layer.cornerRadius = 20
@@ -213,6 +214,7 @@ extension UIViewController {
         let viewWorkoutButton = createCustomButton(imageName: "dumbbell", action: viewWorkoutSelector)
         let startWorkoutButton = createCustomButton(imageName: "play", action: startWorkoutSelector)
         let finishWorkoutButton = createCustomButton(imageName: "stop", action: finishWorkoutSelector)
+        let gymprogressSelector = createCustomButton(imageName: "tree", action: gymprogresstracker)
         let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 
         toolbar.items = [
@@ -220,6 +222,7 @@ extension UIViewController {
             flexibleSpace, viewWorkoutButton,
             flexibleSpace, startWorkoutButton,
             flexibleSpace, finishWorkoutButton,
+            flexibleSpace, gymprogressSelector,
             flexibleSpace
         ]
 

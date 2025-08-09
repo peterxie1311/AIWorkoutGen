@@ -10,7 +10,6 @@
 		DC2786662D14221100CE9026 /* workoutAIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2786652D14221100CE9026 /* workoutAIService.swift */; };
 		DC27866A2D17958C00CE9026 /* workoutDesigns.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2786692D17958C00CE9026 /* workoutDesigns.swift */; };
 		DC27866C2D18194F00CE9026 /* HelperFunctions.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC27866B2D18194F00CE9026 /* HelperFunctions.swift */; };
-		DC27867E2D1EDEEA00CE9026 /* Piechartviewcontroller.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC27867D2D1EDEE900CE9026 /* Piechartviewcontroller.swift */; };
 		DC2786802D6CDD4300CE9026 /* AddSetViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC27867F2D6CDD4300CE9026 /* AddSetViewController.swift */; };
 		DC59973C2CCC8D3E0003713A /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC59973B2CCC8D3E0003713A /* SettingsManager.swift */; };
 		DC59973E2CCCA7AC0003713A /* SettingsTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC59973D2CCCA7AC0003713A /* SettingsTableViewCell.swift */; };
@@ -21,6 +20,7 @@
 		DC59974A2CCCEA7D0003713A /* WorkoutSessionsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5997492CCCEA7D0003713A /* WorkoutSessionsManager.swift */; };
 		DC59974C2CCCEC640003713A /* SetrepManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC59974B2CCCEC640003713A /* SetrepManager.swift */; };
 		DC5E6A402CFC11EE0068F9A9 /* RepViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC5E6A3F2CFC11EE0068F9A9 /* RepViewController.swift */; };
+		DC89EB492E0FD64F0002EE60 /* workouttree.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC89EB482E0FD64F0002EE60 /* workouttree.swift */; };
 		DC9F169C2CCA6A720091B6C0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F169B2CCA6A720091B6C0 /* AppDelegate.swift */; };
 		DC9F169E2CCA6A720091B6C0 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F169D2CCA6A720091B6C0 /* SceneDelegate.swift */; };
 		DC9F16A02CCA6A720091B6C0 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F169F2CCA6A720091B6C0 /* ViewController.swift */; };
@@ -32,6 +32,7 @@
 		DC9F16C02CCA6A750091B6C0 /* WorkoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F16BF2CCA6A750091B6C0 /* WorkoutUITests.swift */; };
 		DC9F16C22CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F16C12CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift */; };
 		DC9F16D32CCB988F0091B6C0 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F16D22CCB988F0091B6C0 /* SettingsViewController.swift */; };
+		DCF3773D2E2663ED003D2B9E /* Tree.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCF3773C2E2663ED003D2B9E /* Tree.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,7 +56,6 @@
 		DC2786652D14221100CE9026 /* workoutAIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = workoutAIService.swift; sourceTree = "<group>"; };
 		DC2786692D17958C00CE9026 /* workoutDesigns.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = workoutDesigns.swift; sourceTree = "<group>"; };
 		DC27866B2D18194F00CE9026 /* HelperFunctions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelperFunctions.swift; sourceTree = "<group>"; };
-		DC27867D2D1EDEE900CE9026 /* Piechartviewcontroller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Piechartviewcontroller.swift; sourceTree = "<group>"; };
 		DC27867F2D6CDD4300CE9026 /* AddSetViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AddSetViewController.swift; sourceTree = "<group>"; };
 		DC59973B2CCC8D3E0003713A /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		DC59973D2CCCA7AC0003713A /* SettingsTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTableViewCell.swift; sourceTree = "<group>"; };
@@ -66,6 +66,7 @@
 		DC5997492CCCEA7D0003713A /* WorkoutSessionsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionsManager.swift; sourceTree = "<group>"; };
 		DC59974B2CCCEC640003713A /* SetrepManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetrepManager.swift; sourceTree = "<group>"; };
 		DC5E6A3F2CFC11EE0068F9A9 /* RepViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepViewController.swift; sourceTree = "<group>"; };
+		DC89EB482E0FD64F0002EE60 /* workouttree.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = workouttree.swift; sourceTree = "<group>"; };
 		DC9F16982CCA6A720091B6C0 /* Workout.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Workout.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		DC9F169B2CCA6A720091B6C0 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DC9F169D2CCA6A720091B6C0 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -82,6 +83,7 @@
 		DC9F16C12CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		DC9F16D22CCB988F0091B6C0 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		DCADF3E82D9D430B00CC0C27 /* Workout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Workout.entitlements; sourceTree = "<group>"; };
+		DCF3773C2E2663ED003D2B9E /* Tree.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tree.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -137,14 +139,15 @@
 				DC2786652D14221100CE9026 /* workoutAIService.swift */,
 				DC9F169D2CCA6A720091B6C0 /* SceneDelegate.swift */,
 				DC59973F2CCCAD5E0003713A /* Constants.swift */,
-				DC9F169F2CCA6A720091B6C0 /* ViewController.swift */,
-				DC27867D2D1EDEE900CE9026 /* Piechartviewcontroller.swift */,
 				DC27866B2D18194F00CE9026 /* HelperFunctions.swift */,
+				DC9F169F2CCA6A720091B6C0 /* ViewController.swift */,
 				DC2786692D17958C00CE9026 /* workoutDesigns.swift */,
 				DC5997452CCCC8630003713A /* WorkoutsListViewController.swift */,
+				DC89EB482E0FD64F0002EE60 /* workouttree.swift */,
 				DC27867F2D6CDD4300CE9026 /* AddSetViewController.swift */,
 				DC5997432CCCC0520003713A /* WorkoutManager.swift */,
 				DC5997472CCCC88A0003713A /* WorkoutViewController.swift */,
+				DCF3773C2E2663ED003D2B9E /* Tree.swift */,
 				DC5E6A3F2CFC11EE0068F9A9 /* RepViewController.swift */,
 				DC9F16D22CCB988F0091B6C0 /* SettingsViewController.swift */,
 				DC59973D2CCCA7AC0003713A /* SettingsTableViewCell.swift */,
@@ -312,8 +315,8 @@
 				DC5997482CCCC88A0003713A /* WorkoutViewController.swift in Sources */,
 				DC9F16A02CCA6A720091B6C0 /* ViewController.swift in Sources */,
 				DC9F169C2CCA6A720091B6C0 /* AppDelegate.swift in Sources */,
-				DC27867E2D1EDEEA00CE9026 /* Piechartviewcontroller.swift in Sources */,
 				DC59973C2CCC8D3E0003713A /* SettingsManager.swift in Sources */,
+				DCF3773D2E2663ED003D2B9E /* Tree.swift in Sources */,
 				DC9F169E2CCA6A720091B6C0 /* SceneDelegate.swift in Sources */,
 				DC2786662D14221100CE9026 /* workoutAIService.swift in Sources */,
 				DC59974A2CCCEA7D0003713A /* WorkoutSessionsManager.swift in Sources */,
@@ -327,6 +330,7 @@
 				DC5997462CCCC8630003713A /* WorkoutsListViewController.swift in Sources */,
 				DC5997402CCCAD5E0003713A /* Constants.swift in Sources */,
 				DC27866C2D18194F00CE9026 /* HelperFunctions.swift in Sources */,
+				DC89EB492E0FD64F0002EE60 /* workouttree.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

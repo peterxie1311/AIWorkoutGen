@@ -149,6 +149,22 @@ class SetrepManager {
         }
         return latestRep
     }
+    
+//    func initSetrep (workoutName:String) -> Setrep? {
+//        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return nil }
+//        let context = appDelegate.persistentContainer.viewContext
+//        let newSetrep         = Setrep(context: context)
+//        newSetrep.rep_qty     = Int64(0)
+//        newSetrep.startTime   = Date()
+//        newSetrep.finishTime  = Date()
+//        newSetrep.workoutName = workoutName
+//        newSetrep.completed   = false
+//        newSetrep.weight      = 0
+//        newSetrep.repid       = UUID()
+//        
+//        return newSetrep
+//        
+//    }
 
     // Add a new Setrep
     func addSetrep(qty: Int, startTime: Date, finishTime: Date, workoutName: String,weight:Int64) {

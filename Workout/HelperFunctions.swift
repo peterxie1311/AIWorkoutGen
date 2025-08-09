@@ -16,6 +16,11 @@ class HelperFunctions {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter.string(from: date)
     }
+    static func parseDateToString(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
+    }
     static func showAlert(on viewController: UIViewController, title: String, message: String) {
            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
@@ -34,7 +39,6 @@ class HelperFunctions {
         // Calculate the start of the week
         if let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start {
             let normalizedStartOfWeek = calendar.startOfDay(for: startOfWeek)
-            print("Normalized Start of the Week: \(normalizedStartOfWeek) || Date Comparison: \(date)")
             return date > normalizedStartOfWeek
         }
         return false

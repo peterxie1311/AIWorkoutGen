@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 class workoutAIservice {
     static let shared = workoutAIservice()
@@ -11,7 +12,7 @@ class workoutAIservice {
     private let endpoint = "https://api.openai.com/v1/chat/completions"
 
     // Function to send a message to ChatGPT API
-    func queryChatGPT(messages: [[String: String]], completion: @escaping (Result<String, Error>) -> Void) {
+    func queryChatGPT(messages: [[String: String]],completion: @escaping (Result<String, Error>) -> Void) {
         guard let url = URL(string: endpoint) else {
             completion(.failure(NSError(domain: "Invalid URL", code: 0, userInfo: nil)))
             return
@@ -89,8 +90,10 @@ class workoutAIservice {
                         }
                     }
                 } catch {
-                    print("Error parsing response: \(error)")
+                   // HelperFunctions.showAlert(on: viewController, title: "Failed to add workout!", message: //"Error parsing response: \(error)")
+                    print(error)
                     completion(.failure(error))
+                    
                 }
             }
         }

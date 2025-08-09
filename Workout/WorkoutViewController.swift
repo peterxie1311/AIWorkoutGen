@@ -227,7 +227,7 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
         startimelabel.text = "Start Time: " + HelperFunctions.parseDateToStringFull(startTime!)
         endtimelabel.text  = "Finish Time: " + HelperFunctions.parseDateToStringFull(endTime!)
         locationlabel.text = "Location: " + (self.location ?? "")
-        durationlabel.text = "Duration (hrs): " + String(self.duration_hrs)
+        durationlabel.text = "Duration (mins): " + String(self.duration_hrs)
         workoutLabel.text =  "Workout: \(self.workoutGenre ?? "")"
         
     }

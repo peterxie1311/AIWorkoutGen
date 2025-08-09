@@ -27,16 +27,16 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // Buttons --------------------------------------
     var addRepButton        = workoutDesigns.createStyledButton(title: "Generate Workout",
                                                                 systemImageName: "plus",
-                                                                width: 25,
-                                                                height: 50)
+                                                                width: 20,
+                                                                height: 40)
     var clearToDoList       = workoutDesigns.createStyledButton(title: "Clear Todo List",
                                                                 systemImageName: "trash",
-                                                                width: 25,
-                                                                height: 50)
+                                                                width: 30,
+                                                                height: 40)
     var AddSetRepButton     = workoutDesigns.createStyledButton(title: "Add Set",
                                                                 systemImageName: "list.clipboard",
-                                                                width: 25,
-                                                                height: 50)
+                                                                width: 30,
+                                                                height: 40)
     let toolbar = UIToolbar()
     
     // Table View ------------------------------
@@ -125,7 +125,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                               settingsSelector: #selector(goToSettings),
                               viewWorkoutSelector: #selector(goToViewWorkout),
                               startWorkoutSelector: #selector(startWorkout),
-                              finishWorkoutSelector: #selector(finishTimer))
+                              finishWorkoutSelector: #selector(finishTimer),
+                              gymprogresstracker:#selector(goToProgressTracker))
         setupTodoList()
         setuptextfields()
         setupstackview()
@@ -290,43 +291,24 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             
             gymtimers = workoutDesigns.createRoundedSquareView(withText: gymtimerstring)
             gymtimers.translatesAutoresizingMaskIntoConstraints = false
-           // contentView.addSubview(gymtimers)
         }
-//        if restTimerString == "" {
-  //          restTimer = workoutDesigns.createRoundedSquareView(withText: getRestTimerString())
-      //      restTimer.translatesAutoresizingMaskIntoConstraints = false
-    //    }
     }
     
-    //func getRestTimerString()->String{
-       //var restTimeString = ""
-        
-       // if SetrepManager.shared.toDoHasCompletedSetRep() == true {
-            //let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
-          //  let restTime     = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
-        //    restTimeString  = restTimerPrefix + "\(round(-restTime))"
-        //}
-      //  else {
-        //    restTimeString  = restTimerPrefix + "0"
-        //}
-        
-//        return restTimeString
-  //  }
-    
+
     func setupViewConstrains() {
         NSLayoutConstraint.activate([
             // Scroll View Constraints
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor,constant: 16),
+            scrollView.leadingAnchor.constraint (equalTo: view.leadingAnchor,constant: 16),
             scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor,constant: -16),
-            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: toolbar.topAnchor), // Adjusted to avoid overlapping
+            scrollView.topAnchor.constraint     (equalTo: view.topAnchor),
+            scrollView.bottomAnchor.constraint  (equalTo: toolbar.topAnchor), // Adjusted to avoid overlapping
 
             // Content View Constraints
-            contentStackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentStackView.leadingAnchor.constraint (equalTo: scrollView.contentLayoutGuide.leadingAnchor),
             contentStackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-            contentStackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            contentStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
+            contentStackView.topAnchor.constraint     (equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentStackView.bottomAnchor.constraint  (equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentStackView.widthAnchor.constraint   (equalTo: scrollView.frameLayoutGuide.widthAnchor)
         ])
 
         // Ensure the content view is at least as tall as the scroll view
@@ -377,19 +359,70 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     @objc func addRep(){
         let customisations = workoutcustomisation.text ?? ""
         let excludeWorkouts = SettingsManager.shared.getSetting(name: "Exclude Workout")?.value ?? ""
-        var workoutstring = "Generate me a workout for strength based training in JSON format within a flat array where we have the columns workoutname, setqty and repqty."
+        var workoutstring = "Generate me a workout for strength based training in JSON format within a flat array where we have the columns workoutname, setqty and repqty. "
         
         if customisations != "" {
-            workoutstring += "Here are some workout customisations: [\(customisations)]."
+            workoutstring += "This is my goal for this gym session: [\(customisations)]. "
         }
         if excludeWorkouts != "" {
-            workoutstring += "Exlude the following workouts:[\(excludeWorkouts)]"
+            workoutstring += "Exlude the following workouts:[\(excludeWorkouts)] "
+        }
+        workoutstring += """
+                              This is previous workout data sent in JSON
+                              Field meanings:
+                              - "w": workout name
+                              - "o": overall workout
+                              - "r": rep quantity
+                              - "s": set quantity
+                              - "wt": weight in kg
+                              - "d": date
+                              """
+        
+        // Step 1: Sort sessions by date descending
+        let sortedSessions = WorkoutSessionManager.shared.workoutSessions.sorted {
+            ($0.startTime ?? Date.distantPast) > ($1.startTime ?? Date.distantPast)
         }
 
-        let messages = [
-            ["role": "system", "content": workoutstring]
-               ]
+        // Step 2: Flatten all Setreps
+        var allSetreps: [(setrep: Setrep, sessionDate: Date,workout_genre:String?)] = []
 
+        for session in sortedSessions {
+            let reps = (session.setrep?.allObjects as? [Setrep]) ?? []
+            for setrep in reps {
+                allSetreps.append((setrep, session.startTime ?? Date(),session.workout_genre))
+            }
+        }
+
+        // Step 3: Take the first 100 most recent reps
+        let latestSetreps = allSetreps.prefix(120)
+
+        // Step 4: Build JSON string
+        var jsonWorkoutData = "[\n"
+        for (setrep, sessionDate,workout_genre) in latestSetreps {
+            let entry = """
+              {
+                "w": "\(setrep.workoutName ?? "unknown")",
+                "o": \(workout_genre ?? " "),
+                "r": \(setrep.rep_qty),
+                "wt": \(setrep.weight),
+                "d": "\(HelperFunctions.parseDateToString(sessionDate))"
+              },
+            """
+            jsonWorkoutData += entry + "\n"
+        }
+        jsonWorkoutData += "]"
+
+        // Now append to workoutstring
+        workoutstring += "\n" + jsonWorkoutData + "\n"
+        
+        print(workoutstring)
+
+       
+        let messages = [
+            ["role": "system", "content": "You are a helpful fitness assistant who responds ONLY in JSON."],
+            ["role": "user", "content": workoutstring]
+               ]
+        
                workoutAIservice.shared.queryChatGPT(messages: messages) { result in
                    DispatchQueue.main.async {
                        switch result {
@@ -397,7 +430,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                            print("Response: \(response)")
                            self.todoList.reloadData()
                        case .failure(let error):
-                           print("Error: \(error.localizedDescription)")
+                           HelperFunctions.showAlert(on: self, title: "Failed to add workout!", message: "Error: \(error.localizedDescription)")
                        }
                    }
                }
@@ -451,10 +484,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                 if set.completed == true{
                     finishedSets.append(set)
                     set.workoutSession = newWorkout
-                    
                 }
             }
-            
             newWorkout.setrep = NSSet(array: finishedSets)
             WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currentWorkout,updatedSession:newWorkout)
             timercounter = "Total: \(String(format: "%.2f", mins)) mins \n"
@@ -478,25 +509,25 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             timercounter = "Time: \(minutes) mins" // Update the label with the new elapsed
             gymtimerstring = starttimestring + timercounter
             workoutDesigns.updateLabelText(in: gymtimers, newText: gymtimerstring)
-//            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
         }
         else{
             print("FAILED TO START TIME!")
         }
     }
-
+    
+    // go to viewcontroller
     @objc func goToSettings() {
         let settingsVC = SettingsViewController()
         navigationController?.pushViewController(settingsVC, animated: true)
     }
     
-    @objc func goToAddWorkout() {
-        let addWorkoutVC = Piechartviewcontroller()
-        navigationController?.pushViewController(addWorkoutVC, animated: true)
-    }
-    
     @objc func goToViewWorkout() {
         let viewWorkoutVC = WorkoutsListViewController()
+        navigationController?.pushViewController(viewWorkoutVC, animated: true)
+    }
+    
+    @objc func goToProgressTracker() {
+        let viewWorkoutVC = WorkoutTreeViewController();
         navigationController?.pushViewController(viewWorkoutVC, animated: true)
     }
     
@@ -509,6 +540,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             HelperFunctions.showAlert(on: self, title: "Error", message: "Please Start a workout")
         }
     }
+    
+    // table designs
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return toDoArray.count
@@ -531,7 +564,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
 }
 
-
+// cell class for the table
 
 class TodoListCell: UITableViewCell {
     let workoutLabel = UILabel()
