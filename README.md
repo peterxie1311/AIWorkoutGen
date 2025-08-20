@@ -95,27 +95,6 @@ Choose one of these safe approaches:
 
 ---
 
-## 🔌 OpenAI Integration (overview)
-- All API calls are centralised in **`workoutAIService.swift`**.
-- The service composes a prompt using your **recent 100 workouts** (or similar window) and your **preferences**.
-- Responses are parsed into the app’s workout model (exercise list, sets/reps, notes).
-
-Example call (pseudocode):
-```swift
-struct WorkoutRequest: Codable { let recentWorkouts: [WorkoutSummary], let goal: String }
-struct WorkoutPlan: Codable { let sessions: [Session] }
-
-let plan = try await aiClient.generatePlan(from: request)
-```
-
----
-
-## 🧪 Testing
-- `WorkoutTests` for unit tests (e.g., parsing AI responses, set/rep math).
-- `WorkoutUITests` for basic flows (create workout → add set → complete).
-
----
-
 ## 🔒 Privacy & Security
 - **No API keys** are shipped with the app.
 - Workout history is stored locally via **Core Data**.
@@ -131,17 +110,6 @@ let plan = try await aiClient.generatePlan(from: request)
 - Theming and accessibility polish.
 - SwiftUI rewrite (optional path) for modern UI.
 
----
-
-## 📸 Screenshots
-_Add screenshots or screen recordings here (e.g., Generator, Session Log, History)._
-
----
-
-## 📄 License
-MIT (or your choice). Add a `LICENSE` file if you want others to reuse the project.
-
----
 
 ## 👤 Author
 **Peter Xie**  
