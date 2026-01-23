@@ -5,28 +5,20 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     override var prefersHomeIndicatorAutoHidden: Bool {
            return true
        }
- 
+    //MARK: declare variables
     // Setup Constants && Objects ---------------------------------
-    
     // labels ------------------------------
-  //  var main_Title: String  = "Person"
     let mainTitleLabel      = UILabel()
-    //Gym counter
+    //Gym counter -----------------------------------
     var gymcounters         = UIView()
-    // test counter
+    // test counter -----------------------------------
     var restCounter          = workoutDesigns.createCircularProgressView(withText: "Rest Timer")
-    
-    // gym timers
+    // gym timers -----------------------------------
     var gymtimerstring      = ""
     var timercounter        = ""
     var starttimestring     = ""
     var gymtimers           = UIView()
     let startDatePrefic     = "Start Time: "
-    
-    // rest counter
-    //let restTimerPrefix     = "Rest Time: "
-  //  var restTimer           = UIView()
-    //var restTimerString     = ""
     
     // Buttons --------------------------------------
     var addRepButton        = workoutDesigns.createStyledButton(title: "Generate Workout",
@@ -49,7 +41,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     // Commenting out because we are generating our workouts with workoutAIService.Shared.queryGPT
     
-    // Timer properties ---
+    // Timer properties -----------------------------------
     var timer: Timer?
     var elapsedTime: TimeInterval = 0
     
@@ -69,12 +61,14 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     let workoutcustomisation = UITextField()
     let workout_genre        = UITextField()
     
-    // setup stackview
+    // setup stackview 
     let stackView       = UIStackView() // horrizontal
     let verticleView    = UIStackView() // verticle view inside of the horrizontal one
     let stackScrollView = UIScrollView()
     var stackcheck      = false
     
+    
+    //MARK: INIT&Reload Views
     override func viewDidLoad() {
         super.viewDidLoad()
         loadViews()
@@ -101,7 +95,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             self.workoutSessions = WorkoutSessionManager.shared.workoutSessions
             self.todoList.reloadData()
             self.updateTodoListVisibility()
-//            workoutDesigns.updateLabelText(in: self.restTimer, newText: self.getRestTimerString())
             let gymcounterstring = "#Gym: \(self.workoutSessions.count)\n\(WorkoutSessionManager.shared.checkOpenWorkouts())\n\(WorkoutSessionManager.shared.checkOpenWorkoutsThisWeek())"
             workoutDesigns.updateLabelText(in: self.gymcounters, newText: gymcounterstring)
         }
@@ -138,18 +131,16 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         setupViewConstrains()
         addDoneButtonToKeyboard()
     }
+    
+    //MARK: INIT MAIN STACK
 
     func setupstackview() {
-        
         verticleView.translatesAutoresizingMaskIntoConstraints = false
         verticleView.axis                                      = .vertical
         verticleView.distribution                              = .fillEqually
         verticleView.spacing                                   = 20
         verticleView.addArrangedSubview(gymcounters)
         verticleView.addArrangedSubview(gymtimers)
-        
-        
-        
         
         stackScrollView.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis                                            = .horizontal // Align horizontally
@@ -159,10 +150,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         stackView.addArrangedSubview(verticleView)
         stackView.addArrangedSubview(restCounter)
-        
         stackcheck = true
-        
-       // contentStackView.addSubview(stackScrollView)
+
         stackScrollView.addSubview(stackView)
 
         NSLayoutConstraint.activate([
@@ -178,27 +167,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
     }
 
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        let allowedCharacters = CharacterSet(charactersIn: "0123456789")
-        let characterSet = CharacterSet(charactersIn: string)
-        return allowedCharacters.isSuperset(of: characterSet)
-    }
-    
-    private func addDoneButtonToKeyboard() {
-            let toolbar = UIToolbar()
-            toolbar.sizeToFit()
-            let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
-            let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-            toolbar.items = [spacer, doneButton]
-            workoutcustomisation.inputAccessoryView = toolbar
-        }
-    
-    @objc func dismissKeyboard() {
-        print("Swipe gesture detected")
-        UIView.animate(withDuration: 0.3) {
-               self.view.endEditing(true)
-           }
-    }
+   
     
     func setuptextfields(){
         workoutcustomisation.placeholder        = "Enter your workout customisations"
@@ -244,24 +213,18 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         todoList.translatesAutoresizingMaskIntoConstraints              = false
         todoList.heightAnchor.constraint(equalToConstant: 400).isActive = true
         
-        
-
-        
         todoList.backgroundColor = .clear
         todoList.separatorStyle = .none
         todoList.showsVerticalScrollIndicator = false
-        //odoList.rowHeight = 50
         todoList.layer.cornerRadius = 16
         todoList.layer.masksToBounds = true
         
         todoList.separatorStyle = .singleLine
         todoList.separatorColor = .separator
         todoList.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
-        
-        // t3esting
+
         todoList.rowHeight = UITableView.automaticDimension
         todoList.estimatedRowHeight = 60
-
 
         if toDoArray.isEmpty {
             todoList.isHidden = true
@@ -270,9 +233,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             todoList.reloadData()
         }
     }
-  
-    
-
     
     func setupButton() {
         // Auto Layout constraints (if needed)
@@ -289,7 +249,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     func setupView() {
-        
         let gymcounterstring = "#Gym: \(self.workoutSessions.count)\n\(WorkoutSessionManager.shared.checkOpenWorkouts())\n\(WorkoutSessionManager.shared.checkOpenWorkoutsThisWeek())"
         //need to implement update of gym counters
         gymcounters = workoutDesigns.createRoundedSquareView(withText: gymcounterstring)
@@ -301,7 +260,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         else{
             timercounter = "Time Elapsed: 0 Mins"
         }
-        
         if gymtimerstring == "" { // this is the value when first initialised
             
             if let startTime = WorkoutSessionManager.shared.getWorkoutSession()?.startTime {
@@ -313,13 +271,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             } else {
                  gymtimerstring = startDatePrefic 
             }
-            
-            
             gymtimers = workoutDesigns.createRoundedSquareView(withText: gymtimerstring)
             gymtimers.translatesAutoresizingMaskIntoConstraints = false
         }
     }
     
+    //MARK: Setup View Constraints
 
     func setupViewConstrains() {
         NSLayoutConstraint.activate([
@@ -355,8 +312,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         contentStackView.translatesAutoresizingMaskIntoConstraints = false
         
     }
-
-
+    
+    //MARK: Button Functions!
     @objc func startWorkout() {
         // Start the timer
         elapsedTime = 0
@@ -381,17 +338,14 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
     }
     
-   //This is for the addRep Button ----------------
+    
     @objc func addRep(){
         let customisations = workoutcustomisation.text ?? ""
         let excludeWorkouts = SettingsManager.shared.getSetting(name: "Exclude Workout")?.value ?? ""
-
-        // Step 1: Sort sessions by date descending
         let sortedSessions = WorkoutSessionManager.shared.workoutSessions.sorted {
             ($0.startTime ?? Date.distantPast) > ($1.startTime ?? Date.distantPast)
         }
 
-        // Step 2: Flatten all Setreps
         var allSetreps: [(setrep: Setrep, sessionDate: Date,workout_genre:String?)] = []
 
         for session in sortedSessions {
@@ -401,10 +355,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             }
         }
 
-        // Step 3: Take the first 100 most recent reps
         let latestSetreps = allSetreps.prefix(120)
 
-        // Step 4: Build JSON string
         var jsonWorkoutData = "[\n"
         for (setrep, sessionDate,workout_genre) in latestSetreps {
             let entry = """
@@ -420,7 +372,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
         jsonWorkoutData += "]"
         
-        var workoutstring = """
+        let workoutstring = """
         You are a fitness AI that creates optimized strength training plans.
 
         Return ONLY a JSON array, no extra text, no explanations.
@@ -505,7 +457,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
 
-    // This is for the finish button ----------------
+   //MARK: Timer Functions!
     @objc func finishTimer() {
         timer?.invalidate()
         timer = nil // Clear the timer
@@ -545,11 +497,34 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             workoutDesigns.updateLabelText(in: gymtimers, newText: gymtimerstring)
         }
         else{
-            print("FAILED TO START TIME!")
+            HelperFunctions.showAlert(on: self, title: "ERROR!", message: "Hey sorry about that there was an error starting the timer, try again or let Peter know")
         }
     }
     
-    // go to viewcontroller
+
+    
+    //MARK: Table funcs
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return toDoArray.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: todoCellreuseIdentifier, for: indexPath) as! TodoListCell
+        let item = toDoArray[indexPath.row]
+        cell.configure(with: item)
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+          let selectedItem = toDoArray[indexPath.row]
+          let detailViewController = RepViewController(rep: selectedItem)
+          navigationController?.pushViewController(detailViewController, animated: true)
+      }
+    
+    
+    //MARK: Links to VC
     @objc func goToSettings() {
         let settingsVC = SettingsViewController()
         navigationController?.pushViewController(settingsVC, animated: true)
@@ -575,31 +550,35 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         }
     }
     
-    // table designs
     
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return toDoArray.count
+    //MARK: Keyboard functions
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        let allowedCharacters = CharacterSet(charactersIn: "0123456789")
+        let characterSet = CharacterSet(charactersIn: string)
+        return allowedCharacters.isSuperset(of: characterSet)
     }
     
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: todoCellreuseIdentifier, for: indexPath) as! TodoListCell
-        let item = toDoArray[indexPath.row]
-        cell.configure(with: item)
-        return cell
-    }
+    private func addDoneButtonToKeyboard() {
+            let toolbar = UIToolbar()
+            toolbar.sizeToFit()
+            let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
+            let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            toolbar.items = [spacer, doneButton]
+            workoutcustomisation.inputAccessoryView = toolbar
+        }
     
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-          tableView.deselectRow(at: indexPath, animated: true)
-          let selectedItem = toDoArray[indexPath.row]
-          let detailViewController = RepViewController(rep: selectedItem)
-          navigationController?.pushViewController(detailViewController, animated: true)
-      }
+    @objc func dismissKeyboard() {
+        print("Swipe gesture detected")
+        UIView.animate(withDuration: 0.3) {
+               self.view.endEditing(true)
+           }
+    }
 
     
 }
 
-// cell class for the table
-
+//MARK: Declaration of table
 class TodoListCell: UITableViewCell {
     let workoutLabel = UILabel()
     let qtyLabel = UILabel()
@@ -611,13 +590,10 @@ class TodoListCell: UITableViewCell {
         
         let stackView = UIStackView(arrangedSubviews: [workoutLabel, qtyLabel, kgsLabel, status])
         stackView.axis = .horizontal
-        stackView.distribution = .fill
+        stackView.distribution = .fillEqually
         stackView.alignment = .center
         stackView.spacing = 8
-        // cell stack constraints
-        qtyLabel.widthAnchor.constraint(equalToConstant: 50).isActive = true
-        kgsLabel.widthAnchor.constraint(equalToConstant: 60).isActive = true
-        status.widthAnchor.constraint(equalToConstant: 24).isActive = true
+
         workoutLabel.numberOfLines = 0
         workoutLabel.lineBreakMode = .byWordWrapping
         // cell stack constraints end -----------------------------------------

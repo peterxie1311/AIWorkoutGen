@@ -36,7 +36,7 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
                                                                   height: 30)
     
     //table
-    private let tableView = UITableView()
+    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
     
     // views
     private let scrollView = UIScrollView()
@@ -140,6 +140,11 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
         tableView.delegate = self
         tableView.register(WorkoutTableViewCell.self, forCellReuseIdentifier: "WorkoutCell")
         
+        tableView.backgroundColor = .clear
+        tableView.backgroundView = UIView()
+        tableView.backgroundView?.backgroundColor = .clear
+        tableView.tableFooterView = UIView() // removes empty-cell area tint
+        
         // Setup UI Components
         startimelabel.font = UIFont.systemFont(ofSize: 18)
         endtimelabel.font  = UIFont.systemFont(ofSize: 18)
@@ -189,17 +194,7 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
             stackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
         ])
-        
-//        deleteButton = workoutDesigns.createStyledButton(title: "Delete Sesh",
-//                                                         width: stackView.frame.width,
-//                                                         height: 100)
-//        excludeButton =
-//        AddSetRep    = 
-        
-            
         tableView.heightAnchor.constraint(equalToConstant: 400).isActive = true
-            
-
     }
     
     // UITableViewDataSource Methods
@@ -253,20 +248,23 @@ class WorkoutTableViewCell: UITableViewCell {
         stackView.alignment = .center
         stackView.spacing = 10
         
-        addSubview(stackView)
+        contentView.addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
-            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5)
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5)
         ])
         
         // Style Labels
         [workoutLabel, qtyLabel, kgsLabel, secLabel].forEach {
             $0.textAlignment = .center
             $0.font = UIFont.systemFont(ofSize: 16)
+            $0.textColor = .white
         }
+        contentView.backgroundColor = UIColor(white:0.15 , alpha:1.0)
+        backgroundColor = .clear
     }
     
     required init?(coder: NSCoder) {

@@ -6,7 +6,9 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
            return true
        }
     
-    // Properties
+    //MARK: Const Declaration
+    
+    // Properties ------------------------------------------
     var completed: Bool
     var duration_sec: Float
     var finishTime: Date
