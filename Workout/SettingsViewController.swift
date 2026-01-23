@@ -12,7 +12,7 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
         title = "Settings"
         view.backgroundColor = .white
         setupStackView()
-        setupTableView()
+//        setupTableView()
         initializeSettings() // Call to initialize settings
     }
     
@@ -24,15 +24,17 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
         stackView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stackView )
         NSLayoutConstraint.activate([
-                stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+                stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 230),
                 stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
                 stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
             ])
         
+        setupTableView(stackView: stackView)
+        
     }
     
-    func setupTableView() {
+    func setupTableView(stackView:UIStackView) {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(SettingsTableViewCell.self, forCellReuseIdentifier: "SettingsCell")
@@ -40,10 +42,10 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
        // view.addSubview(tableView)
         
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.topAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            tableView.topAnchor.constraint(equalTo: stackView.topAnchor),
+            tableView.bottomAnchor.constraint(equalTo: stackView.bottomAnchor),
+            tableView.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: stackView.trailingAnchor)
         ])
         
         

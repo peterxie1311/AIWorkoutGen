@@ -34,7 +34,7 @@ class HelperFunctions {
     }
     static func isLargerThanSunday(date: Date) -> Bool { // we're actually just doing saturday 
         var calendar = Calendar.current
-        calendar.firstWeekday = 1 // 1 = Sunday
+        calendar.firstWeekday = 2 // 1 = Sunday
 
         // Calculate the start of the week
         if let startOfWeek = calendar.dateInterval(of: .weekOfYear, for: Date())?.start {

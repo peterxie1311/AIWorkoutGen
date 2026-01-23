@@ -1,7 +1,7 @@
 import UIKit
 import SwiftUI
 
-class WorkoutTreeViewController: UIViewController {
+class WorkoutfoodTrackerViewController: UIViewController {
     
     func getWorkoutStats() -> [workoutTree]{
         

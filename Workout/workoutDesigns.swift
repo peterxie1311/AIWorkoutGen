@@ -28,70 +28,89 @@ class workoutDesigns {
         return containerView
     }
     
-    static func createLinearProgressBarView(
+    static func createCircularProgressView(
         withText text: String,
-        duration: TimeInterval = 300
+        duration: TimeInterval = 300,
+        diameter: CGFloat = 150  // change this to make the circle bigger/smaller
     ) -> UIView {
         let containerView = UIView()
-     //   containerView.backgroundColor = .systemGray6
         containerView.layer.cornerRadius = 16
         containerView.layer.masksToBounds = true
-
-        let titleLabel = UILabel()
-        titleLabel.text = text.uppercased()
-        titleLabel.textColor = .white
-        titleLabel.font = UIFont.systemFont(ofSize: 18, weight: .bold)
-        titleLabel.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(titleLabel)
-
-        let timeLabel = UILabel()
-        timeLabel.text = "0"
-        timeLabel.textColor = .white
-        timeLabel.font = UIFont.systemFont(ofSize: 32, weight: .bold)
-        timeLabel.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(timeLabel)
-
+        
+        // Circle container
         let circleContainer = UIView()
         circleContainer.translatesAutoresizingMaskIntoConstraints = false
         containerView.addSubview(circleContainer)
-
-        let center = CGPoint(x: 50, y: 50)
-        let circlePath = UIBezierPath(arcCenter: center, radius: 40, startAngle: -.pi/2, endAngle: 3 * .pi/2, clockwise: true)
-
+        
+        // Labels go *inside* the circle
+        let titleLabel = UILabel()
+        titleLabel.text = text.uppercased()
+        titleLabel.textColor = .white
+        titleLabel.font = .systemFont(ofSize: 16, weight: .bold)
+        titleLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        let timeLabel = UILabel()
+        timeLabel.text = "0.0"
+        timeLabel.textColor = .white
+        timeLabel.font = .systemFont(ofSize: 32, weight: .bold)
+        timeLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        circleContainer.addSubview(titleLabel)
+        circleContainer.addSubview(timeLabel)
+        
+        // Shape layers
         let trackLayer = CAShapeLayer()
-        trackLayer.path = circlePath.cgPath
-        trackLayer.strokeColor = UIColor.systemGray6.cgColor //UIColor(red: 3/255, green: 34/255, blue: 82/255, alpha: 1).cgColor
+        trackLayer.strokeColor = UIColor.systemGray6.cgColor
         trackLayer.fillColor = UIColor.clear.cgColor
         trackLayer.lineWidth = 8
+        trackLayer.lineCap = .round
         circleContainer.layer.addSublayer(trackLayer)
-
+        
         let progressLayer = CAShapeLayer()
-        progressLayer.path = circlePath.cgPath
         progressLayer.strokeColor = UIColor.systemBlue.cgColor
         progressLayer.fillColor = UIColor.clear.cgColor
         progressLayer.lineWidth = 8
         progressLayer.strokeEnd = 0
+        progressLayer.lineCap = .round
         circleContainer.layer.addSublayer(progressLayer)
-
+        
+        // Constraints
         NSLayoutConstraint.activate([
-            titleLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
-            titleLabel.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-
-            circleContainer.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 12),
+            circleContainer.topAnchor.constraint(equalTo: containerView.topAnchor, constant: 12),
             circleContainer.centerXAnchor.constraint(equalTo: containerView.centerXAnchor),
-            circleContainer.widthAnchor.constraint(equalToConstant: 100),
-            circleContainer.heightAnchor.constraint(equalToConstant: 100),
-
+            circleContainer.widthAnchor.constraint(equalToConstant: diameter),
+            circleContainer.heightAnchor.constraint(equalToConstant: diameter),
+            circleContainer.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12),
+            
+            // Labels inside circle
+            titleLabel.centerXAnchor.constraint(equalTo: circleContainer.centerXAnchor),
+            titleLabel.topAnchor.constraint(equalTo: circleContainer.topAnchor, constant: 65),
+            
             timeLabel.centerXAnchor.constraint(equalTo: circleContainer.centerXAnchor),
-            timeLabel.centerYAnchor.constraint(equalTo: circleContainer.centerYAnchor),
-
-            circleContainer.bottomAnchor.constraint(equalTo: containerView.bottomAnchor, constant: -12)
+            timeLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8)
         ])
-
+        
+        // Compute circle path *after* layout
+        DispatchQueue.main.async {
+            let b = circleContainer.bounds
+            let radius = min(b.width, b.height) / 2 - progressLayer.lineWidth - 2
+            let center = CGPoint(x: b.midX, y: b.midY)
+            let path = UIBezierPath(
+                arcCenter: center,
+                radius: radius,
+                startAngle: -.pi/2,
+                endAngle: 3 * .pi/2,
+                clockwise: true
+            )
+            trackLayer.path = path.cgPath
+            progressLayer.path = path.cgPath
+        }
+        
+        // Timer updates progress
         let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             if SetrepManager.shared.toDoHasCompletedSetRep() {
-                let latestSetRep = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
-                let restTime = latestSetRep.finishTime?.timeIntervalSinceNow ?? 0
+                let latest = SetrepManager.shared.getLatestSetRep(setrepArray: SetrepManager.shared.Setreps)
+                let restTime = latest.finishTime?.timeIntervalSinceNow ?? 0
                 let clamped = max(0, -restTime)
                 timeLabel.text = String(format: "%.1f", clamped)
                 let progress = min(clamped / duration, 1.0)
@@ -102,10 +121,9 @@ class workoutDesigns {
             }
         }
         RunLoop.current.add(timer, forMode: .common)
-
+        
         return containerView
     }
-
 
     
     static func updateLabelText(in view: UIView, newText: String) {
@@ -164,7 +182,7 @@ extension UIViewController {
                        viewWorkoutSelector: Selector,
                        startWorkoutSelector: Selector,
                        finishWorkoutSelector: Selector,
-                       gymprogresstracker:Selector) {
+                       foodtracker:Selector) {
         view.addSubview(toolbar)
         toolbar.layer.masksToBounds = true
         toolbar.backgroundColor = .systemBackground
@@ -175,7 +193,7 @@ extension UIViewController {
         let viewWorkoutButton = createCustomButton(imageName: "dumbbell", action: viewWorkoutSelector)
         let startWorkoutButton = createCustomButton(imageName: "play", action: startWorkoutSelector)
         let finishWorkoutButton = createCustomButton(imageName: "stop", action: finishWorkoutSelector)
-        let gymprogressSelector = createCustomButton(imageName: "tree", action: gymprogresstracker)
+        let foodtracker = createCustomButton(imageName: "fork.knife", action: foodtracker)
         let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
 
         toolbar.items = [
@@ -183,7 +201,7 @@ extension UIViewController {
             flexibleSpace, viewWorkoutButton,
             flexibleSpace, startWorkoutButton,
             flexibleSpace, finishWorkoutButton,
-            flexibleSpace, gymprogressSelector,
+            flexibleSpace, foodtracker,
             flexibleSpace
         ]
 

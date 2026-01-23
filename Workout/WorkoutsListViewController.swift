@@ -126,6 +126,7 @@ class WorkoutListTableViewCell: UITableViewCell {
         stackView.alignment = .center
         stackView.spacing = 10
         
+        
         addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([

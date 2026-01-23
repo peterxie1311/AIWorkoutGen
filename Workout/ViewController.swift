@@ -14,7 +14,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     //Gym counter
     var gymcounters         = UIView()
     // test counter
-    var restCounter          = workoutDesigns.createLinearProgressBarView(withText: "Rest Timer")
+    var restCounter          = workoutDesigns.createCircularProgressView(withText: "Rest Timer")
     
     // gym timers
     var gymtimerstring      = ""
@@ -44,7 +44,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     let toolbar = UIToolbar()
     
     // Table View ------------------------------
-    let todoList = UITableView()
+    let todoList = UITableView(frame: .zero, style: .insetGrouped)
     let todoCellreuseIdentifier = "todoListCell"
     
     // Commenting out because we are generating our workouts with workoutAIService.Shared.queryGPT
@@ -131,7 +131,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
                               viewWorkoutSelector: #selector(goToViewWorkout),
                               startWorkoutSelector: #selector(startWorkout),
                               finishWorkoutSelector: #selector(finishTimer),
-                              gymprogresstracker:#selector(goToProgressTracker))
+                              foodtracker:#selector(goTofoodtracker))
         setupTodoList()
         setuptextfields()
         setupstackview()
@@ -140,8 +140,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     func setupstackview() {
-        
-        // first setup the verticle view
         
         verticleView.translatesAutoresizingMaskIntoConstraints = false
         verticleView.axis                                      = .vertical
@@ -159,9 +157,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         stackView.spacing                                         = 20 // Adjust space between the views
         stackView.translatesAutoresizingMaskIntoConstraints       = false
         
-//        stackView.addArrangedSubview(gymcounters)
-//        stackView.addArrangedSubview(gymtimers)
-//        stackView.addArrangedSubview(restTimer)
         stackView.addArrangedSubview(verticleView)
         stackView.addArrangedSubview(restCounter)
         
@@ -223,11 +218,11 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         headerStackView.spacing = 10
         
         for title in titles {
-            let label = UILabel()
-            label.text = title
+            let label           = UILabel()
+            label.text          = title
             label.textAlignment = .center
-            label.font = UIFont.boldSystemFont(ofSize: 16)
-            label.textColor = .systemBlue
+            label.font          = UIFont.boldSystemFont(ofSize: 16)
+            label.textColor     = .systemBlue
             headerStackView.addArrangedSubview(label)
         }
         
@@ -244,11 +239,29 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         // Setup
         todoList.register(TodoListCell.self, forCellReuseIdentifier: "todoListCell")
-        todoList.delegate = self
-        todoList.dataSource = self
-        todoList.translatesAutoresizingMaskIntoConstraints = false
+        todoList.delegate                                               = self
+        todoList.dataSource                                             = self
+        todoList.translatesAutoresizingMaskIntoConstraints              = false
         todoList.heightAnchor.constraint(equalToConstant: 400).isActive = true
-        todoList.register(TodoListCell.self, forCellReuseIdentifier: "TodoListCell")
+        
+        
+
+        
+        todoList.backgroundColor = .clear
+        todoList.separatorStyle = .none
+        todoList.showsVerticalScrollIndicator = false
+        //odoList.rowHeight = 50
+        todoList.layer.cornerRadius = 16
+        todoList.layer.masksToBounds = true
+        
+        todoList.separatorStyle = .singleLine
+        todoList.separatorColor = .separator
+        todoList.separatorInset = UIEdgeInsets(top: 0, left: 12, bottom: 0, right: 12)
+        
+        // t3esting
+        todoList.rowHeight = UITableView.automaticDimension
+        todoList.estimatedRowHeight = 60
+
 
         if toDoArray.isEmpty {
             todoList.isHidden = true
@@ -511,10 +524,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             newWorkout.setrep = NSSet(array: finishedSets)
             WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currentWorkout,updatedSession:newWorkout)
             timercounter = "Total: \(String(format: "%.2f", mins)) mins \n"
-           gymtimerstring = starttimestring + timercounter
+            gymtimerstring = starttimestring + timercounter
         
             workoutDesigns.updateLabelText(in: gymtimers, newText: gymtimerstring)
-//            workoutDesigns.updateLabelText(in: restTimer, newText: getRestTimerString())
             SetrepManager.shared.clearSetreps()
             print(SetrepManager.shared.Setreps.count)
             reload()
@@ -548,8 +560,8 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         navigationController?.pushViewController(viewWorkoutVC, animated: true)
     }
     
-    @objc func goToProgressTracker() {
-        let viewWorkoutVC = WorkoutTreeViewController();
+    @objc func goTofoodtracker() {
+        let viewWorkoutVC = WorkoutfoodTrackerViewController();
         navigationController?.pushViewController(viewWorkoutVC, animated: true)
     }
     
@@ -599,28 +611,38 @@ class TodoListCell: UITableViewCell {
         
         let stackView = UIStackView(arrangedSubviews: [workoutLabel, qtyLabel, kgsLabel, status])
         stackView.axis = .horizontal
-        stackView.distribution = .fillEqually
+        stackView.distribution = .fill
         stackView.alignment = .center
-        stackView.spacing = 10
+        stackView.spacing = 8
+        // cell stack constraints
+        qtyLabel.widthAnchor.constraint(equalToConstant: 50).isActive = true
+        kgsLabel.widthAnchor.constraint(equalToConstant: 60).isActive = true
+        status.widthAnchor.constraint(equalToConstant: 24).isActive = true
+        workoutLabel.numberOfLines = 0
+        workoutLabel.lineBreakMode = .byWordWrapping
+        // cell stack constraints end -----------------------------------------
         
-        addSubview(stackView)
+        contentView.addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
-            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5)
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
         ])
         
         // Style Labels
         [workoutLabel, qtyLabel, kgsLabel].forEach {
             $0.textAlignment = .center
             $0.font = UIFont.systemFont(ofSize: 16)
+            $0.textColor = .white
         }
         
         status.contentMode = .scaleAspectFit
-
+        status.tintColor   = .white
         
+        contentView.backgroundColor = UIColor(white:0.15 , alpha:1.0)
+        backgroundColor = .clear
     }
     
     required init?(coder: NSCoder) {
@@ -631,7 +653,6 @@ class TodoListCell: UITableViewCell {
         workoutLabel.text = setrep.workoutName
         qtyLabel.text = String(setrep.rep_qty)
         kgsLabel.text = String(setrep.weight)
-        
         let isCompleted = setrep.completed // Assuming `isCompleted` is a property of `Setrep`
                 if isCompleted {
                     status.image = UIImage(systemName: "checkmark.circle") // Checkmark icon
