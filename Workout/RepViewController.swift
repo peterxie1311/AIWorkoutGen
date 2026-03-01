@@ -1,7 +1,7 @@
 import UIKit
 import AVKit
 
-class RepViewController: UIViewController ,UITextFieldDelegate{
+class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
     override var prefersHomeIndicatorAutoHidden: Bool {
            return true
        }
@@ -65,6 +65,7 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
     let changeRepWeight           = UITextField()
     let changeSetQTY              = UITextField()
     let changeWorkoutName         = UITextField()
+    let scrollViewBase            = UIScrollView()
     
    
     
@@ -92,8 +93,9 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        register(scrollView: scrollViewBase)
         setupUI()
-        addDoneButtonToKeyboard()
+//        addDoneButtonToKeyboard()
 //        NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("workout"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("SetRep"), object: nil)
     }
@@ -183,65 +185,42 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         changeSetQTY.placeholder = "Change Set QTY"
         changeSetQTY.keyboardType = .numberPad
         changeSetQTY.delegate = self
-        
-        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-            swipeDown.direction = .down
-            view.addGestureRecognizer(swipeDown)
-        
 
         // Add Subviews and Set Constraints
         let stackView = UIStackView(arrangedSubviews: [nameLabel, rep_qtyLabel,status, weight_label,startTimeLabel, duration_secLabel,personalBestLabelWeight,personalBestLabelReps,RepButton,deleteRepButton,changeWorkoutName,changeRepWeight,changeSetQTY,changeRepWeightButton])
         stackView.axis = .vertical
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false
-        
-       
-        
-        view.addSubview(stackView)
+    
+        scrollViewBase.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollViewBase)
+        scrollViewBase.addSubview(stackView)
+        scrollViewBase.keyboardDismissMode = .interactive   // or .onDrag
+
         
         NSLayoutConstraint.activate([
-            stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+            scrollViewBase.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollViewBase.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollViewBase.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollViewBase.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+
+               stackView.topAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.topAnchor),
+               stackView.leadingAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.leadingAnchor, constant: 20),
+               stackView.trailingAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.trailingAnchor, constant: -20),
+               stackView.bottomAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.bottomAnchor),
+
+               stackView.widthAnchor.constraint(equalTo: scrollViewBase.frameLayoutGuide.widthAnchor, constant: -40)
         ])
-        
     }
-    
-    
-    private func addDoneButtonToKeyboard() {
-            // Create the toolbar
-            let toolbar = UIToolbar()
-            toolbar.sizeToFit()
-            let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
-            let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-            
-            // Add the "Done" button and spacer to the toolbar
-            toolbar.items = [spacer, doneButton]
-            
-            // Assign the toolbar to the keyboard's accessory view
-            changeRepWeight.inputAccessoryView = toolbar
-            changeSetQTY.inputAccessoryView = toolbar
-            changeWorkoutName.inputAccessoryView = toolbar
-        }
-    @objc func dismissKeyboard() {
-        print("Swipe gesture detected")
-        UIView.animate(withDuration: 0.1) {
-               self.view.endEditing(true)
-           }
-    }
-    
 
     @objc private func executechangerepweight() {
-        
-
         var newweight = weight
         var newsetqty = rep_qty
         var newWorkoutName = WorkoutName
 
         if let newWeightText = changeRepWeight.text, !newWeightText.isEmpty {
             guard let validWeight = Int64(newWeightText), validWeight > 0 else {
-                showAlert(title: "Invalid Input", message: "Please enter a valid weight.")
+                HelperFunctions.showAlert(on: self, title: "Invalid Input", message: "Please enter a valid weight.")
                 return
             }
             newweight = validWeight
@@ -249,7 +228,7 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         if let newSetQTYText = changeSetQTY.text,!newSetQTYText.isEmpty {
            guard let newSetQTY = Int64(newSetQTYText),
                 newSetQTY > 0 else {
-                    showAlert(title: "Invalid Input", message: "Please enter a valid Set QTY.")
+               HelperFunctions.showAlert(on: self, title: "Invalid Input", message: "Please enter a valid Set QTY.")
                     return
                 }
             newsetqty = newSetQTY
@@ -269,16 +248,8 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         // Optionally update the UI or show feedback
         changeRepWeight.text = ""
         changeSetQTY.text    = ""
-        showAlert(title: "Success", message: "Updated successfully!")
     }
-    
-    private func showAlert(title: String, message: String) {
-        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-        present(alert, animated: true, completion: nil)
-    }
-    
-    
+
     @objc private func deleteRep() {
         SetrepManager.shared.removeSetrep(repid: self.repid)
         SetrepManager.shared.loadSetreps()
@@ -330,4 +301,17 @@ class RepViewController: UIViewController ,UITextFieldDelegate{
         duration_secLabel.text = timerprefix + String(timeDifference)
    
     }
+    
+    
+    //MARK: setActiveTestfield
+    // this is an inhouse apple function that gets called to set the activeField which gets defined in keyboardAwareVC so that we can move the scroll view up when the keyboard gets activateda
+    func textFieldDidBeginEditing(_ textField: UITextField) {
+        activeField = textField
+    }
+
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        activeField = nil
+    }
 }
+
+

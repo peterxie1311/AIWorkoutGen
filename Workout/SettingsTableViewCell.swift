@@ -30,8 +30,7 @@ class SettingsTableViewCell: UITableViewCell {
             textField.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 10),
             textField.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -10),
 
-//            switchControl.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-//            switchControl.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+
         ])
     }
     

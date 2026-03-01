@@ -68,11 +68,27 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var stackcheck      = false
     
     
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
     //MARK: INIT&Reload Views
     override func viewDidLoad() {
+        // Since this is the home page we should init all of our core data here
+        SettingsManager.shared.loadSettings()
+        WorkoutManager.shared.loadWorkout()
+        WorkoutSessionManager.shared.loadWorkoutSessions()
+        SetrepManager.shared.loadSetreps()
+        FoodLogManager.shared.loadFoodLogArrays()
+        // loading managers done -----------------------------------------------
+        
+        
         super.viewDidLoad()
         loadViews()
         scrollView.keyboardDismissMode = .interactive // or .onDrag
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+            tap.cancelsTouchesInView = false
+            scrollView.addGestureRecognizer(tap)  // or view.addGestureRecognizer(tap)
         NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("workout"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("SetRep"), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("settings"), object: nil)
@@ -129,7 +145,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         setuptextfields()
         setupstackview()
         setupViewConstrains()
-        addDoneButtonToKeyboard()
     }
     
     //MARK: INIT MAIN STACK
@@ -310,6 +325,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         contentStackView.axis                                      = .vertical
         contentStackView.spacing                                   = 10
         contentStackView.translatesAutoresizingMaskIntoConstraints = false
+     
         
     }
     
@@ -536,18 +552,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     @objc func goTofoodtracker() {
-        let viewWorkoutVC = WorkoutfoodTrackerViewController();
+        let viewWorkoutVC = WorkoutfoodTrackerViewController(i_date: Date());
         navigationController?.pushViewController(viewWorkoutVC, animated: true)
     }
     
     @objc func goToAddSetVC() {
-        if let tmpSession = WorkoutSessionManager.shared.getFirstOpenGymSesh() {
-            let AddSetVC = AddSetViewController(workout: tmpSession )
-            navigationController?.pushViewController(AddSetVC, animated: true)
-        }
-        else {
-            HelperFunctions.showAlert(on: self, title: "Error", message: "Please Start a workout")
-        }
+        goToAddSetPageVC()
     }
     
     
@@ -559,21 +569,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         return allowedCharacters.isSuperset(of: characterSet)
     }
     
-    private func addDoneButtonToKeyboard() {
-            let toolbar = UIToolbar()
-            toolbar.sizeToFit()
-            let doneButton = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(dismissKeyboard))
-            let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-            toolbar.items = [spacer, doneButton]
-            workoutcustomisation.inputAccessoryView = toolbar
-        }
     
-    @objc func dismissKeyboard() {
-        print("Swipe gesture detected")
-        UIView.animate(withDuration: 0.3) {
-               self.view.endEditing(true)
-           }
-    }
 
     
 }

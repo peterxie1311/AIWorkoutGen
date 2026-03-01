@@ -5,8 +5,29 @@ class SettingsManager {
     // Singleton instance
     static let shared = SettingsManager()
     
+    //Settings constants
+    static let name:String = "Name"
+    static let enableNotifications:String = "Enable Notifications"
+    static let gptAPIKey:String = "GPT API Key"
+    static let excludeWorkout:String = "Exclude Workout"
+    static let calorieGoal:String = "Calorie Goal"
+    static let proteinGoal:String = "Protein Goal"
+    static let carbGoal:String = "Carb Goal"
+    
+    
     // Stored settings as an array of Setting objects
     var settings: [Setting] = [] // Change to [Setting] to hold Core Data objects
+    
+    let defaultSettings: [[String]] = [
+        [name,Constants.string_default],
+        [enableNotifications,Constants.string_numDefault],
+        [gptAPIKey,Constants.string_default],
+        [excludeWorkout,Constants.string_default],
+        [calorieGoal,Constants.string_numDefault],
+        [proteinGoal,Constants.string_numDefault],
+        [carbGoal,Constants.string_numDefault]
+    
+    ]
 
     private init() {
         // Load settings from Core Data
@@ -19,8 +40,16 @@ class SettingsManager {
                 return setting
             }
         }
-        print("No Setting found !")
         return nil
+    }
+    
+    func getSettingDouble(name:String) -> Double {
+        for setting in settings {
+            if setting.settingName == name {
+                return Double(setting.value ?? Constants.string_default) ?? Constants.num_defaultDouble
+            }
+        }
+        return Constants.num_defaultDouble
     }
     
     func updateSetting(name: String, newValue: String) {
@@ -57,14 +86,33 @@ class SettingsManager {
             print("Failed to clear settings: \(error)")
         }
     }
-    func initSettings (){
+    func initSettings(){
         clearSettings()
-        addSetting(name: "Name", value: "")
-        addSetting(name: "Enable Notifications", value: "true")
-        addSetting(name: "GPT API Key", value: "")
-        addSetting(name: "Exclude Workout", value: "")
-        
+        for defaultSetting in defaultSettings {
+            addSetting(name: defaultSetting[0], value: defaultSetting[1])
+        }
     }
+    
+    func checkSettingsAndInitIfNecessary(){
+        loadSettings()
+        for defaultSetting in defaultSettings{
+            if (getSetting(name: defaultSetting[0]) === nil){
+                initSettings()
+            }
+        }
+        // We also need to check for duplicates
+        // make a set and if it appears twice then init
+        var seenNames = Set<String>()
+        for setting in settings {
+            if seenNames.contains(setting.settingName ?? " ") {
+                initSettings()
+                break
+            } else {
+                seenNames.insert(setting.settingName ?? " ")
+            }
+        }
+    }
+    
 
     
     // Load settings from Core Data
