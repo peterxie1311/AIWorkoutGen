@@ -66,15 +66,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
         // Setup Buttons
         
         addFoodLogButton.addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
-        
-        card.configure(
-                  calories: totalCals,
-                  proteinCurrent: totalProtein, proteinGoal: proteinGoal,
-                  carbsCurrent: totalCarbs, carbsGoal: carbGoal,
-                  bar1Progress: totalProtein/proteinGoal,
-                  bar2Progress: totalCarbs/totalCals
-              )
-        
+    
         let views: [UIView] = [titleLabel,card,addFoodLogButton]
         
         for view in views {
@@ -97,6 +89,17 @@ class WorkoutfoodTrackerViewController: UIViewController {
 
                stackView.widthAnchor.constraint(equalTo: stackScrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
+        
+        view.layoutIfNeeded()
+        
+        card.configure(
+                  calories: totalCals,
+                  caloriesGoal: calorieGoal,
+                  proteinCurrent: totalProtein, proteinGoal: proteinGoal,
+                  carbsCurrent: totalCarbs, carbsGoal: carbGoal,
+                  
+              )
+
         
         
 

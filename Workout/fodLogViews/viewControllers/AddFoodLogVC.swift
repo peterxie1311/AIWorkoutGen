@@ -16,16 +16,16 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
 
     private let ingredientsLabel        = UILabel()
     private var addFoodLineButton       = workoutDesigns.createStyledButton(title: "Add FoodLog",
-                                                                          width: 100,
-                                                                          height: 50)
+                                                                            width: 100,
+                                                                           height: 50)
     
     private var AddFoodIngredientButton = workoutDesigns.createStyledButton(title: "Add Ingredient",
-                                                                          width: 100,
-                                                                          height: 50)
+                                                                            width: 100,
+                                                                           height: 50)
     
     private var queryChatGptButton      = workoutDesigns.createStyledButton(title: "Estimate Macros",
-                                                                          width: 100,
-                                                                          height: 50)
+                                                                            width: 100,
+                                                                           height: 50)
     private let proteinGramField = UITextField()
     private let carbGramField    = UITextField()
     private let calorieGramField = UITextField()
@@ -206,53 +206,61 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
     
     private func setupUI() {
         
-        //setup the text fields
-        proteinGramField.borderStyle  = .roundedRect
-        proteinGramField.placeholder  = "Protein (Grams)"
-        proteinGramField.keyboardType = .alphabet
-        proteinGramField.delegate     = self
-        proteinGramField.translatesAutoresizingMaskIntoConstraints = false
-        proteinGramField.isUserInteractionEnabled                  = true
-        
-        carbGramField.borderStyle  = .roundedRect
-        carbGramField.placeholder  = "Carbs (Grams)"
-        carbGramField.keyboardType = .alphabet
-        carbGramField.delegate     = self
-        carbGramField.translatesAutoresizingMaskIntoConstraints = false
-        carbGramField.isUserInteractionEnabled                  = true
-        
-        calorieGramField.borderStyle  = .roundedRect
-        calorieGramField.placeholder  = "Calories"
-        calorieGramField.keyboardType = .alphabet
-        calorieGramField.delegate     = self
-        calorieGramField.translatesAutoresizingMaskIntoConstraints = false
-        calorieGramField.isUserInteractionEnabled                  = true
-        
-        foodNameField.borderStyle  = .roundedRect
-        foodNameField.placeholder  = "Food Name"
-        foodNameField.keyboardType = .alphabet
-        foodNameField.delegate     = self
-        foodNameField.translatesAutoresizingMaskIntoConstraints = false
-        foodNameField.isUserInteractionEnabled                  = true
-        
-        foodGramsField.borderStyle  = .roundedRect
-        foodGramsField.placeholder  = "Amount Of Food (Grams)"
-        foodGramsField.keyboardType = .alphabet
-        foodGramsField.delegate     = self
-        foodGramsField.translatesAutoresizingMaskIntoConstraints = false
-        foodGramsField.isUserInteractionEnabled                  = true
-        
-        
-        fatGramsLabel.borderStyle  = .roundedRect
-        fatGramsLabel.placeholder  = "Amount Of Fat (Grams)"
-        fatGramsLabel.keyboardType = .alphabet
-        fatGramsLabel.delegate     = self
-        fatGramsLabel.translatesAutoresizingMaskIntoConstraints = false
-        fatGramsLabel.isUserInteractionEnabled                  = true
-        
-        //--------------------------
+        let texfieldsArray: [TextField] = [
+            
+            TextField(
+                labelName: "Food Name",
+                keyboardType: .alphabet,
+                uiTextfield: foodNameField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Amount Of Food (Grams)",
+                keyboardType: .alphabet,
+                uiTextfield: foodGramsField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Protein (Grams)",
+                keyboardType: .alphabet,
+                uiTextfield: proteinGramField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Carbs (Grams)",
+                keyboardType: .alphabet,
+                uiTextfield: carbGramField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Calories",
+                keyboardType: .alphabet,
+                uiTextfield: calorieGramField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Amount Of Fat (Grams)",
+                keyboardType: .alphabet,
+                uiTextfield: fatGramsLabel,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            )
+        ]
         
 
+        let textfields = workoutDesigns.createRoundedSquareViewWithTextFields(textFields: texfieldsArray)
+        
+        //--------------------------
         ingredientsLabel.font  = UIFont.systemFont(ofSize: 20)
         ingredientsLabel.numberOfLines = 0
         ingredientsLabel.lineBreakMode = .byWordWrapping
@@ -284,12 +292,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
         
         let stackView = UIStackView(arrangedSubviews: [
             ingredientsLabel  ,
-            foodNameField     ,
-            foodGramsField    ,
-            proteinGramField  ,
-            carbGramField     ,
-            calorieGramField  ,
-            fatGramsLabel     ,
+            textfields,
             AddFoodIngredientButton,
             addFoodLineButton ,
             queryChatGptButton,

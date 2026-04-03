@@ -48,17 +48,24 @@ final class MacroSummaryCardView: UIView {
     // MARK: - Public API
 
     func configure(
-        calories: Double,
+        calories: Double, caloriesGoal:Double,
         proteinCurrent: Double, proteinGoal: Double,
-        carbsCurrent: Double, carbsGoal: Double,
-        bar1Progress: CGFloat,   // 0...1
-        bar2Progress: CGFloat    // 0...1
+        carbsCurrent: Double, carbsGoal: Double
+//        bar1Progress: CGFloat,   // 0...1
+//        bar2Progress: CGFloat    // 0...1
     ) {
-        caloriesValue.text = "\(calories)"
+        caloriesValue.attributedText = makeSplitValue(main: "\(calories)", sub: "/\(caloriesGoal)")
 
-        proteinValue.attributedText = makeSplitValue(main: "\(proteinCurrent)", sub: "/\(proteinGoal)")
+
+        proteinValue.attributedText = makeSplitValue(main: "\(proteinCurrent)",
+                                                      sub: "/\(proteinGoal)"
+                                                     )
+        
         carbsValue.attributedText   = makeSplitValue(main: "\(carbsCurrent)", sub: "/\(carbsGoal)")
-
+        
+        let bar1Progress = CGFloat(min(1, max(0, Float(proteinCurrent) / Float(proteinGoal))))
+        let bar2Progress = CGFloat(min(1, max(0, Float(calories) / Float(caloriesGoal))))
+    
         setProgress(bar1Progress, fill: bar1Fill, in: bar1Track)
         setProgress(bar2Progress, fill: bar2Fill, in: bar2Track)
     }
@@ -132,11 +139,7 @@ final class MacroSummaryCardView: UIView {
         proteinTitle.text = "Protein"
         carbsTitle.text = "Carbs"
 
-        // Big values
-        caloriesValue.font = .systemFont(ofSize: 34, weight: .bold)
         caloriesValue.textColor = .label
-
-        // “142/180” style (we’ll set attributed text later)
         proteinValue.textColor = .label
         carbsValue.textColor = .label
 
@@ -154,7 +157,7 @@ final class MacroSummaryCardView: UIView {
         // Bar fills
         // (Leave default blue for bar1; keep bar2 a lighter gray/secondary tint)
         bar1Fill.backgroundColor = .systemBlue
-        bar2Fill.backgroundColor = UIColor.systemGray2
+        bar2Fill.backgroundColor = .systemGreen
 
         // Rounded corners will be set after layout when we know heights
         layoutIfNeeded()
@@ -207,7 +210,7 @@ final class MacroSummaryCardView: UIView {
             widthConstraint.constant = width
         }
         // Animate if you want:
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 1) {
             self.layoutIfNeeded()
         }
         roundBar(track: track, fill: fill)
@@ -218,17 +221,20 @@ final class MacroSummaryCardView: UIView {
         fill.layer.cornerRadius = fill.bounds.height / 2
     }
 
-    private func makeSplitValue(main: String, sub: String) -> NSAttributedString {
-        let big = UIFont.systemFont(ofSize: 26, weight: .bold)
+    private func makeSplitValue(main: String,
+                                sub: String,
+                                mainColour:UIColor = UIColor.label,
+                                secondaryColour:UIColor = UIColor.secondaryLabel) -> NSAttributedString {
+        let big = UIFont.systemFont(ofSize: 20, weight: .bold)
         let small = UIFont.systemFont(ofSize: 16, weight: .semibold)
 
         let result = NSMutableAttributedString(
             string: main,
-            attributes: [.font: big, .foregroundColor: UIColor.label]
+            attributes: [.font: big, .foregroundColor: mainColour]
         )
         result.append(NSAttributedString(
             string: sub,
-            attributes: [.font: small, .foregroundColor: UIColor.secondaryLabel]
+            attributes: [.font: small, .foregroundColor: secondaryColour]
         ))
         return result
     }

@@ -122,32 +122,69 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         addSetButton.addTarget(self, action: #selector(addSet), for: .touchUpInside)
         
         
-        workoutnameField.borderStyle  = .roundedRect
-        workoutnameField.placeholder  = "Workout Name"
-        workoutnameField.keyboardType = .alphabet
-        workoutnameField.delegate     = self
-        workoutnameField.translatesAutoresizingMaskIntoConstraints = false
-        workoutnameField.isUserInteractionEnabled                  = true
+//        workoutnameField.borderStyle  = .roundedRect
+//        workoutnameField.placeholder  = "Workout Name"
+//        workoutnameField.keyboardType = .alphabet
+//        workoutnameField.delegate     = self
+//        workoutnameField.translatesAutoresizingMaskIntoConstraints = false
+//        workoutnameField.isUserInteractionEnabled                  = true
+//        
+//        setqtyField.borderStyle  = .roundedRect
+//        setqtyField.placeholder  = "Set QTY"
+//        setqtyField.keyboardType = .numberPad
+//        setqtyField.delegate     = self
+//        setqtyField.translatesAutoresizingMaskIntoConstraints = false
+//        
+//        repqtyField.borderStyle  = .roundedRect
+//        repqtyField.placeholder  = "Rep QTY"
+//        repqtyField.keyboardType = .numberPad
+//        repqtyField.delegate     = self
+//        repqtyField.translatesAutoresizingMaskIntoConstraints = false
+//        
+//        weightField.borderStyle  = .roundedRect
+//        weightField.placeholder  = "Weight (kg)"
+//        weightField.keyboardType = .numberPad
+//        weightField.delegate     = self
+//        weightField.translatesAutoresizingMaskIntoConstraints = false
         
-        setqtyField.borderStyle  = .roundedRect
-        setqtyField.placeholder  = "Set QTY"
-        setqtyField.keyboardType = .numberPad
-        setqtyField.delegate     = self
-        setqtyField.translatesAutoresizingMaskIntoConstraints = false
+        let workoutTextFields: [TextField] = [
+
+            TextField(
+                labelName: "Workout Name",
+                keyboardType: .default,
+                uiTextfield: workoutnameField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Set QTY",
+                keyboardType: .numberPad,
+                uiTextfield: setqtyField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Rep QTY",
+                keyboardType: .numberPad,
+                uiTextfield: repqtyField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            ),
+
+            TextField(
+                labelName: "Weight (kg)",
+                keyboardType: .numberPad,
+                uiTextfield: weightField,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
+            )
+        ]
         
-        repqtyField.borderStyle  = .roundedRect
-        repqtyField.placeholder  = "Rep QTY"
-        repqtyField.keyboardType = .numberPad
-        repqtyField.delegate     = self
-        repqtyField.translatesAutoresizingMaskIntoConstraints = false
+        let texfields = workoutDesigns.createRoundedSquareViewWithTextFields(textFields: workoutTextFields)
         
-        weightField.borderStyle  = .roundedRect
-        weightField.placeholder  = "Weight (kg)"
-        weightField.keyboardType = .numberPad
-        weightField.delegate     = self
-        weightField.translatesAutoresizingMaskIntoConstraints = false
-        
-        let stackView = UIStackView(arrangedSubviews: [AddSetLabel,workoutnameField,setqtyField,repqtyField,weightField,addSetButton])
+        let stackView = UIStackView(arrangedSubviews: [AddSetLabel,texfields,addSetButton])
         stackView.axis    = .vertical
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false

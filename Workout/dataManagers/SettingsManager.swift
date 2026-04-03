@@ -25,8 +25,7 @@ class SettingsManager {
         [excludeWorkout,Constants.string_default],
         [calorieGoal,Constants.string_numDefault],
         [proteinGoal,Constants.string_numDefault],
-        [carbGoal,Constants.string_numDefault]
-    
+        [carbGoal,Constants.string_numDefault],
     ]
 
     private init() {
