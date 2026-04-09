@@ -51,17 +51,44 @@ final class MacroSummaryCardView: UIView {
         calories: Double, caloriesGoal:Double,
         proteinCurrent: Double, proteinGoal: Double,
         carbsCurrent: Double, carbsGoal: Double
-//        bar1Progress: CGFloat,   // 0...1
-//        bar2Progress: CGFloat    // 0...1
     ) {
-        caloriesValue.attributedText = makeSplitValue(main: "\(calories)", sub: "/\(caloriesGoal)")
-
-
-        proteinValue.attributedText = makeSplitValue(main: "\(proteinCurrent)",
-                                                      sub: "/\(proteinGoal)"
-                                                     )
         
-        carbsValue.attributedText   = makeSplitValue(main: "\(carbsCurrent)", sub: "/\(carbsGoal)")
+//        let carbs = workoutDesigns.attributedText(text: "Carbs:",
+//                                                  fontsize: 16,
+//                                                  colour: UIColor.secondaryLabel)
+        let calValue_l  = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(calories))",
+                                                      fontsize: 20,
+                                                        colour:.label)
+        
+        let calGoal_l  = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(caloriesGoal))",
+                                                     fontsize: 16,
+                                                     colour: UIColor.systemGreen)
+        
+        let proteinValue_l = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(proteinCurrent))",
+                                                         fontsize: 20,
+                                                           colour: .label)
+        
+        let proteinGoal_l = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(proteinGoal))",
+                                                         fontsize: 16,
+                                                          colour: UIColor.systemBlue)
+        let carbsValue_l  = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(carbsCurrent))",
+                                                        fontsize: 20)
+        
+        let carbsGoal_l  = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(carbsGoal))",
+                                                       fontsize: 16,
+                                                         colour: .secondaryLabel)
+        
+        caloriesValue.attributedText = workoutDesigns.makeAttributedString(textArray:[calValue_l,calGoal_l])
+        proteinValue.attributedText = workoutDesigns.makeAttributedString(textArray: [proteinValue_l,proteinGoal_l])
+        carbsValue.attributedText = workoutDesigns.makeAttributedString(textArray: [carbsValue_l,carbsGoal_l])
+        
+//        caloriesValue.attributedText = makeSplitValue(main: "\(HelperFunctions.formatNumber(calories))", sub: "/\(HelperFunctions.formatNumber(caloriesGoal))")
+
+//        proteinValue.attributedText = makeSplitValue(main: "\(HelperFunctions.formatNumber(proteinCurrent))",
+//                                                      sub: "/\(HelperFunctions.formatNumber(proteinGoal))"
+//                                                     )
+        
+//        carbsValue.attributedText   = makeSplitValue(main: "\(HelperFunctions.formatNumber(carbsCurrent))", sub: "/\(HelperFunctions.formatNumber(carbsGoal))")
         
         let bar1Progress = CGFloat(min(1, max(0, Float(proteinCurrent) / Float(proteinGoal))))
         let bar2Progress = CGFloat(min(1, max(0, Float(calories) / Float(caloriesGoal))))
@@ -99,7 +126,7 @@ final class MacroSummaryCardView: UIView {
 
         // Bars stack
         let bars = UIStackView(arrangedSubviews: [makeBar(track: bar1Track, fill: bar1Fill, height: 8),
-                                                  makeBar(track: bar2Track, fill: bar2Fill, height: 6)])
+                                                  makeBar(track: bar2Track, fill: bar2Fill, height: 8)])
         bars.axis = .vertical
         bars.spacing = 10
         bars.translatesAutoresizingMaskIntoConstraints = false

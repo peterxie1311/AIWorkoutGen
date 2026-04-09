@@ -10,19 +10,26 @@ class WorkoutfoodTrackerViewController: UIViewController {
     let totalCals:Double
     let totalProtein:Double
     let totalCarbs:Double
-    let foodLines:[FoodLogLine]
+   // let foodLines:[FoodLogLine]
     let foodHeadId:UUID
     let carbGoal:Double
     let proteinGoal:Double
     let calorieGoal:Double
     
     // View Objects
-    let titleLabel = UILabel()
+    let titleLabel     = UILabel()
+    let breakFastLabel = UILabel()
+    let lunchLabel     = UILabel()
+    let dinnerLabel    = UILabel()
     
     //Setup Views
     private let stackScrollView = UIScrollView()
     private let stackView = UIStackView()
     private let card = MacroSummaryCardView()
+    private let breakfastCard = FoodlogCardView()
+    private let lunchCard = FoodlogCardView()
+    private let dinnerCard = FoodlogCardView()
+    
     private let addFoodLogButton = workoutDesigns.createStyledButton(title: "Add Food", width: 50, height: 50)
     
     
@@ -33,7 +40,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
         self.totalProtein = foodhead?.protein       ?? 0.0
         self.totalCarbs   = foodhead?.carbs         ?? 0.0
         self.foodHeadId   = foodhead?.foodHeadID    ?? UUID()
-        self.foodLines    = FoodLogManager.shared.fetchFoodLinesbyID(i_id: self.foodHeadId)
+       // self.foodLines    = FoodLogManager.shared.fetchFoodLinesbyID(i_id: self.foodHeadId)
         self.carbGoal     = SettingsManager.shared.getSettingDouble(name: SettingsManager.carbGoal)
         self.proteinGoal  = SettingsManager.shared.getSettingDouble(name: SettingsManager.proteinGoal)
         self.calorieGoal  = SettingsManager.shared.getSettingDouble(name: SettingsManager.calorieGoal)
@@ -46,6 +53,32 @@ class WorkoutfoodTrackerViewController: UIViewController {
     
     @objc private func addFoodLine(){
         goToAddFoodLine(i_date: logDate)
+    }
+    
+    @objc private func reloadData(){
+        view.layoutIfNeeded()
+        
+        let foodhead      = FoodLogManager.shared.fetchFoodHeadById(i_id: foodHeadId)
+        
+        card.configure(
+                  calories: foodhead?.calories ?? 0,
+                  caloriesGoal: calorieGoal,
+                  proteinCurrent: foodhead?.protein ?? 0,
+                  proteinGoal: proteinGoal,
+                  carbsCurrent: foodhead?.carbs ?? 0,
+                  carbsGoal: carbGoal,
+                  
+              )
+        let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 11, i_hourGreaterThan: 4)
+       // let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyID(i_id: foodHeadId)
+        breakfastCard.configure(foodLogLines: breakfastFoodLines, totalCalories: calorieGoal,totalProtein: proteinGoal)
+        
+        let lunchFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 15, i_hourGreaterThan: 12)
+        lunchCard.configure(foodLogLines: lunchFoodLines, totalCalories: self.calorieGoal, totalProtein: self.proteinGoal)
+        
+        let dinnerFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 23, i_hourGreaterThan: 16)
+        dinnerCard.configure(foodLogLines: dinnerFoodLines, totalCalories: self.calorieGoal, totalProtein: self.proteinGoal)
+        
     }
     
     override func viewDidLoad() {
@@ -63,11 +96,34 @@ class WorkoutfoodTrackerViewController: UIViewController {
         titleLabel.text = "Food Log: " + HelperFunctions.parseDateToString(self.logDate)
         titleLabel.font = UIFont.boldSystemFont(ofSize: 24)
         
+        //
+        let breakfastLabelConfig = workoutDesigns.attributedText(text:"Breakfast")
+        
+        let breakfastlabelConfigSecond = workoutDesigns.attributedText(text: " (12am-12pm)",
+                                                                       fontsize:16,
+                                                                       colour:UIColor.secondaryLabel)
+        breakFastLabel.attributedText = workoutDesigns.makeAttributedString(textArray: [breakfastLabelConfig,breakfastlabelConfigSecond])
+        
+        let lunchLabelConfig = workoutDesigns.attributedText(text:"Lunch")
+        let lunchLabelConfigSecond = workoutDesigns.attributedText(text: " (12pm-4pm)",
+                                                                   fontsize: 16,
+                                                                   colour: UIColor.secondaryLabel)
+        lunchLabel.attributedText = workoutDesigns.makeAttributedString(textArray: [lunchLabelConfig,lunchLabelConfigSecond])
+        
+        let dinnerLabelConfig = workoutDesigns.attributedText(text:"Dinner")
+        let dinnerLabelConfigSecond = workoutDesigns.attributedText(text:" (4pm - 12am)",
+                                                                    fontsize: 16,
+                                                                    colour:.secondaryLabel)
+        
+        dinnerLabel.attributedText = workoutDesigns.makeAttributedString(textArray: [dinnerLabelConfig,dinnerLabelConfigSecond])
+        
+        
+        
         // Setup Buttons
         
         addFoodLogButton.addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
     
-        let views: [UIView] = [titleLabel,card,addFoodLogButton]
+        let views: [UIView] = [titleLabel,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton]
         
         for view in views {
             stackView.addArrangedSubview(view)
@@ -90,15 +146,9 @@ class WorkoutfoodTrackerViewController: UIViewController {
                stackView.widthAnchor.constraint(equalTo: stackScrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
         
-        view.layoutIfNeeded()
+        reloadData()
         
-        card.configure(
-                  calories: totalCals,
-                  caloriesGoal: calorieGoal,
-                  proteinCurrent: totalProtein, proteinGoal: proteinGoal,
-                  carbsCurrent: totalCarbs, carbsGoal: carbGoal,
-                  
-              )
+        NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: NSNotification.Name(Constants.reloadFoodLogTrigger), object: nil)
 
         
         

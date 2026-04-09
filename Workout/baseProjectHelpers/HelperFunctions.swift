@@ -26,13 +26,25 @@ class HelperFunctions {
            alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
            viewController.present(alert, animated: true, completion: nil)
        }
-    
+    static func formatNumber(_ value: Double) -> String {
+        if value.truncatingRemainder(dividingBy: 1) == 0 {
+            return String(Int(value)) // no .0
+        } else {
+            return String(format: "%.2f", value) // 2dp
+        }
+    }
     static func parseDateToStringTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
     }
-    static func isLargerThanSunday(date: Date) -> Bool { // we're actually just doing saturday 
+    static func isDateHourBetween(date:Date,hour_less:Int,hour_greater:Int) -> Bool{
+        let datehour = Calendar.current.component(.hour, from: date)
+        return datehour <= hour_less && datehour >= hour_greater
+    }
+    
+    
+    static func isLargerThanSunday(date: Date) -> Bool { // we're actually just doing saturday
         var calendar = Calendar.current
         calendar.firstWeekday = 2 // 1 = Sunday
 
@@ -43,12 +55,7 @@ class HelperFunctions {
         }
         return false
     }
-    
-    
-
-
-
-    
+      
 }
 
 

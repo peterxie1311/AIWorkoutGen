@@ -15,13 +15,11 @@ class FoodLogManager {
     // Stored workout sessions as an array of WorkoutSession objects
     var foodLogHead: [FoodLogHead] = []
     var foodLogLine: [FoodLogLine] = []
+    let reloadConst:String = "FoodLogReload"
 
     private init() {
         loadFoodLogArrays()
     }
-    
- 
-
     
     func loadFoodLogArrays() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
@@ -33,13 +31,25 @@ class FoodLogManager {
         do {
             
             foodLogHead = try context.fetch(foodLogHeadfetchRequest)
+            foodLogLine = try context.fetch(foodLogLinefetchRequest)
         } catch {
             print("Issue with loading foodlogs");
         }
     }
     
     func fetchFoodLinesbyID(i_id: UUID)-> [FoodLogLine] {
+        loadFoodLogArrays()
         return foodLogLine.filter { $0.foodHeadID == i_id }
+    }
+    
+    func fetchFoodLinesbyIDLessThanHour(i_id:UUID,i_hourLessThan:Int,i_hourGreaterThan:Int) -> [FoodLogLine]{
+        loadFoodLogArrays()
+        return foodLogLine.filter {
+            guard let date = $0.date else { return false }
+
+            return $0.foodHeadID == i_id &&
+            HelperFunctions.isDateHourBetween(date: date, hour_less:i_hourLessThan, hour_greater:i_hourGreaterThan)
+        }
     }
     
     func fetchFoodHeadbyDate(i_date: Date)-> FoodLogHead? {
@@ -51,6 +61,37 @@ class FoodLogManager {
             return firstHead
         }else{
             return nil;
+        }
+    }
+    
+    func fetchFoodHeadById (i_id:UUID) -> FoodLogHead?{
+        if let firstHead = foodLogHead.first(where: {$0.foodHeadID == i_id}) {
+            return firstHead
+        }else{
+            return nil;
+        }
+        
+    }
+    
+    func removeFoodLogLine (i_foodlogLine:FoodLogLine){
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+        let context = appDelegate.persistentContainer.viewContext
+        
+        let tmpFoodHead = foodLogHead.filter{$0.foodHeadID == i_foodlogLine.foodHeadID}
+        //recalculate the head values
+        tmpFoodHead.forEach{
+            $0.calories -= i_foodlogLine.calories
+            $0.carbs    -= i_foodlogLine.carbs
+            $0.fat      -= i_foodlogLine.fat
+            $0.protein  -= i_foodlogLine.protein
+        }
+        
+        do {
+            context.delete(i_foodlogLine)
+            try context.save()
+            NotificationCenter.default.post(name:NSNotification.Name(Constants.reloadFoodLogTrigger),object: nil)
+        } catch {
+            print("failed")
         }
     }
     
@@ -75,6 +116,7 @@ class FoodLogManager {
             newFoodLine.protein    = i_protein
             newFoodLine.foodHeadID = firstHead.foodHeadID
             newFoodLine.foodID     = UUID()
+            newFoodLine.date       = Date()
             
             // Now we have to recalculate the totals of the foodhead
             var calcCaloriesTotals = i_calories
@@ -95,7 +137,7 @@ class FoodLogManager {
         
             do {
                 try context.save()
-                NotificationCenter.default.post(name: NSNotification.Name(Constants.addFoodLogTrigger),object:nil)
+                NotificationCenter.default.post(name: NSNotification.Name(Constants.reloadFoodLogTrigger),object:nil)
                 loadFoodLogArrays()
             } catch {
                 print("Failed to add new Food Log Entry!!")
@@ -120,10 +162,11 @@ class FoodLogManager {
             newFoodLine.protein    = i_protein
             newFoodLine.foodHeadID = newFoodLogHead.foodHeadID
             newFoodLine.foodID     = UUID()
+            newFoodLine.date       = Date()
             
             do {
                 try context.save()
-                NotificationCenter.default.post(name: NSNotification.Name(Constants.addFoodLogTrigger),object:nil)
+                NotificationCenter.default.post(name: NSNotification.Name(Constants.reloadFoodLogTrigger),object:nil)
                 loadFoodLogArrays()
             } catch{
                 print("Error saving new Food Log Entry!!`")

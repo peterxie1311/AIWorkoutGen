@@ -199,13 +199,14 @@ class workoutDesigns {
         let bar2Fill  = UIView()
         
         let (bar1View, bar1WidthConstraint) = makeBar(track: bar1Track, fill: bar1Fill, height: 8)
-        let (bar2View, bar2WidthConstraint) = makeBar(track: bar2Track, fill: bar2Fill, height: 6)
+        let (bar2View, bar2WidthConstraint) = makeBar(track: bar2Track, fill: bar2Fill, height: 8)
 
         let bars = UIStackView(arrangedSubviews: [bar1View, bar2View])
         parentView.layoutIfNeeded()
         print(bar1Track.bounds.width)
         UIView.animate(withDuration: 0.25) {
             bar1WidthConstraint.constant = bar1Track.bounds.width * 0.7
+            bar2WidthConstraint.constant = bar2Track.bounds.width * 0.7
             cardView.layoutIfNeeded()
         }
         
@@ -305,11 +306,60 @@ class workoutDesigns {
         
     }
     
+    struct attributedText {
+        let text: String
+        let fontsize: CGFloat
+        let colour: UIColor
+        let fontWeight: UIFont.Weight
 
-
+        init(
+            text: String,
+            fontsize: CGFloat = 20,
+            colour: UIColor = .label,
+            fontWeight: UIFont.Weight = .semibold
+        ) {
+            self.text = text
+            self.fontsize = fontsize
+            self.colour = colour
+            self.fontWeight = fontWeight
+        }
+    }
     
+    static func makeAttributedString(textArray:[attributedText]) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        textArray.forEach {
+            let font = UIFont.systemFont(ofSize: $0.fontsize, weight: $0.fontWeight)
+                    result.append(NSAttributedString(
+                        string: $0.text,
+                        attributes: [.font: font, .foregroundColor: $0.colour]
+                    ))
+            
+        }
+        return result
+    }
     
     //MARK: MacroSummarCard End ----------
+    
+    
+    static func makeProgressBar(track: UIView, fill: UIView, height: CGFloat) -> UIView {
+        track.translatesAutoresizingMaskIntoConstraints = false
+        fill.translatesAutoresizingMaskIntoConstraints = false
+
+        track.addSubview(fill)
+
+        NSLayoutConstraint.activate([
+            track.heightAnchor.constraint(equalToConstant: height),
+
+            fill.leadingAnchor.constraint(equalTo: track.leadingAnchor),
+            fill.topAnchor.constraint(equalTo: track.topAnchor),
+            fill.bottomAnchor.constraint(equalTo: track.bottomAnchor),
+
+            // start at 0 width; we’ll update in setProgress(...)
+            fill.widthAnchor.constraint(equalToConstant: 0)
+        ])
+
+        return track
+    }
     
     static func createCircularProgressView(
         withText text: String,
