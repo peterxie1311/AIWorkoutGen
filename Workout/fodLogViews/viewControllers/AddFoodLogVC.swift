@@ -151,7 +151,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
         
     }
     
-    @objc private func addFoodLine(){
+    @objc private func addFoodLine() {
         
         guard
             let tmpFoodName = foodNameField.text?
@@ -192,13 +192,18 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
             return
         }
         
-     
+        Task{
+            do{
+              await FoodLogManager.shared.addFoodLogEntry(i_date: date, i_calories: tmpCalories, i_carbs: tmpCarbs, i_fat: tmpfatGrams, i_food: tmpFoodName, i_grams: tmpFoodGrams, i_protein: tmpProtein)
+            } catch{
+                print("ERROR!")
+            }
+        }
         
-        FoodLogManager.shared.addFoodLogEntry(i_date: date, i_calories: tmpCalories, i_carbs: tmpCarbs, i_fat: tmpfatGrams, i_food: tmpFoodName, i_grams: tmpFoodGrams, i_protein: tmpProtein)
+        
     }
     
     @objc func dismissKeyboard() {
-        print("Swipe gesture detected")
         UIView.animate(withDuration: 0.1) {
                self.view.endEditing(true)
            }

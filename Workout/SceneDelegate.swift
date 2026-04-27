@@ -21,7 +21,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         let window = UIWindow(windowScene: windowScene)
-        let rootVC = ViewController() // Your initial view controller
+        let rootVC = WorkoutAIViewController() // Your initial view controller
         let navigationController = UINavigationController(rootViewController: rootVC)
         window.rootViewController = navigationController
         self.window = window

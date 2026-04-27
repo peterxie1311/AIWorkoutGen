@@ -33,6 +33,13 @@ class HelperFunctions {
             return String(format: "%.2f", value) // 2dp
         }
     }
+    
+    static func parseIntSecToString(seconds: Int) -> String {
+        let hrs = seconds / 3600
+        let mins = (seconds % 3600) / 60
+        let secs = seconds % 60
+        return String(format: "%02d:%02d:%02d", hrs, mins, secs)
+    }
     static func parseDateToStringTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"

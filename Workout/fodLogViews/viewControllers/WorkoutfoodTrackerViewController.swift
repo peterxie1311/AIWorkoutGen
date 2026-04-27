@@ -31,7 +31,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
     private let dinnerCard = FoodlogCardView()
     
     private let addFoodLogButton = workoutDesigns.createStyledButton(title: "Add Food", width: 50, height: 50)
-    
+    private let refresh = workoutDesigns.createStyledButton(title: "Refresh", width: 50, height: 50)
     
     init(i_date:Date){
         self.logDate      = i_date
@@ -55,10 +55,16 @@ class WorkoutfoodTrackerViewController: UIViewController {
         goToAddFoodLine(i_date: logDate)
     }
     
+    @objc private func sync(){
+        Task {
+            await FoodLogManager.shared.syncFoodLogEntries()
+        }
+    }
+    
     @objc private func reloadData(){
         view.layoutIfNeeded()
         
-        let foodhead      = FoodLogManager.shared.fetchFoodHeadById(i_id: foodHeadId)
+        let foodhead      = FoodLogManager.shared.fetchFoodHeadbyDate(i_date: self.logDate)
         
         card.configure(
                   calories: foodhead?.calories ?? 0,
@@ -89,6 +95,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
         stackScrollView.translatesAutoresizingMaskIntoConstraints = false
         stackScrollView.addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackScrollView.translatesAutoresizingMaskIntoConstraints = false
         stackScrollView.isUserInteractionEnabled = true
         stackView.isUserInteractionEnabled = true
         
@@ -122,8 +129,9 @@ class WorkoutfoodTrackerViewController: UIViewController {
         // Setup Buttons
         
         addFoodLogButton.addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
+        refresh.addTarget(self, action: #selector(sync), for: .touchUpInside)
     
-        let views: [UIView] = [titleLabel,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton]
+        let views: [UIView] = [titleLabel,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton,refresh]
         
         for view in views {
             stackView.addArrangedSubview(view)

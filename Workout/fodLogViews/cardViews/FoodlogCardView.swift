@@ -122,7 +122,7 @@ private final class FoodEntryRowView: UIView {
     private let bar2Fill             = UIView()
     private var bar2Progress:CGFloat = 0
     
-    private var line:FoodLogLine    = FoodLogLine()
+    private var line:FoodLogLine?    = nil
     
     override init(frame: CGRect){
         super.init(frame:frame)
@@ -147,6 +147,7 @@ private final class FoodEntryRowView: UIView {
     }
     
     @objc private func deleteFoodLogLine () {
+        guard let line else {return}
         FoodLogManager.shared.removeFoodLogLine(i_foodlogLine: line)
     }
     
@@ -277,15 +278,15 @@ private final class FoodEntryRowView: UIView {
             backgroundContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
             backgroundContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
             
+            foregroundContainer.topAnchor.constraint(equalTo: topAnchor),
+            foregroundContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
+            foregroundContainer.trailingAnchor.constraint(equalTo: trailingAnchor,constant: 1), // there was an annoying red background +1 gets rid of it
+            foregroundContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
+            
             deleteButton.trailingAnchor.constraint(equalTo: backgroundContainer.trailingAnchor, constant: -16),
             deleteButton.centerYAnchor.constraint(equalTo: backgroundContainer.centerYAnchor),
             deleteButton.widthAnchor.constraint(equalToConstant: 28),
             deleteButton.heightAnchor.constraint(equalToConstant: 28),
-
-            foregroundContainer.topAnchor.constraint(equalTo: topAnchor),
-            foregroundContainer.leadingAnchor.constraint(equalTo: leadingAnchor),
-            foregroundContainer.trailingAnchor.constraint(equalTo: trailingAnchor),
-            foregroundContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
             
             stackView.topAnchor.constraint(equalTo: foregroundContainer.topAnchor, constant: 12),
             stackView.leadingAnchor.constraint(equalTo: foregroundContainer.leadingAnchor, constant: 12),

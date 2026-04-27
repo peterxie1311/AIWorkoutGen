@@ -82,7 +82,6 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         FoodLogManager.shared.loadFoodLogArrays()
         // loading managers done -----------------------------------------------
         
-        
         super.viewDidLoad()
         loadViews()
         scrollView.keyboardDismissMode = .interactive // or .onDrag

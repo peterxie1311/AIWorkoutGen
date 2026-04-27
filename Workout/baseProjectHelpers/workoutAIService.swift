@@ -48,7 +48,7 @@ class workoutAIservice {
         Return ONLY a JSON array, no extra text, no explanations.
 
         Output Format:
-        [{"foodname": String, "foodgrams": Double, "protein": Double, "carbs": Double, "fats": Double, "calories": Double, "fiber": Double}]
+        [{"foodname": String, "foodgrams": Double, "protein": Double, "carbs": Double, "fats": Double, "fiber": Double}]
 
         Rules:
         - All measurements are grams.
@@ -125,9 +125,12 @@ class workoutAIservice {
                         let protein = (ingredient["protein"] as? NSNumber)?.doubleValue,
                         let carbs = (ingredient["carbs"] as? NSNumber)?.doubleValue,
                         let fats = (ingredient["fats"] as? NSNumber)?.doubleValue,
-                        let calories = (ingredient["calories"] as? NSNumber)?.doubleValue,
+                      //  let calories = (ingredient["calories"] as? NSNumber)?.doubleValue,
                         let fiber = (ingredient["fiber"] as? NSNumber)?.doubleValue
+                        // we're just going to calculate calories based on macros
+                        
                     else { continue }
+                    let calories = (protein*4) + (carbs*4) + (fats*9)
 
                     ingredientResults.append(
                         MacroEstimate(
@@ -159,123 +162,6 @@ class workoutAIservice {
         }
     }
     
-    
-//    func estimateMacros(i_ingredients:[MacroEstimate],
-//                        i_vc:UIViewController) async throws -> [MacroEstimate] {
-//        
-//        guard let url = URL(string: endpoint) else {
-//            HelperFunctions.showAlert(on: i_vc, title: "Failed to Init URL!", message: "")
-//            return [macroEstimateDefault]
-//        }
-//        
-//        let ingredientsData = try JSONEncoder().encode(i_ingredients)
-//        let ingredientsJSONString = String(data: ingredientsData, encoding: .utf8) ?? "[]"
-//                            
-//                            
-//        let inputString = """
-//        You are an AI that predeicts macros.
-//        Return ONLY a JSON array, no extra text, no explanations.
-//
-//        Rules:
-//        - Output Format: [{"foodname":String,
-//                           "foodgrams":Double,
-//                           "protein": Double,
-//                           "carbs": Double,
-//                           "fats": Double,
-//                           "calories": Double,
-//                           "fiber": Double}]
-//        
-//        - All measurements will be in grams.
-//        - If the input field is = 0 then please ignore it.
-//        
-//        Please predict the Output Format based on the following input information:
-//        
-//        \(ingredientsJSONString)
-//        """
-//        
-//        let query = [
-//            ["role": "system", "content": "You are a helpful Macro Predicting assistant who responds ONLY in JSON."],
-//            ["role": "user", "content": inputString] ]
-//        
-//        var request = URLRequest(url: url)
-//        request.httpMethod = "POST"
-//        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-//        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-//
-//        let requestBody: [String: Any] = [
-//            "model": "gpt-4o",
-//            "temperature": 0.3,
-//            "messages": query
-//        ]
-//        
-//        do {
-//            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
-//        } catch {
-//            return [macroEstimateDefault]
-//        }
-//        
-//        do {
-//            let (data, response) = try await URLSession.shared.data(for: request)
-//            // just check thre response code from chat usually code = 200 is good!
-//            if let response = response as? HTTPURLResponse {
-//                if response.statusCode != 200 {
-//                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "\(response.statusCode) - \(response.allHeaderFields)")
-//                    return [macroEstimateDefault]
-//                }
-//                
-//                // if we reach here then try and parse the response
-//                
-//                
-//                do {
-//                    if let responseDict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-//                       let choices = responseDict["choices"] as? [[String: Any]],
-//                       let message = choices.first?["message"] as? [String: Any],
-//                       let content = message["content"] as? String {
-//                        let cleanedContent = content
-//                            .replacingOccurrences(of: "```json", with: "")
-//                            .replacingOccurrences(of: "```", with: "")
-//                            .trimmingCharacters(in: .whitespacesAndNewlines)
-//                        
-//                        if let jsonData = cleanedContent.data(using: .utf8),
-//                           let ingredientsReply = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [[String: Any]] {
-//                           var ingredientResults = [] as [MacroEstimate]
-//                           for ingredient in ingredientsReply {
-//                               if let foodname = ingredient["foodname"]as? String,
-//                                  let foodgram = ingredient["foodgrams"]as? Double,
-//                                  let protein = ingredient["protein"]as? Double,
-//                                  let carbs = ingredient["carbs"]as? Double,
-//                                  let fats = ingredient["fats"]as? Double,
-//                                  let calories = ingredient["calories"]as? Double,
-//                                  let fiber = ingredient["fiber"]as? Double
-//                               {
-//                                   let newEstimate = MacroEstimate(foodname: foodname,
-//                                                                   foodgrams: foodgram,
-//                                                                   protein: protein,
-//                                                                   carbs: carbs,
-//                                                                   fats: fats,
-//                                                                   calories: calories,
-//                                                                   fiber: fiber)
-//                                   
-//                                   ingredientResults.append(newEstimate)
-//                                   
-//                               }
-//                           }
-//                         return ingredientResults
-//                        }
-//                    }
-//                } catch {
-//                    HelperFunctions.showAlert(on: i_vc, title: "Parsing error", message: error.localizedDescription)
-//                }
-//                
-//                
-//                
-//            }
-//        }catch {
-//            HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: error.localizedDescription)
-//        }
-//
-//        return [macroEstimateDefault]
-//    }
 
     // Function to send a message to ChatGPT API
     func queryChatGPT(messages: [[String: String]],completion: @escaping (Result<String, Error>) -> Void) {

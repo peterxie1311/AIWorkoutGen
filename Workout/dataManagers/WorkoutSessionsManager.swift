@@ -13,6 +13,18 @@ class WorkoutSessionManager {
         loadWorkoutSessions()
     }
     
+//(workout.setrep?.allObjects as? [Setrep]) ?? []
+    
+    func syncworkoutsessionentries () async {
+        loadWorkoutSessions()
+        for ws in workoutSessions {
+            let setrepArray = (ws.setrep?.allObjects as? [Setrep]) ?? []
+            for setrep in setrepArray {
+                await DBConnector.shared.insupdworkout(i_sr: setrep)
+            }
+        }
+    }
+    
     func fetchSetreps(for workoutSession: WorkoutSession) {
         // Get the managedObjectContext from the AppDelegate
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
@@ -30,7 +42,6 @@ class WorkoutSessionManager {
         // Perform the fetch
         do {
             let setrepObjects = try context.fetch(fetchRequest)
-            print(setrepObjects.count)
             for setrep in setrepObjects {
                 print("Setrep: \(setrep)")
             }

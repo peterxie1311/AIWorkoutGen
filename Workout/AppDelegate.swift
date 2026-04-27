@@ -42,13 +42,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         guard let storeDescription = container.persistentStoreDescriptions.first else {
             fatalError("Persistent store description not found")
         }
-        
+//        storeDescription.shouldMigrateStoreAutomatically = true
+//        storeDescription.shouldInferMappingModelAutomatically = true
+//        
         
 
-        // Enable iCloud Backup but prevent automatic fetching
-        storeDescription.setOption(false as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-        
-        storeDescription.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.pdawg.workout1311")
+//        // Enable iCloud Backup but prevent automatic fetching
+//        storeDescription.setOption(false as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+//        
+//        storeDescription.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.pdawg.workout1311")
 
         container.loadPersistentStores { (storeDescription, error) in
             if let error = error as NSError? {

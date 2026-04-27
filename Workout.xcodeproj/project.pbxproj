@@ -52,6 +52,7 @@
 		DC9F16C12CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		DCADF3E82D9D430B00CC0C27 /* Workout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Workout.entitlements; sourceTree = "<group>"; };
 		DCD661812F3738350017A8F6 /* GoToVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoToVC.swift; sourceTree = "<group>"; };
+		DCDF35FA2F9908C600E12788 /* WorkoutDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WorkoutDebug.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -128,6 +129,7 @@
 		DC9F169A2CCA6A720091B6C0 /* Workout */ = {
 			isa = PBXGroup;
 			children = (
+				DCDF35FA2F9908C600E12788 /* WorkoutDebug.entitlements */,
 				DCD661812F3738350017A8F6 /* GoToVC.swift */,
 				DCADF3E82D9D430B00CC0C27 /* Workout.entitlements */,
 				DC9F169B2CCA6A720091B6C0 /* AppDelegate.swift */,
@@ -486,7 +488,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Workout/Workout.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Workout/WorkoutDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8372VJBM73;
