@@ -50,25 +50,18 @@ final class WorkoutSummaryCardView: UIView {
         
         container.translatesAutoresizingMaskIntoConstraints = false
         let col1 = makeColumn(title: startTimeLabel, value: startTimeValueLabel, align: .left, systemImageName: "clock",imageColour: .systemPurple)
-        
-        
-        let divider1 = makeDivider()
-        
+     
         let col2 = makeColumn(title: durationLabel, value: durationValueLabel, align: .left, systemImageName:"alarm" ,imageColour:.systemBlue)
+
+        let col3 = makeColumn(title: restTimeLabel, value: restTimeValueLabel, align: .left, systemImageName: "timer", imageColour: .systemCyan)
+  
+        let col4 = makeColumn(title: totalRestTimeLabel, value: totalRestTimeValueLabel, align: .left, systemImageName: "flame", imageColour: .systemOrange)
         
-        let divider2 = makeDivider()
-        
-        let col3 = makeColumn(title: restTimeLabel, value: restTimeValueLabel, align: .right, systemImageName: "timer", imageColour: .systemCyan)
-        let divider3 = makeDivider()
-        
-        let col4 = makeColumn(title: totalRestTimeLabel, value: totalRestTimeValueLabel, align: .right, systemImageName: "flame", imageColour: .systemOrange)
-        let divider4 = makeDivider()
-        
-        let hstack = UIStackView(arrangedSubviews: [col1,divider1,col2,divider2,col3,divider3,col4,divider4])
+        let hstack = UIStackView(arrangedSubviews: [col1,col2,col3,col4])
         hstack.axis = .horizontal
-        hstack.spacing = 10
+        hstack.spacing = 8
         hstack.translatesAutoresizingMaskIntoConstraints = false
-        //hstack.distribution = .fill
+        hstack.distribution = .fillEqually
         
         container.addSubview(hstack)
         
@@ -92,13 +85,13 @@ final class WorkoutSummaryCardView: UIView {
         container.layer.cornerRadius = 18
         container.layer.masksToBounds = true
 
-        startTimeLabel.text = "Start Time"
+        startTimeLabel.text = "Start"
         startTimeValueLabel.text = "12:00 PM"
         
         durationLabel.text = "Duration"
         durationValueLabel.text = "00:00:00"
         
-        restTimeLabel.text = "Rest Time"
+        restTimeLabel.text = "Rest"
         restTimeValueLabel.text = "01:00"
         
         totalRestTimeLabel.text = "Total Rest"
@@ -140,9 +133,4 @@ final class WorkoutSummaryCardView: UIView {
         
         return h
     }
-
-    
-
-    
-    
 }

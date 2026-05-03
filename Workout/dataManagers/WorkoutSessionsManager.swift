@@ -17,6 +17,8 @@ class WorkoutSessionManager {
     
     func syncworkoutsessionentries () async {
         loadWorkoutSessions()
+        print("INSIDE ASYNC")
+        print(workoutSessions.count)
         for ws in workoutSessions {
             let setrepArray = (ws.setrep?.allObjects as? [Setrep]) ?? []
             for setrep in setrepArray {

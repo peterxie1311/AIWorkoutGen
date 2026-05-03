@@ -468,17 +468,22 @@ class workoutDesigns {
     
     static func createStyledButton(
         title: String,
+        titleFontSize:CGFloat = 16,
+        imageSize:CGFloat = 16,
         systemImageName: String? = nil,
         backgroundColor: UIColor = .systemBlue,
+        borderColor:UIColor      = .systemBlue,
+        textColor:UIColor        = .white,
         cornerRadius: CGFloat = 20,
         width: CGFloat ,
         height: CGFloat
     ) -> UIButton {
+        let config = UIImage.SymbolConfiguration(pointSize: imageSize, weight: .medium)
         let button = UIButton(type: .system)
         if let systemImageName = systemImageName {
-                let image = UIImage(systemName: systemImageName)
+                let image = UIImage(systemName: systemImageName,withConfiguration: config)
                 button.setImage(image, for: .normal)
-                button.tintColor = .white
+                button.tintColor = textColor
                 button.imageView?.contentMode = .scaleAspectFit
             button.semanticContentAttribute = .forceRightToLeft
             button.setTitle(title + " ", for: .normal)
@@ -486,8 +491,10 @@ class workoutDesigns {
             } else {
                 button.setTitle(title, for: .normal)
             }
-        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(textColor, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: titleFontSize, weight: .semibold)
         button.backgroundColor = backgroundColor
+      
         
         // Styling for the button
         button.layer.cornerRadius = cornerRadius
@@ -495,11 +502,14 @@ class workoutDesigns {
         button.layer.shadowOpacity = 0.2
         button.layer.shadowOffset = CGSize(width: 2, height: 2)
         button.layer.shadowRadius = 5
+        button.layer.borderWidth  = 2
+        button.layer.borderColor  = borderColor.cgColor
         
         // Auto Layout constraints
         button.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            button.heightAnchor.constraint(equalToConstant: height),
+            button.heightAnchor.constraint(equalToConstant: 40),
+          //  button.widthAnchor.constraint(equalToConstant: width),
         ])
         
         return button

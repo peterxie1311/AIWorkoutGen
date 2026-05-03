@@ -121,31 +121,7 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
         //addSetButton.setTitle("Delete Workout", for: .normal)
         addSetButton.addTarget(self, action: #selector(addSet), for: .touchUpInside)
         
-        
-//        workoutnameField.borderStyle  = .roundedRect
-//        workoutnameField.placeholder  = "Workout Name"
-//        workoutnameField.keyboardType = .alphabet
-//        workoutnameField.delegate     = self
-//        workoutnameField.translatesAutoresizingMaskIntoConstraints = false
-//        workoutnameField.isUserInteractionEnabled                  = true
-//        
-//        setqtyField.borderStyle  = .roundedRect
-//        setqtyField.placeholder  = "Set QTY"
-//        setqtyField.keyboardType = .numberPad
-//        setqtyField.delegate     = self
-//        setqtyField.translatesAutoresizingMaskIntoConstraints = false
-//        
-//        repqtyField.borderStyle  = .roundedRect
-//        repqtyField.placeholder  = "Rep QTY"
-//        repqtyField.keyboardType = .numberPad
-//        repqtyField.delegate     = self
-//        repqtyField.translatesAutoresizingMaskIntoConstraints = false
-//        
-//        weightField.borderStyle  = .roundedRect
-//        weightField.placeholder  = "Weight (kg)"
-//        weightField.keyboardType = .numberPad
-//        weightField.delegate     = self
-//        weightField.translatesAutoresizingMaskIntoConstraints = false
+
         
         let workoutTextFields: [TextField] = [
 

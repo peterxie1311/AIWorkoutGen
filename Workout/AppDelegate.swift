@@ -42,6 +42,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         guard let storeDescription = container.persistentStoreDescriptions.first else {
             fatalError("Persistent store description not found")
         }
+        
+        print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask))
+        print("SECOND LINE")
+        print(container.persistentStoreDescriptions.first?.url as Any)
 //        storeDescription.shouldMigrateStoreAutomatically = true
 //        storeDescription.shouldInferMappingModelAutomatically = true
 //        

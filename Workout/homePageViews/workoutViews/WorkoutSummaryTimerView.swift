@@ -12,9 +12,30 @@ class WorkoutSummaryTimerView: UIView {
 //    private var startDate:Date
 //    private var
     
-    private let timerView = TimerView()
+    private let timerView       = TimerView()
     private let containerView   = UIView()
-    private let hStack = UIStackView()
+    private let hStack          = UIStackView()
+    private let vStack          = UIStackView()
+    private let restTimerLabel  = UILabel()
+    
+    private let startWorkoutButton = workoutDesigns.createStyledButton( title: "Start",
+                                                                        titleFontSize: 16,
+                                                                        imageSize: 16,
+                                                                        systemImageName: "play.fill",
+                                                                        backgroundColor: .systemBlue,
+                                                                        cornerRadius: 16,
+                                                                        width: 100 ,
+                                                                        height: 30)
+    private let finishWorkoutButton = workoutDesigns.createStyledButton( title: "Finish",
+                                                                         titleFontSize: 16,
+                                                                         imageSize: 16,
+                                                                        systemImageName: "stop",
+                                                                        backgroundColor: .clear,
+                                                                        borderColor: .systemBlue,
+                                                                        textColor: .systemBlue,
+                                                                        cornerRadius: 16,
+                                                                        width: 100 ,
+                                                                        height: 30)
     
 
     override init(frame: CGRect){
@@ -26,6 +47,7 @@ class WorkoutSummaryTimerView: UIView {
         fatalError("look into workoutsummaryCardView def required init?")
     }
     
+    
     private func build(){
         addSubview(containerView)
         containerView.layer.cornerRadius = 16
@@ -33,14 +55,32 @@ class WorkoutSummaryTimerView: UIView {
         containerView.translatesAutoresizingMaskIntoConstraints = false
         
         //Configure the hstack
-        
         hStack.axis    = .horizontal
         hStack.translatesAutoresizingMaskIntoConstraints = false
-        //hStack.distribution = .fill
-       // hStack.spacing = 4
+        vStack.axis    = .vertical
+        vStack.translatesAutoresizingMaskIntoConstraints = false
         
+        let buttonHstack = UIStackView()
+        buttonHstack.axis = .horizontal
+        buttonHstack.distribution = .fillEqually
+       // buttonHstack.spacing      = 
+        buttonHstack.alignment    = .fill
+        buttonHstack.translatesAutoresizingMaskIntoConstraints = false
+        buttonHstack.addArrangedSubview(startWorkoutButton)
+        buttonHstack.addArrangedSubview(finishWorkoutButton)
+     //   finishWorkoutButton.addTarget(self, action: #selector(syncWorkout), for: .touchUpInside)
         containerView.addSubview(hStack)
-        hStack.addArrangedSubview(timerView)
+     
+        vStack.addArrangedSubview(makeDividerHeight(gap: 25))
+        vStack.addArrangedSubview(restTimerLabel)
+        vStack.addArrangedSubview(buttonHstack)
+        vStack.addArrangedSubview(makeDividerHeight(gap: 25))
+        
+        let views = [timerView,vStack]
+        views.forEach{
+            hStack.addArrangedSubview($0)
+        }
+        
         
         
         NSLayoutConstraint.activate([
@@ -61,20 +101,20 @@ class WorkoutSummaryTimerView: UIView {
         containerView.backgroundColor = .systemGray6
         let date = Date().addingTimeInterval(-120)
         self.timerView.updateTimer(i_finishTime: date)
+        restTimerLabel.text = "Rest Timer"
+        restTimerLabel.textColor = .systemBlue
+        restTimerLabel.font = .systemFont(ofSize: 32, weight: .bold)
         
         
-//        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-//            s
-//        }
-//        RunLoop.current.add(timer, forMode: .common)
+        
         
     }
     
-    private func makeDivider() -> UIView {
+    private func makeDividerHeight(gap:CGFloat) -> UIView {
         let divider = UIView()
         divider.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            divider.widthAnchor.constraint(equalToConstant: 1)])
+            divider.heightAnchor.constraint(equalToConstant: gap)])
         return divider
     }
     
@@ -129,7 +169,7 @@ private final class TimerView: UIView {
             
             // Labels inside circle
             timeLabel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            timeLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 65)
+            timeLabel.topAnchor.constraint(equalTo: container.topAnchor, constant: 50)
 //            timeLabel.centerXAnchor.constraint(equalTo: circleContainer.centerXAnchor),
 //            timeLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8)
         ])
@@ -145,7 +185,13 @@ private final class TimerView: UIView {
     func updateTimer(i_finishTime:Date){
         let restTime = i_finishTime.timeIntervalSinceNow
         let normalisedRestTime = max(0,-restTime)
-        timeLabel.text = String(format:"%.1f",normalisedRestTime)
+        
+        let seconds = Int(normalisedRestTime)
+        let mins = seconds / 60
+        let secs = seconds % 60
+        timeLabel.text = String(format: "%02d:%02d", mins, secs)
+        
+//        timeLabel.text = String(format:"%.1f",normalisedRestTime)
         let progress = min(normalisedRestTime/duration,1)
         progressLayer.strokeEnd = CGFloat(progress)
         
@@ -164,9 +210,9 @@ private final class TimerView: UIView {
         progressLayer.path = path.cgPath
     }
     private func style(){
-        timeLabel.text = "00:00"
+        timeLabel.text      = "00:00"
         timeLabel.textColor = .systemBlue
-        timeLabel.font = .systemFont(ofSize: 32, weight: .bold)
+        timeLabel.font      = .systemFont(ofSize: 34, weight: .semibold)
         
         // style the track
         trackLayer.strokeColor = UIColor.systemBlue.withAlphaComponent(0.2).cgColor

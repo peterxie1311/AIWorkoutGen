@@ -57,6 +57,7 @@ class DBConnector {
     
     func insupdworkout(i_sr:Setrep) async {
         let postgresqlFuncName = "insupdworkout"
+        print("WORKING!")
         
         let payload = InsUpdWorkoutRequest(
             i_completed: i_sr.completed ?? false,

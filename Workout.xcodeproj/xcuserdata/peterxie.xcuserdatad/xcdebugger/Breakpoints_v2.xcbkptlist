@@ -27,8 +27,8 @@
             filePath = "Workout/homePageViews/cardViews/WorkoutSummaryTimerView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "114"
-            endingLineNumber = "114"
+            startingLineNumber = "154"
+            endingLineNumber = "154"
             landmarkName = "build()"
             landmarkType = "7">
          </BreakpointContent>

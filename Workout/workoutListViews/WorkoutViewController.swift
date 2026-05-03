@@ -212,13 +212,13 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
         
         return cell
     }
-    
-    @objc func goToAddSetVC() {
-       
-            let AddSetVC = AddSetViewController(workout: WorkoutSession )
-            navigationController?.pushViewController(AddSetVC, animated: true)
-       
-    }
+//    
+//    @objc func goToAddSetVC() {
+//       
+//            let AddSetVC = AddSetViewController(workout: WorkoutSession )
+//            navigationController?.pushViewController(AddSetVC, animated: true)
+//       
+//    }
     
     private func setupData() {
         print(self.setreps.count)

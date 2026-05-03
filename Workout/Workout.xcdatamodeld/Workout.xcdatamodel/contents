@@ -23,6 +23,7 @@
         <attribute name="completed" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="duration_sec" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="finishTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="plannedWeekday" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="rep_qty" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="repid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -52,6 +53,7 @@
         <attribute name="location" optional="YES" attributeType="String"/>
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="workout_genre" optional="YES" attributeType="String"/>
+        <attribute name="workouttab" optional="YES" attributeType="String"/>
         <relationship name="setrep" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Setrep" inverseName="workoutSession" inverseEntity="Setrep"/>
     </entity>
 </model>

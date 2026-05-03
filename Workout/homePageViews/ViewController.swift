@@ -1,5 +1,35 @@
 import UIKit
+// ----------NOTE -------\\
 
+
+// WAARNING THIS FILE IS VERY OLD AND IS NO LONGER IN USE PLEASE DO NOT USE THIS IT IS BAD ...
+//please dont use
+//please dont use//please dont use
+//please dont use
+//please dont use//please dont use
+//please dont use
+//please dont use
+
+//please dont use
+
+//please dont use
+//please dont use//please dont use
+//please dont use
+//please dont use
+//please dont use//please dont use
+//please dont use
+//please dont use//please dont use
+//please dont use
+//please dont use
+
+//please dont use
+
+//please dont use
+//please dont use//please dont use
+//please dont use
+
+
+//------------ -------------\\
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate  {
     
     override var prefersHomeIndicatorAutoHidden: Bool {
@@ -539,26 +569,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
       }
     
     
-    //MARK: Links to VC
-    @objc func goToSettings() {
-        let settingsVC = SettingsViewController()
-        navigationController?.pushViewController(settingsVC, animated: true)
-    }
-    
-    @objc func goToViewWorkout() {
-        let viewWorkoutVC = WorkoutsListViewController()
-        navigationController?.pushViewController(viewWorkoutVC, animated: true)
-    }
-    
-    @objc func goTofoodtracker() {
-        let viewWorkoutVC = WorkoutfoodTrackerViewController(i_date: Date());
-        navigationController?.pushViewController(viewWorkoutVC, animated: true)
-    }
-    
-    @objc func goToAddSetVC() {
-        goToAddSetPageVC()
-    }
-    
+//    //MARK: Links to VC
+//    @objc func goToSettings() {
+//        let settingsVC = SettingsViewController()
+//        navigationController?.pushViewController(settingsVC, animated: true)
+//    }
+//    
+//    @objc func goToViewWorkout() {
+//        let viewWorkoutVC = WorkoutsListViewController()
+//        navigationController?.pushViewController(viewWorkoutVC, animated: true)
+//    }
+//    
+//    @objc func goTofoodtracker() {
+//        let viewWorkoutVC = WorkoutfoodTrackerViewController(i_date: Date());
+//        navigationController?.pushViewController(viewWorkoutVC, animated: true)
+//    }
+//    
+//    @objc func goToAddSetVC() {
+//        goToAddSetPageVC()
+//    }
+//    
     
     //MARK: Keyboard functions
     
