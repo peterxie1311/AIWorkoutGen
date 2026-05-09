@@ -313,5 +313,3 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         activeField = nil
     }
 }
-
-

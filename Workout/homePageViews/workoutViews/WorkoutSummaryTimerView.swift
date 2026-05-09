@@ -38,9 +38,9 @@ class WorkoutSummaryTimerView: UIView {
                                                                         height: 30)
     
 
-    override init(frame: CGRect){
-        super.init(frame:frame)
-        build()
+    init(startButtonAction:Selector,finishButtonAction:Selector,target:Any ){
+         super.init(frame:.zero)
+        build(startButtonAction: startButtonAction, finishButtonAction: finishButtonAction,target: target)
         style()
     }
     required init?(coder: NSCoder){
@@ -48,7 +48,8 @@ class WorkoutSummaryTimerView: UIView {
     }
     
     
-    private func build(){
+    
+    private func build(startButtonAction:Selector,finishButtonAction:Selector,target:Any){
         addSubview(containerView)
         containerView.layer.cornerRadius = 16
         containerView.layer.masksToBounds = true
@@ -68,6 +69,8 @@ class WorkoutSummaryTimerView: UIView {
         buttonHstack.translatesAutoresizingMaskIntoConstraints = false
         buttonHstack.addArrangedSubview(startWorkoutButton)
         buttonHstack.addArrangedSubview(finishWorkoutButton)
+        startWorkoutButton.addTarget(target, action: startButtonAction, for: .touchUpInside)
+        finishWorkoutButton.addTarget(target, action: finishButtonAction, for: .touchUpInside)
      //   finishWorkoutButton.addTarget(self, action: #selector(syncWorkout), for: .touchUpInside)
         containerView.addSubview(hStack)
      
@@ -97,10 +100,12 @@ class WorkoutSummaryTimerView: UIView {
         
     }
     
+    func configureTime(i_date:Date){
+        self.timerView.updateTimer(i_finishTime: i_date)
+    }
+    
     private func style(){
         containerView.backgroundColor = .systemGray6
-        let date = Date().addingTimeInterval(-120)
-        self.timerView.updateTimer(i_finishTime: date)
         restTimerLabel.text = "Rest Timer"
         restTimerLabel.textColor = .systemBlue
         restTimerLabel.font = .systemFont(ofSize: 32, weight: .bold)

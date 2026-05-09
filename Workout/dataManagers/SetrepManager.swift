@@ -92,8 +92,6 @@ class SetrepManager {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
         let fetchRequest: NSFetchRequest<Setrep> = Setrep.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "workoutSession == nil")
-
         do {
             Setreps = try context.fetch(fetchRequest)
             print("Loaded \(Setreps.count) Setreps not associated with any WorkoutSession")

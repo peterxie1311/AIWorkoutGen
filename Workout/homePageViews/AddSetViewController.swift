@@ -1,130 +1,58 @@
 import UIKit
 
-class AddSetViewController: UIViewController, UITextFieldDelegate  {
-    override var prefersHomeIndicatorAutoHidden: Bool {
-           return true
-       }
-    let WorkoutSession:WorkoutSession
-    let setreps:[Setrep]
+class AddSetViewController: UIViewController, UITextFieldDelegate {
 
-    private let AddSetLabel      = UILabel()
-    private var addSetButton     = workoutDesigns.createStyledButton(title: "Add Set!",
-                                                                     width: 100,
-                                                                     height: 50)
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
+    private let stackView = UIStackView()
+
+    private let AddSetLabel = UILabel()
+
+    private var addSetButton = workoutDesigns.createStyledButton(
+        title: "Add Set!",
+        width: 100,
+        height: 50
+    )
+
     private let workoutnameField = UITextField()
-    private let setqtyField      = UITextField()
-    private let repqtyField      = UITextField()
-    private let weightField      = UITextField()
-   
-    init(workout:WorkoutSession) {
-        self.WorkoutSession = workout
-        self.setreps        = (workout.setrep?.allObjects as? [Setrep]) ?? []
-        super.init(nibName: nil, bundle: nil)
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
+    private let setqtyField = UITextField()
+    private let repqtyField = UITextField()
+    private let weightField = UITextField()
+
+//    required init?(coder: NSCoder) {
+//        fatalError("init(coder:) has not been implemented")
+//    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.systemBackground
+
+        view.backgroundColor = .systemBackground
         setupUI()
         setupData()
     }
-    
-    @objc private func addSet(){
-        var tmpWorkoutName    = ""
-        var tmpRepQty         = 0
-        var tmpSetQty         = 1
-        var tmpRepWeight      = 0
-        var retCode           = true
-        let tmpWorkoutSession = self.WorkoutSession
-        var tmpSetRepArr      = self.setreps
-        
-        if let workoutNameText = workoutnameField.text, !workoutNameText.isEmpty {
-            tmpWorkoutName = workoutNameText
-        }
-        else {
-            HelperFunctions.showAlert(on: self,title: "Invalid Input", message: "Please enter a valid weight.")
-            retCode = false
-        }
-        
-        if let newSetQTYText = setqtyField.text,!newSetQTYText.isEmpty {
-           guard let newSetQTY = Int(newSetQTYText),
-                newSetQTY > 0 else {
-               HelperFunctions.showAlert(on: self,title: "Invalid Input", message: "Please enter a valid Set QTY.")
-               retCode = false
-                    return
-                }
-            tmpSetQty = newSetQTY
-        }
- 
-        if let newRetQTYText = repqtyField.text,!newRetQTYText.isEmpty {
-           guard let newRepQTY = Int(newRetQTYText),
-                 newRepQTY > 0 else {
-               HelperFunctions.showAlert(on: self,title: "Invalid QTY", message: "Please enter a valid Ret QTY.")
-               retCode = false
-                    return
-                }
-            tmpRepQty = newRepQTY
-        }
-        
-        if let newRepWeightText = weightField.text,!newRepWeightText.isEmpty {
-           guard let newRepWeight = Int(newRepWeightText),
-                 newRepWeight > 0 else {
-               HelperFunctions.showAlert(on: self,title: "Invalid Weight", message: "Please enter a valid Ret QTY.")
-               retCode = false
-                    return
-                }
-            tmpRepWeight = newRepWeight
-        }
-        
-        if retCode == true {
-            if WorkoutSessionManager.shared.checkIsOpenWorkout(workout: WorkoutSession) {
-                for _ in 1...tmpSetQty{
-                    SetrepManager.shared.addSetrep(qty: Int(tmpRepQty), startTime: Date(), finishTime:Date(), workoutName: tmpWorkoutName, weight: Int64(tmpRepWeight))
-                }
-            }
-            else {
-                
-        
-                
-                for _ in 1...tmpSetQty {
-                    let tmpSetRep =  SetrepManager.shared.initSetRep(qty: Int(tmpRepQty), startTime: Date(), finishTime: Date(), workoutName: tmpWorkoutName, weight: Int64(tmpRepWeight))
-                        tmpSetRepArr.append(tmpSetRep)
-                    
-                }
-                
-                tmpWorkoutSession.setrep = NSSet(array: tmpSetRepArr)
-                WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:WorkoutSession,updatedSession:tmpWorkoutSession)
-            }
-            
-        }
+
+    @objc private func addSet() {
+        // add your add set logic here
     }
-    
+
     @objc func dismissKeyboard() {
-        print("Swipe gesture detected")
-        UIView.animate(withDuration: 0.1) {
-               self.view.endEditing(true)
-           }
+        view.endEditing(true)
     }
-    
+
     private func setupUI() {
+        AddSetLabel.font = UIFont.systemFont(ofSize: 20)
+        AddSetLabel.textAlignment = .center
 
-        AddSetLabel.font  = UIFont.systemFont(ofSize: 20)
-        
-        let swipeDown = UISwipeGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-            swipeDown.direction = .down
-            view.addGestureRecognizer(swipeDown)
-        
-        //addSetButton.setTitle("Delete Workout", for: .normal)
         addSetButton.addTarget(self, action: #selector(addSet), for: .touchUpInside)
-        
 
-        
+        let swipeDown = UISwipeGestureRecognizer(
+            target: self,
+            action: #selector(dismissKeyboard)
+        )
+        swipeDown.direction = .down
+        view.addGestureRecognizer(swipeDown)
+
         let workoutTextFields: [TextField] = [
-
             TextField(
                 labelName: "Workout Name",
                 keyboardType: .default,
@@ -132,7 +60,6 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
                 useLabelNameAsPlaceHolder: false,
                 delegate: self
             ),
-
             TextField(
                 labelName: "Set QTY",
                 keyboardType: .numberPad,
@@ -140,7 +67,6 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
                 useLabelNameAsPlaceHolder: false,
                 delegate: self
             ),
-
             TextField(
                 labelName: "Rep QTY",
                 keyboardType: .numberPad,
@@ -148,7 +74,6 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
                 useLabelNameAsPlaceHolder: false,
                 delegate: self
             ),
-
             TextField(
                 labelName: "Weight (kg)",
                 keyboardType: .numberPad,
@@ -157,27 +82,49 @@ class AddSetViewController: UIViewController, UITextFieldDelegate  {
                 delegate: self
             )
         ]
-        
-        let texfields = workoutDesigns.createRoundedSquareViewWithTextFields(textFields: workoutTextFields)
-        
-        let stackView = UIStackView(arrangedSubviews: [AddSetLabel,texfields,addSetButton])
-        stackView.axis    = .vertical
+
+        let textFieldsView = workoutDesigns.createRoundedSquareViewWithTextFields(
+            textFields: workoutTextFields
+        )
+
+        stackView.axis = .vertical
         stackView.spacing = 10
+        stackView.alignment = .fill
+        stackView.distribution = .fill
+
+        stackView.addArrangedSubview(AddSetLabel)
+        stackView.addArrangedSubview(textFieldsView)
+        stackView.addArrangedSubview(addSetButton)
+
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        contentView.addSubview(stackView)
+
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
         stackView.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.addSubview(stackView)
-        
+
         NSLayoutConstraint.activate([
-            stackView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
+
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 40),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            stackView.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -40)
         ])
     }
-    
+
     private func setupData() {
         AddSetLabel.text = "Add a Workout Set!"
     }
-    
 }

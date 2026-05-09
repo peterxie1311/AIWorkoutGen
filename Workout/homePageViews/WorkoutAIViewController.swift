@@ -14,11 +14,17 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     private let stackView = UIStackView()
     
     private let summaryCard = WorkoutSummaryCardView()
-    private let timerView   = WorkoutSummaryTimerView()
+    private lazy var timerView   = WorkoutSummaryTimerView(startButtonAction: #selector(startWorkout),finishButtonAction: #selector(finishWorkout),target: self)
     
     private let customisations = UITextField()
+    var timer: Timer?
+    private let planTabsView = WorkoutPlanTabsView()
+    private lazy var handler: (Setrep) -> Void = { [weak self] setrep in
+        self?.goToSetRep(s: setrep)
+    }
+ 
     
-    private let genWorkoutButton = workoutDesigns.createStyledButton( title: "Generate",
+    private let genWorkoutButton = workoutDesigns.createStyledButton( title: "+ Workout",
                                                                          titleFontSize: 16,
                                                                          imageSize: 16,
                                                                         systemImageName: "heart.text.clipboard",
@@ -49,6 +55,49 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     )
     
     let toolBar = WorkoutToolBar()
+    
+    func updateTimer(i_currWorkout:WorkoutSession){
+        let latestDate = WorkoutSessionManager.shared.getLastSetRep(i_workout: i_currWorkout)?.finishTime ?? Date()
+        timerView.configureTime(i_date: latestDate)
+        
+    }
+    
+    @objc func finishWorkout() {
+        timer?.invalidate()
+        timer = nil // Clear the timer
+        
+        if let curWorkout = planTabsView.selectedWorkoutSession {
+            let newWorkout = curWorkout
+            newWorkout.endTime = Date()
+            WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:curWorkout,updatedSession:newWorkout)
+        }
+        loadViewDatas()
+      
+    }
+    
+    //MARK: Button Functions!
+    @objc func startWorkout() {
+        // Start the timer
+        timer?.invalidate() // Invalidate any existing timer
+        if let currworkout = planTabsView.selectedWorkoutSession{
+            let newWorkout = currworkout
+            newWorkout.startTime = Date()
+            newWorkout.endTime   = Date()
+            WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currworkout,updatedSession:newWorkout)
+            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                self.updateTimer(i_currWorkout: currworkout)
+            }
+
+        }else {
+            HelperFunctions.showAlert(on: self, title: "No Open Workouts!", message: "Need to Open a workout theres nothing to start!")
+        }
+        
+        
+        loadViewDatas()
+    
+    }
+    
+    
     @objc func syncWorkout() {
         print("BUTTON TAPPED ✅")
         WorkoutSessionManager.shared.loadWorkoutSessions()
@@ -58,9 +107,18 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         
     }
     
+    func initObserver(){
+        NotificationCenter.default.addObserver(self, selector: #selector(loadViewDatas), name: NSNotification.Name("SetRep"), object: nil)
+    }
+    @objc func loadViewDatas(){
+        planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),onSetRepSelected: handler)
+        
+    }
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        initObserver()
         view.backgroundColor = .systemBackground
         view.addSubview(stackScrollView)
         view.addSubview(toolBar)
@@ -72,7 +130,8 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         stackView.spacing = 16
         stackView.distribution = .fill
         
-        let planTabsView = WorkoutPlanTabsView()
+       
+        
         planTabsView.heightAnchor.constraint(equalToConstant: 350).isActive = true
         
         let views = [summaryCard,timerView,genWorkoutButton,planTabsView]
@@ -107,6 +166,10 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
             stackView.bottomAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.bottomAnchor),
             stackView.widthAnchor.constraint(equalTo: stackScrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
+        loadViewDatas()
+      
+     
+        
         
         
     }

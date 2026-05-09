@@ -17,6 +17,7 @@
         <attribute name="foodHeadID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="foodID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="grams" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="isActive" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="protein" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
     </entity>
     <entity name="Setrep" representedClassName="Setrep" syncable="YES" codeGenerationType="class">

@@ -366,7 +366,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         timer?.invalidate() // Invalidate any existing timer
         timer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateTimer), userInfo: nil, repeats: true)
         
-        WorkoutSessionManager.shared.addWorkoutSession(durationHrs: 0, endTime: Date(), location: "", startTime: Date(), sets: [])
+        WorkoutSessionManager.shared.addWorkoutSession(durationHrs: 0, endTime: Date(), location: "", startTime: Date(), sets: [],workoutTab: "test")
         if let startTime = WorkoutSessionManager.shared.getWorkoutSession()?.startTime {
             starttimestring = startDatePrefic + HelperFunctions.parseDateToStringTime(startTime) + "\n"
             gymtimerstring = starttimestring + timercounter

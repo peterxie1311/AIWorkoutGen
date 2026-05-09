@@ -10,12 +10,10 @@ import UIKit
 extension UIViewController {
 
     func goToAddSetPageVC() {
-        if let tmpSession = WorkoutSessionManager.shared.getFirstOpenGymSesh() {
-            let vc = AddSetViewController(workout: tmpSession)
+        
+        let vc = AddSetViewController()
             navigationController?.pushViewController(vc, animated: true)
-        } else {
-            HelperFunctions.showAlert(on: self, title: "Error", message: "Please Start a workout")
-        }
+        
     }
     
     func goToAddFoodLine(i_date:Date){
@@ -36,6 +34,10 @@ extension UIViewController {
     @objc func goTofoodtracker() {
         let viewWorkoutVC = WorkoutfoodTrackerViewController(i_date: Date());
         navigationController?.pushViewController(viewWorkoutVC, animated: true)
+    }
+    @objc func goToSetRep(s:Setrep){
+        let detailViewController = RepViewController(rep: s)
+        navigationController?.pushViewController(detailViewController, animated: true)
     }
     
     @objc func goToAddSetVC() {

@@ -16,4 +16,5 @@ struct Constants {
    static let num_default:Int           = 0
    static let num_defaultDouble:Double  = 0.0
    static let string_numDefault:String  = "0"
+    static let setRepNotification:String = "SetRep"
 }

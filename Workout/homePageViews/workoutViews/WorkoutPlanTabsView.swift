@@ -14,6 +14,12 @@ final class WorkoutPlanTabsView: UIView {
     private var workoutSessions: [WorkoutSession] = []
     private var selectedIndex = 0
     private var headerCreated = false
+    var onSetRepSelectedFunc: ((Setrep) -> Void)?
+    var selectedWorkoutSession:WorkoutSession?{
+        guard workoutSessions.indices.contains(selectedIndex) else {return nil}
+        return workoutSessions[selectedIndex]
+    }
+    
     
 
    
@@ -30,9 +36,10 @@ final class WorkoutPlanTabsView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func configure(i_workoutSessions: [WorkoutSession]) {
+    func configure(i_workoutSessions: [WorkoutSession],onSetRepSelected: @escaping (Setrep) -> Void) {
+        onSetRepSelectedFunc = onSetRepSelected
         workoutSessions = i_workoutSessions
-        selectedIndex = 0
+
         reloadTabs()
         tableView.reloadData()
     }
@@ -130,7 +137,7 @@ final class WorkoutPlanTabsView: UIView {
 
         for (index, session) in workoutSessions.enumerated() {
             let button = UIButton(type: .system)
-            button.setTitle(session.workout_genre ?? " ", for: .normal)
+            button.setTitle(session.workouttab ?? " ", for: .normal)
             button.tag = index
             button.layer.cornerRadius = 12
             button.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
@@ -155,7 +162,8 @@ final class WorkoutPlanTabsView: UIView {
     }
 }
 
-extension WorkoutPlanTabsView: UITableViewDataSource, UITableViewDelegate {
+extension WorkoutPlanTabsView: UITableViewDataSource, UITableViewDelegate
+{
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         guard workoutSessions.indices.contains(selectedIndex) else {
@@ -176,6 +184,13 @@ extension WorkoutPlanTabsView: UITableViewDataSource, UITableViewDelegate {
         cell.configure(with:array[indexPath.row])
         return cell
     }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+          tableView.deselectRow(at: indexPath, animated: true)
+          let array = Array(workoutSessions[selectedIndex].setrep as? Set<Setrep> ?? [])
+          let selectedItem = array[indexPath.row]
+          onSetRepSelectedFunc?(selectedItem)
+      }
 }
 
 
@@ -212,7 +227,7 @@ class WorkoutListCell: UITableViewCell {
         [workoutLabel, qtyLabel, kgsLabel].forEach {
             $0.textAlignment = .center
             $0.font = UIFont.systemFont(ofSize: 16)
-            $0.textColor = .white
+            $0.textColor = .label
         }
         
         status.contentMode = .scaleAspectFit
