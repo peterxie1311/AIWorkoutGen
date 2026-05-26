@@ -16,7 +16,7 @@ class HelperFunctions {
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         return formatter.string(from: date)
     }
-    static func parseDateToString(_ date: Date) -> String {
+    static func parseDateToString(_ date: Date = Date()) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         return formatter.string(from: date)

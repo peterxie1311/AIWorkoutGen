@@ -15,6 +15,8 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
 
 
     private let ingredientsLabel        = UILabel()
+    private let assumptionsLabel        = UILabel()
+    private let confidenceLabel         = UILabel()
     private var addFoodLineButton       = workoutDesigns.createStyledButton(title: "Add FoodLog",
                                                                             width: 100,
                                                                            height: 50)
@@ -22,6 +24,9 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
     private var AddFoodIngredientButton = workoutDesigns.createStyledButton(title: "Add Ingredient",
                                                                             width: 100,
                                                                            height: 50)
+    private var addSavedFoodButton = workoutDesigns.createStyledButton(title: "Add Saved Food",
+                                                                       width: 100,
+                                                                       height: 50)
     
     private var queryChatGptButton      = workoutDesigns.createStyledButton(title: "Estimate Macros",
                                                                             width: 100,
@@ -32,7 +37,12 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
     private let foodNameField    = UITextField()
     private let foodGramsField   = UITextField()
     private let fatGramsLabel    = UITextField()
+    private let pictureName      = UITextField()
     private var foodIngredientsArray = [] as [MacroEstimate]
+    
+    private var savedFoods        = SavedFoodsView()
+     var ImageName         = ""
+
     
     
     let date:Date
@@ -50,7 +60,8 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
         super.viewDidLoad()
         view.backgroundColor = UIColor.systemBackground
         setupUI()
-        updateIngredientsLabel()
+        configureSavedFoods()
+        updateIngredientsLabel(assumptions: [], confidenceLevel: "")
     }
     
     @objc private func addIngredient() {
@@ -88,6 +99,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
          tmpProtein  = Double(proteinGramField.text ?? "") ?? Constants.num_defaultDouble
          tmpCarbs    = Double(carbGramField.text ?? "") ?? Constants.num_defaultDouble
          tmpCalories = Double(calorieGramField.text ?? "") ?? Constants.num_defaultDouble
+
         
          if retCode == true {
             let macro = MacroEstimate(
@@ -96,13 +108,55 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
                 protein: tmpProtein,
                 carbs: tmpCarbs,
                 fats: Constants.num_defaultDouble,
-                calories: tmpCalories,
-                fiber: Constants.num_defaultDouble
+                //calories: tmpCalories,
+                fiber: Constants.num_defaultDouble,
+                assumptions: [],
+                confidence: "",
+                imageName: ""
             )
             foodIngredientsArray.append(macro)
-            updateIngredientsLabel()
+             updateIngredientsLabel(assumptions: [], confidenceLevel: "")
         }
         
+    }
+    private func fillFieldsFromSavedFood(_ food: SavedFoodModel) {
+        foodNameField.text = food.name
+        foodGramsField.text = String(format: "%.1f", food.grams)
+        proteinGramField.text = String(format: "%.1f", food.protein)
+        carbGramField.text = String(format: "%.1f", food.carbs)
+        calorieGramField.text = String(format: "%.0f", food.calories)
+        fatGramsLabel.text = String(format: "%.1f", food.fat)
+        pictureName.text = food.image
+        ImageName = food.image
+    }
+    
+    private func configureSavedFoods() {
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
+
+        let context = appDelegate.persistentContainer.viewContext
+
+        SavedFoodsManager.shared.loadSavedFoods(context: context)
+
+        let viewData = SavedFoodsManager.shared.savedFoods.map { food in
+            SavedFoodViewData(
+                savedFoodRef: food.savedFoodRef,
+                image: food.uiImage,
+                name: food.name,
+                amountText: food.amountText
+            )
+        }
+
+        savedFoods.configure(savedFoods: viewData)
+
+        savedFoods.onFoodTapped = { [weak self] tappedFood in
+            guard let self else { return }
+
+            guard let food = SavedFoodsManager.shared.getSavedFood(
+                savedFoodRef: tappedFood.savedFoodRef
+            ) else { return }
+
+            self.fillFieldsFromSavedFood(food)
+        }
     }
     
     @objc private func queryChat() {
@@ -120,11 +174,17 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
                             var calories = Constants.num_defaultDouble
                             var grams    = Constants.num_defaultDouble
                             var fat      = Constants.num_defaultDouble
+                            var a:[String] = []
+                            var c:String = ""
                             for macro in macrosReturned {
                                 protein  += macro.protein
                                 carbs    += macro.carbs
                                 calories += macro.calories
                                 fat      += macro.fats
+                                a += macro.assumptions
+                                c += macro.confidence
+                                self.ImageName = macro.imageName
+                                
                             }
                             for ingredient in foodIngredientsArray {
                                 grams += ingredient.foodgrams
@@ -136,6 +196,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
                             self.carbGramField.text    = String(format: "%.2f", carbs)
                             self.calorieGramField.text = String(format: "%.2f", calories)
                             self.fatGramsLabel.text    = String(format: "%.2f", fat)
+                            updateIngredientsLabel(assumptions: a, confidenceLevel: c)
                         }
                     } catch {
                         await MainActor.run {
@@ -191,15 +252,71 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
             )
             return
         }
-        
-        Task{
-            do{
-              await FoodLogManager.shared.addFoodLogEntry(i_date: date, i_calories: tmpCalories, i_carbs: tmpCarbs, i_fat: tmpfatGrams, i_food: tmpFoodName, i_grams: tmpFoodGrams, i_protein: tmpProtein)
-            } catch{
-                print("ERROR!")
-            }
+        if SavedFoodsManager.shared.addSavedFood(
+            name: tmpFoodName,
+            image: pictureName.text ?? "",
+            grams: tmpFoodGrams,
+            protein: tmpProtein,
+            carbs: tmpCarbs,
+            fat: tmpfatGrams
+        ) != nil {
+            configureSavedFoods()
         }
+//        Task{
+//            do{
+//              await FoodLogManager.shared.addFoodLogEntry(i_date: date, i_calories: tmpCalories, i_carbs: tmpCarbs, i_fat: tmpfatGrams, i_food: tmpFoodName, i_grams: tmpFoodGrams, i_protein: tmpProtein)
+//            } catch{
+//                print("ERROR!")
+//            }
+//        }
+    }
+    
+    @objc private func addSavedFoods (){
         
+        guard
+            let tmpFoodName = foodNameField.text?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+            !tmpFoodName.isEmpty,
+            let tmpPictureName = pictureName.text?
+                .trimmingCharacters(in: .whitespacesAndNewlines),
+            !tmpFoodName.isEmpty,
+
+            let gramsText = foodGramsField.text,
+            let tmpFoodGrams = Double(gramsText),
+            tmpFoodGrams > 0,
+
+            let proteinText = proteinGramField.text,
+            let tmpProtein = Double(proteinText),
+            tmpProtein >= 0,
+
+            let carbsText = carbGramField.text,
+            let tmpCarbs = Double(carbsText),
+            tmpCarbs >= 0,
+
+            let caloriesText = calorieGramField.text,
+            let tmpCalories = Double(caloriesText),
+            tmpCalories >= 0,
+                
+            let fatGramsText = fatGramsLabel.text,
+            let tmpfatGrams = Double(fatGramsText),
+            tmpfatGrams >= 0
+                
+            
+
+        else {
+            HelperFunctions.showAlert(
+                on: self,
+                title: "Invalid Input",
+                message: """
+                Please ensure:
+                • Food name is not empty
+                • Food grams > 0
+                • Protein, Carbs, Calories are valid numbers
+                """
+            )
+            return
+        }
+        SavedFoodsManager.shared.addSavedFood( name: tmpFoodName, image: pictureName.text ?? "", grams: tmpFoodGrams, protein: tmpProtein, carbs: tmpCarbs, fat: tmpfatGrams)
         
     }
     
@@ -208,6 +325,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
                self.view.endEditing(true)
            }
     }
+    
     
     private func setupUI() {
         
@@ -259,6 +377,13 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
                 uiTextfield: fatGramsLabel,
                 useLabelNameAsPlaceHolder: false,
                 delegate: self
+            ),
+            TextField(
+                labelName: "Picture Name:",
+                keyboardType: .alphabet,
+                uiTextfield: pictureName,
+                useLabelNameAsPlaceHolder: false,
+                delegate: self
             )
         ]
         
@@ -287,6 +412,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
         addFoodLineButton .addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
         AddFoodIngredientButton . addTarget(self, action: #selector(addIngredient), for: .touchUpInside)
         queryChatGptButton.addTarget(self, action: #selector(queryChat), for: .touchUpInside)
+        addSavedFoodButton.addTarget(self, action: #selector(addSavedFoods), for: .touchUpInside)
         addFoodLineButton .isUserInteractionEnabled = true
         addFoodLineButton .isEnabled = true
         addFoodLineButton .translatesAutoresizingMaskIntoConstraints = false
@@ -296,11 +422,15 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
         
         
         let stackView = UIStackView(arrangedSubviews: [
+            savedFoods,
             ingredientsLabel  ,
+            assumptionsLabel,
+            confidenceLabel,
             textfields,
             AddFoodIngredientButton,
             addFoodLineButton ,
             queryChatGptButton,
+            addSavedFoodButton
             
         ])
         stackView.axis    = .vertical
@@ -343,13 +473,24 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
                stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
                stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
            ])
+        
+        let dummyFood = SavedFoodViewData(
+            savedFoodRef: UUID(),
+            image: UIImage(named: "chicken") ?? UIImage(),
+            name: "Chicken",
+            amountText: "50 grams"
+        )
+
+        savedFoods.configure(savedFoods: [dummyFood])
     }
     
-    private func updateIngredientsLabel() {
+    private func updateIngredientsLabel(assumptions:[String], confidenceLevel:String) {
         guard !foodIngredientsArray.isEmpty else {
             ingredientsLabel.text = "No ingredients added"
             return
         }
+        
+        
 
         var text = "Ingredients Added:\n"
 
@@ -358,6 +499,15 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate  {
         }
 
         ingredientsLabel.text = text
+        
+        var assumptionsText:String=""
+        
+        assumptions.forEach{
+            assumptionsText += "\($0),"
+        }
+        
+        assumptionsLabel.text = "Assumptions:\(assumptionsText)"
+        confidenceLabel.text  = "Confidence:\(confidenceLevel)"
     }
     
 }

@@ -38,10 +38,12 @@ final class WorkoutSummaryCardView: UIView {
     
     
     func updateTimers(i_startDate:Date,
-                      i_duration:Int,
+                      i_restTime:Int,
                       i_totalRestTimeSec:Int){
+        let duration = Int(Date().timeIntervalSince(i_startDate))
         startTimeValueLabel.text     = HelperFunctions.parseDateToStringTime(i_startDate)
-        durationValueLabel.text      = HelperFunctions.parseIntSecToString  (seconds: i_duration)
+        durationValueLabel.text      = HelperFunctions.parseIntSecToString  (seconds: duration)
+        restTimeValueLabel.text      = HelperFunctions.parseIntSecToString(seconds: i_restTime)
         totalRestTimeValueLabel.text = HelperFunctions.parseIntSecToString  (seconds: i_totalRestTimeSec)
     }
     

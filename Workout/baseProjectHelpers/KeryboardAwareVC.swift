@@ -1,9 +1,3 @@
-//
-//  KeryboardAwareVC.swift
-//  Workout
-//
-//  Created by Peter Xie on 23/1/2026.
-//
 import UIKit
 
 class KeyboardAwareViewController: UIViewController {
@@ -14,6 +8,7 @@ class KeyboardAwareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupKeyboardObservers()
+        enableSwipeDownToDismissKeyboard()
     }
 
     deinit {
@@ -38,6 +33,20 @@ class KeyboardAwareViewController: UIViewController {
             name: UIResponder.keyboardWillHideNotification,
             object: nil
         )
+    }
+
+    private func enableSwipeDownToDismissKeyboard() {
+        let swipeDown = UISwipeGestureRecognizer(
+            target: self,
+            action: #selector(dismissKeyboard)
+        )
+
+        swipeDown.direction = .down
+        view.addGestureRecognizer(swipeDown)
+    }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
 
     @objc private func keyboardWillShow(_ notification: Notification) {

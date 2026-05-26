@@ -58,7 +58,9 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     
     func updateTimer(i_currWorkout:WorkoutSession){
         let latestDate = WorkoutSessionManager.shared.getLastSetRep(i_workout: i_currWorkout)?.finishTime ?? Date()
+        let totalRestTime = WorkoutSessionManager.shared.getTotalRestTime(i_workout: i_currWorkout)
         timerView.configureTime(i_date: latestDate)
+        self.summaryCard.updateTimers(i_startDate: i_currWorkout.startTime ?? Date(), i_restTime: Int(i_currWorkout.rest_duration),i_totalRestTimeSec: totalRestTime)
         
     }
     
@@ -84,8 +86,11 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
             newWorkout.startTime = Date()
             newWorkout.endTime   = Date()
             WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currworkout,updatedSession:newWorkout)
+            timerView.configureRestTimeDur(i_timeinterval: TimeInterval(newWorkout.rest_duration))
+//            summaryCard.updateTimers(i_startDate: Date(), i_totalRestTimeSec: newWorkout.rest_duration)
             timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                self.updateTimer(i_currWorkout: currworkout)
+                self.updateTimer(i_currWorkout: newWorkout)
+          
             }
 
         }else {
@@ -98,23 +103,34 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     }
     
     
-    @objc func syncWorkout() {
-        print("BUTTON TAPPED ✅")
-        WorkoutSessionManager.shared.loadWorkoutSessions()
-        Task {
-            await WorkoutSessionManager.shared.syncworkoutsessionentries()
-        }
-        
-    }
+//    @objc func syncWorkout() {
+//        print("BUTTON TAPPED ✅")
+//        WorkoutSessionManager.shared.loadWorkoutSessions()
+//        Task {
+//            await WorkoutSessionManager.shared.syncworkoutsessionentries()
+//        }
+//    }
     
     func initObserver(){
-        NotificationCenter.default.addObserver(self, selector: #selector(loadViewDatas), name: NSNotification.Name("SetRep"), object: nil)
-    }
-    @objc func loadViewDatas(){
-        planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),onSetRepSelected: handler)
-        
+        NotificationCenter.default.addObserver(self, selector: #selector(loadViewDatas), name: NSNotification.Name(Constants.setRepNotification), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(loadViewDatas), name: NSNotification.Name(Constants.workoutSessionNotif), object: nil)
     }
     
+ 
+    
+    @objc func loadViewDatas(){
+        DispatchQueue.main.async {
+            self.planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),i_onSetRepSelected: self.handler)
+        }
+    }
+//    override func viewWillAppear(_ animated: Bool) {
+//        super.viewWillAppear(animated)
+//
+//
+//            self.loadViewDatas()
+//        }
+//    }
+//    
 
     override func viewDidLoad() {
         super.viewDidLoad()

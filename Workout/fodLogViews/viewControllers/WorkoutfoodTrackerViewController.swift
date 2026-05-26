@@ -131,7 +131,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
         addFoodLogButton.addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
         refresh.addTarget(self, action: #selector(sync), for: .touchUpInside)
     
-        let views: [UIView] = [titleLabel,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton,refresh]
+        var views: [UIView] = [titleLabel,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton]
         
         for view in views {
             stackView.addArrangedSubview(view)

@@ -13,6 +13,7 @@ class SettingsManager {
     static let calorieGoal:String = "Calorie Goal"
     static let proteinGoal:String = "Protein Goal"
     static let carbGoal:String = "Carb Goal"
+    static let sessionKey:String = "Session Key"
     
     
     // Stored settings as an array of Setting objects
@@ -26,6 +27,7 @@ class SettingsManager {
         [calorieGoal,Constants.string_numDefault],
         [proteinGoal,Constants.string_numDefault],
         [carbGoal,Constants.string_numDefault],
+        [sessionKey,Constants.string_default]
     ]
 
     private init() {

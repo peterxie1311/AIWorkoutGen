@@ -7,6 +7,36 @@
 
 import Foundation
 
+struct AddWorkoutSessionPayload: Encodable {
+    let i_sessionid: String
+    let i_payload: [WorkoutSessionUploadDTO]
+}
+
+struct WorkoutSessionUploadDTO: Encodable,Decodable {
+    let id: UUID
+    let endTime: Date?
+    let startTime: Date?
+    let location: String?
+    let workout_genre: String?
+    let duration_hrs: Double
+    let workouttab: String?
+    let rest_duration:Float?
+    let moddate:Date?
+    let setreps: [SetrepUploadDTO]
+}
+
+struct SetrepUploadDTO: Encodable,Decodable {
+    let repid: UUID
+    let duration_sec: Double
+    let finishTime: Date?
+    let rep_qty: Int
+    let startTime: Date?
+    let weight: Double
+    let workoutName: String?
+    let completed: Bool
+    let moddate:Date?
+}
+
 class DBConnector {
     static let shared = DBConnector()
     
@@ -17,8 +47,8 @@ class DBConnector {
     private let method_POST = "POST"
     private let method_DELETE = "DELETE"
     private let method_GET = "GET"
-    private let session_token = "ae13ea87-5f4e-4a36-a71a-693b6a3f2539" // THIS IS JUST FOR TEMP SYNC
-    
+    //private let session_token = "ae13ea87-5f4e-4a36-a71a-693b6a3f2539" // THIS IS JUST FOR TEMP SYNC
+    private let session_token = SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value ?? ""
     
     
     
@@ -51,52 +81,64 @@ class DBConnector {
         let i_wsgenre: String?
     }
     
-   
-  
+
     
-    
-    func insupdworkout(i_sr:Setrep) async {
-        let postgresqlFuncName = "insupdworkout"
-        print("WORKING!")
+    func insertWorkouts(i_ws: [WorkoutSessionUploadDTO]) async {
         
-        let payload = InsUpdWorkoutRequest(
-            i_completed: i_sr.completed ?? false,
-            i_duration_sec: i_sr.duration_sec ?? 0,
-            i_finishtime: i_sr.finishTime ?? Date(),
-            i_repqty: i_sr.rep_qty ?? 0,
-            i_repid: i_sr.repid ?? UUID(),
-            i_starttime: i_sr.startTime ?? Date(),
-            i_weight: i_sr.weight ?? 0,
-            i_workoutname: i_sr.workoutName ?? "",
-            i_wsid: i_sr.workoutSession?.id ?? UUID(),
-            i_wsdur: i_sr.workoutSession?.duration_hrs ?? 0,
-            i_wsendtime: i_sr.workoutSession?.endTime ?? Date(),
-            i_wslocation: i_sr.workoutSession?.location ?? "",
-            i_wsstarttime: i_sr.workoutSession?.startTime ?? Date(),
-            i_wsgenre: i_sr.workoutSession?.workout_genre ?? ""
-        )
-        
+        let postgresqlFuncName = "insupdateworkoutsession"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
-        
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
-
+        print("trying to insert workouts")
+        
+        let payload = AddWorkoutSessionPayload(i_sessionid: session_token,
+                                               i_payload: i_ws)
+        print("PAYLOAD")
+        print(payload)
         do {
             request.httpBody = try encoder.encode(payload)
-            
             let (data, response) = try await URLSession.shared.data(for: request)
-            
             if let http = response as? HTTPURLResponse {
                 print("Status:", http.statusCode)
+                print(response)
             }
-            
-            print(String(data: data, encoding: .utf8) ?? "")
-            
         } catch {
             print("Error:", error)
         }
     }
+    
+    func fetchWorkoutSessions() async -> [WorkoutSessionUploadDTO] {
+        
+        let functionName = "get_workout_sessions"
+        let url = URL(string: "\(projectString)\(functionName)")!
+        var request = initRequest(i_url: url, i_method: method_POST)
+        let body = [
+            "i_sessionid": session_token
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            if let http = response as? HTTPURLResponse {
+                print("Status:", http.statusCode)
+                
+            }
+           
+//            print(String(data: data, encoding: .utf8) ?? "")
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let result = try decoder.decode([WorkoutSessionUploadDTO].self, from: data)
+            return result
+            
+        } catch {
+            print("❌ Fetch error:", error)
+            return []
+        }
+    }
+    
     
     func fetchFoodLogs() async -> [FoodLogLinePayload] {
         
@@ -116,7 +158,6 @@ class DBConnector {
                 print("Status:", http.statusCode)
             }
             
-            print(String(data: data, encoding: .utf8) ?? "")
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let result = try decoder.decode([FoodLogLinePayload].self, from: data)
@@ -146,8 +187,6 @@ class DBConnector {
             if let http = response as? HTTPURLResponse {
                 print("Status:", http.statusCode)
             }
-
-            print(String(data: data, encoding: .utf8) ?? "")
 
         } catch {
             print("Error:", error)

@@ -2,59 +2,225 @@ import CoreData
 import UIKit
 
 class WorkoutSessionManager {
-    // Singleton instance
     static let shared = WorkoutSessionManager()
-    
-    // Stored workout sessions as an array of WorkoutSession objects
     var workoutSessions: [WorkoutSession] = []
 
     private init() {
-        // Load workout sessions from Core Data
         loadWorkoutSessions()
     }
     
-//(workout.setrep?.allObjects as? [Setrep]) ?? []
+
+    @MainActor
+    func syncworkoutsessionentries() async {
+//        await MainActor.run {
+//            loadWorkoutSessions()
+//        }
+//
+//        let dbWorkouts = await DBConnector.shared.fetchWorkoutSessions()
+//        var uploadArr:[WorkoutSessionUploadDTO] = []
+//
+//    
+//            var didChange = false
+//            for dbWorkout in dbWorkouts {
+//                var shouldUpdate = false
+//
+//                if let localWorkout = workoutSessions.first(where: {
+//                    $0.id == dbWorkout.id
+//                }) {
+//
+//                    if localWorkout.moddate != dbWorkout.moddate {
+//
+//                        if localWorkout.moddate ?? .distantPast > dbWorkout.moddate ?? .distantPast {
+//                            print("should update database with local workout session")
+//                            shouldUpdate = true
+//
+//                        } else {
+//                            localWorkout.duration_hrs = Float(dbWorkout.duration_hrs)
+//                            localWorkout.endTime = dbWorkout.endTime
+//                            localWorkout.location = dbWorkout.location
+//                            localWorkout.moddate = dbWorkout.moddate
+//                            localWorkout.rest_duration = dbWorkout.rest_duration ?? localWorkout.rest_duration
+//                            localWorkout.startTime = dbWorkout.startTime
+//                            localWorkout.workout_genre = dbWorkout.workout_genre
+//                            localWorkout.workouttab = dbWorkout.workouttab
+//
+//                            didChange = true
+//                            print("updated local workout session")
+//                        }
+//                    }
+//
+//                    dbWorkout.setreps.forEach { dto in
+//
+//                        if let localSetrep = localWorkout.setrepArray.first(where: {
+//                            $0.repid == dto.repid
+//                        }) {
+//
+//                            if localSetrep.moddate ?? .distantPast > dto.moddate ?? .distantPast {
+//                                print("should update database with local setrep")
+//                                shouldUpdate = true
+//
+//                            } else if localSetrep.moddate != dto.moddate {
+//                                localSetrep.duration_sec = Float(dto.duration_sec)
+//                                localSetrep.finishTime = dto.finishTime
+//                                localSetrep.rep_qty = Int64(dto.rep_qty)
+//                                localSetrep.startTime = dto.startTime
+//                                localSetrep.weight = Int64(dto.weight)
+//                                localSetrep.workoutName = dto.workoutName
+//                                localSetrep.completed = dto.completed
+//                                localSetrep.moddate = dto.moddate
+//
+//                                didChange = true
+//                                print("updated local setrep")
+//                            }
+//
+//                        } else {
+//                            let newSetrep = SetrepManager.shared.initSetRep(
+//                                qty: dto.rep_qty,
+//                                startTime: dto.startTime ?? Date(),
+//                                finishTime: dto.finishTime ?? Date(),
+//                                workoutName: dto.workoutName ?? "",
+//                                weight: Int64(dto.weight),
+//                                uuid: dto.repid
+//                            )
+//
+//                            newSetrep.duration_sec = Float(dto.duration_sec)
+//                            newSetrep.completed = dto.completed
+//                            newSetrep.moddate = dto.moddate
+//
+//                            localWorkout.addToSetrep(newSetrep)
+//
+//                            didChange = true
+//                            print("inserted missing setrep into local workout")
+//                        }
+//                    }
+//                    if shouldUpdate {
+//                        uploadArr.append(localWorkout.toDTO())
+//                    }
+//                } else {
+//                    let sets = dbWorkout.setreps.map { dto in
+//                        let setrep = SetrepManager.shared.initSetRep(
+//                            qty: dto.rep_qty,
+//                            startTime: dto.startTime ?? Date(),
+//                            finishTime: dto.finishTime ?? Date(),
+//                            workoutName: dto.workoutName ?? "",
+//                            weight: Int64(dto.weight),
+//                            uuid: dto.repid
+//                        )
+//
+//                        setrep.duration_sec = Float(dto.duration_sec)
+//                        setrep.completed = dto.completed
+//                        setrep.moddate = dto.moddate
+//
+//                        return setrep
+//                    }
+//
+//                    addWorkoutSession(
+//                        durationHrs: Float(dbWorkout.duration_hrs),
+//                        endTime: dbWorkout.endTime ?? Date(),
+//                        location: dbWorkout.location ?? "",
+//                        startTime: dbWorkout.startTime ?? Date(),
+//                        sets: sets,
+//                        workoutTab: dbWorkout.workouttab ?? dbWorkout.workout_genre ?? "",
+//                        uuid: dbWorkout.id
+//                    )
+//
+//                    didChange = true
+//                    print("inserted missing workout session")
+//                }
+//                
+//               
+//            }
+//
+//            if didChange {
+//                saveWorkoutSessions()
+//            }
+//            
+//            // now check if theres anyws.id in our local db not existing in our online db
+//            for localWorkout in workoutSessions {
+//                        if !dbWorkouts.contains(where: { $0.id == localWorkout.id }) {
+//                            uploadArr.append(localWorkout.toDTO())
+//                        }
+//                    }
+//        
+//      
+//        if uploadArr.count > 0{
+//            await DBConnector.shared.insertWorkouts(i_ws: uploadArr)
+//        }
+    }
     
-    func syncworkoutsessionentries () async {
-        loadWorkoutSessions()
-        print("INSIDE ASYNC")
-        print(workoutSessions.count)
-        for ws in workoutSessions {
-            let setrepArray = (ws.setrep?.allObjects as? [Setrep]) ?? []
-            for setrep in setrepArray {
-                await DBConnector.shared.insupdworkout(i_sr: setrep)
+    func createWorkoutPlan(
+        i_workouts: Int,
+        i_sessions: Int,
+        i_vc: UIViewController,
+        i_customisations: String
+    )  {
+        Task {
+            do {
+
+                let sortedWorkouts = workoutSessions.sorted {
+                    ($0.endTime ?? .distantPast) > ($1.endTime ?? .distantPast)
+                }
+
+                let recentWorkouts = Array(sortedWorkouts.prefix(i_workouts))
+
+                let workoutArray: [WorkoutSessionDTO] = recentWorkouts.map { workout in
+
+                    let setreps: [SetrepDTO] = workout.setrepArray.compactMap { setrep in
+                        guard setrep.completed == true else {
+                            return nil
+                        }
+
+                        return SetrepDTO(
+                            workoutName: setrep.workoutName ?? "",
+                            rep_qty: Int(setrep.rep_qty),
+                            weight: Int(setrep.weight),
+                            set_qty: 1
+                        )
+                    }
+
+                    return WorkoutSessionDTO(
+                        workouttab: workout.workouttab ?? "",
+                        location: workout.location,
+                        workout_genre: workout.workout_genre,
+                        rest_time:workout.rest_duration,
+                        setreps: setreps
+                    )
+                }
+                
+       
+               let arr = try await workoutAIservice.shared.createWorkoutPlan(
+                    i_cntInputData: workoutArray,
+                    i_sessions: i_sessions,
+                    i_vc: i_vc,
+                    i_customisations: i_customisations
+                )
+                
+                // wheen we call init on the DTO object it needs to run on the main thread
+                
+                await MainActor.run {
+                    arr.forEach { w in
+                        self.addWorkoutSession(
+                            sets: w.setreps.flatMap(\.asSetreps),
+                            workoutTab: w.workouttab,
+                            rest_duration:w.rest_time
+                        )
+                    }
+                }
+                
+                
+
+            } catch {
+                await MainActor.run {
+                    HelperFunctions.showAlert(
+                        on: i_vc,
+                        title: "Workout Plan Failed",
+                        message: error.localizedDescription
+                    )
+                }
             }
         }
     }
-    
-    func fetchSetreps(for workoutSession: WorkoutSession) {
-        // Get the managedObjectContext from the AppDelegate
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
-            return
-        }
-        let context = appDelegate.persistentContainer.viewContext
-        
-        // Assuming `setrep` is an NSSet containing related Setrep objects
-        let _ = workoutSession.setrep
-        
-        // Create a fetch request for the related Setrep entity
-        let fetchRequest: NSFetchRequest<Setrep> = Setrep.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "workoutSession == %@", workoutSession)
 
-        // Perform the fetch
-        do {
-            let setrepObjects = try context.fetch(fetchRequest)
-            for setrep in setrepObjects {
-                print("Setrep: \(setrep)")
-            }
-        } catch {
-            print("Failed to fetch setreps: \(error)")
-        }
-    }
-
-
-
-    
     func removeWorkoutSession(workoutid:UUID){
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
@@ -75,73 +241,7 @@ class WorkoutSessionManager {
             print("Failed to remove workout!: \(error)")
         }
     }
-    
-    // Get a workout session by location
-    func getWorkoutSession() -> WorkoutSession? {
-        for session in workoutSessions {
-            
-            let startTimeString = session.startTime != nil ? HelperFunctions.parseDateToStringFull(session.startTime!) : "1"
-            let endTimeString = session.endTime != nil ? HelperFunctions.parseDateToStringFull(session.endTime!) : "2"
-            if startTimeString == endTimeString{
-                return session
-            }
-        }
-        
-        print("No open workout sessions!")
-        return nil
-    }
 
-    
-    func checkOpenWorkouts() -> String {
-        var openWorkouts:String = "#Open Sesh:"
-        openWorkouts += "\(checkOpenWorkoutsNum())"
-        return openWorkouts
-    }
-    
-    func checkOpenWorkoutsThisWeek()->String{
-        var openWorkouts:String = "#Week Sesh:"
-        openWorkouts += "\(checkWorkoutsThisWeekNum())"
-        return openWorkouts
-    }
-    
-    func checkOpenWorkoutsNum() -> Int64 {
-       // var openWorkouts:String = "Number of Open Workouts "
-        var counter:Int64 = 0
-        
-     
-        for session in workoutSessions {
-            let startTimeString = session.startTime != nil ? HelperFunctions.parseDateToStringFull(session.startTime!) : "1"
-            let endTimeString = session.endTime != nil ? HelperFunctions.parseDateToStringFull(session.endTime!) : "2"
-            if startTimeString == endTimeString{
-                counter += 1
-            }
-        }
-        //openWorkouts += "\(counter)"
-        return counter
-    }
-    func checkWorkoutsThisWeekNum()-> Int64 {
-        var counter:Int64 = 0
-        for session in workoutSessions{
-            if HelperFunctions.isLargerThanSunday(date: session.startTime!){
-                counter += 1
-            }
-        }
-        return counter
-    }
-    
-    // get first open gym session
-    func getFirstOpenGymSesh()-> WorkoutSession? {
-      //  var tmpSession = WorkoutSession()
-        for session in workoutSessions {
-            let startTimeString = session.startTime != nil ? HelperFunctions.parseDateToStringFull(session.startTime!) : "1"
-            let endTimeString = session.endTime != nil ? HelperFunctions.parseDateToStringFull(session.endTime!) : "2"
-            if startTimeString == endTimeString{
-                return session
-            }
-        }
-        
-        return nil
-    }
     func getOpenWorkouts() -> [WorkoutSession]{
         var arr:[WorkoutSession]=[]
         for session in workoutSessions {
@@ -154,18 +254,10 @@ class WorkoutSessionManager {
         return arr;
     }
     
-    
-    func checkIsOpenWorkout(workout: WorkoutSession) -> Bool {
-        guard let startTime = workout.startTime, let endTime = workout.endTime else {
-               return false
-           }
-        return HelperFunctions.parseDateToStringFull(startTime) == HelperFunctions.parseDateToStringFull(endTime)
-    }
-    
-    
     // Update an existing workout session
     func updateWorkoutSession(prevWorkout: WorkoutSession, updatedSession: WorkoutSession) {
         if let index = workoutSessions.firstIndex(where: { $0.id == prevWorkout.id }) {
+            updatedSession.moddate = Date()
             workoutSessions[index] = updatedSession // Update the workout session object
             saveWorkoutSessions() // Save after updating
             NotificationCenter.default.post(name: NSNotification.Name("workout"), object: nil)
@@ -178,6 +270,38 @@ class WorkoutSessionManager {
         return i_workout.setrepArray.max {
             ($0.finishTime ?? Date()) < ($1.finishTime ?? Date())
         }
+    }
+    
+    func getTotalRestTime(i_workout: WorkoutSession) -> Int {
+
+        let completedSets = i_workout.setrepArray
+            .filter { $0.completed == true }
+            .sorted {
+                ($0.finishTime ?? .distantPast) <
+                ($1.finishTime ?? .distantPast)
+            }
+
+        var totalRest: TimeInterval = 0
+        
+        if completedSets.count == 0 {
+            return 0
+        }
+        
+        if completedSets.count == 1 {
+            let set = completedSets[0].finishTime ?? Date()
+            return Int(Date().timeIntervalSince(set))
+        }
+        for i in 1..<completedSets.count {
+
+            guard
+                let previous = completedSets[i - 1].finishTime,
+                let current = completedSets[i].startTime
+            else { continue }
+
+            totalRest += current.timeIntervalSince(previous)
+        }
+
+        return Int(totalRest)
     }
     
     func clearWorkoutsessions() {
@@ -241,18 +365,20 @@ class WorkoutSessionManager {
     }
     
     // Add a new workout session
-    func addWorkoutSession(durationHrs: Float, endTime: Date, location: String, startTime: Date,sets:[Setrep],workoutTab:String) {
+    func addWorkoutSession(durationHrs: Float = 0 , endTime: Date = Date(), location: String = "", startTime: Date = Date(),sets:[Setrep],workoutTab:String,uuid:UUID = UUID(),rest_duration:Float = 0) {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
 
         // Create a new instance of WorkoutSession
         let newSession = WorkoutSession(context: context)
-        newSession.id = UUID()
+        newSession.id = uuid
         newSession.duration_hrs = durationHrs
         newSession.endTime = endTime
         newSession.location = location
         newSession.startTime = startTime
         newSession.workouttab = workoutTab
+        newSession.rest_duration = rest_duration
+        newSession.moddate = Date()
         for set in sets {
                 newSession.addToSetrep(set)// Assuming addToSets is generated by Core Data
             }
@@ -260,9 +386,10 @@ class WorkoutSessionManager {
         // Save the context
         do {
             try context.save()
-            print("New Workout Session added: Location: \(location), Duration: \(durationHrs) hrs, startdate: \(startTime) endtime: \(endTime)")
+            print("New Workout Session added: Location: \(location), Duration: \(durationHrs) hrs, startdate: \(startTime) endtime: \(endTime) |workout tab \(workoutTab)")
+            loadWorkoutSessions()
             NotificationCenter.default.post(name: NSNotification.Name("workout"), object: nil)
-            loadWorkoutSessions() // Optionally reload workout sessions after adding
+             // Optionally reload workout sessions after adding
         } catch {
             print("Failed to add new workout session: \(error)")
         }

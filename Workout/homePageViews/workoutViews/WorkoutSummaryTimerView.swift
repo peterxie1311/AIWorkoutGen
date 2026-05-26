@@ -103,6 +103,9 @@ class WorkoutSummaryTimerView: UIView {
     func configureTime(i_date:Date){
         self.timerView.updateTimer(i_finishTime: i_date)
     }
+    func configureRestTimeDur(i_timeinterval:TimeInterval){
+        self.timerView.updateRestTime(i_restTime: i_timeinterval)
+    }
     
     private func style(){
         containerView.backgroundColor = .systemGray6
@@ -179,12 +182,14 @@ private final class TimerView: UIView {
 //            timeLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 8)
         ])
         
-        
     }
     
     override func layoutSubviews() {
         super.layoutSubviews()
         calculatePath()
+    }
+    func updateRestTime (i_restTime:TimeInterval){
+        self.duration = i_restTime;
     }
     
     func updateTimer(i_finishTime:Date){

@@ -17,6 +17,7 @@
 		DC9F16C02CCA6A750091B6C0 /* WorkoutUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F16BF2CCA6A750091B6C0 /* WorkoutUITests.swift */; };
 		DC9F16C22CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC9F16C12CCA6A750091B6C0 /* WorkoutUITestsLaunchTests.swift */; };
 		DCD661822F3738420017A8F6 /* GoToVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCD661812F3738350017A8F6 /* GoToVC.swift */; };
+		DCFA7C242FB01B8E00723E69 /* workouts.json in Resources */ = {isa = PBXBuildFile; fileRef = DCFA7C232FB01B8E00723E69 /* workouts.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,27 +54,12 @@
 		DCADF3E82D9D430B00CC0C27 /* Workout.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Workout.entitlements; sourceTree = "<group>"; };
 		DCD661812F3738350017A8F6 /* GoToVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoToVC.swift; sourceTree = "<group>"; };
 		DCDF35FA2F9908C600E12788 /* WorkoutDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WorkoutDebug.entitlements; sourceTree = "<group>"; };
+		DCFA7C222FAF17A500723E69 /* Workout.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = Workout.xctestplan; sourceTree = SOURCE_ROOT; };
+		DCFA7C232FB01B8E00723E69 /* workouts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = workouts.json; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		DC2207482F7F47BD000D82DD /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				viewControllers/WorkoutfoodTrackerViewController.swift,
-			);
-			target = DC9F16B02CCA6A750091B6C0 /* WorkoutTests */;
-		};
-		DC2207492F7F47BD000D82DD /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				viewControllers/WorkoutfoodTrackerViewController.swift,
-			);
-			target = DC9F16BA2CCA6A750091B6C0 /* WorkoutUITests */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		DC2207412F7F4793000D82DD /* fodLogViews */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (DC2207482F7F47BD000D82DD /* PBXFileSystemSynchronizedBuildFileExceptionSet */, DC2207492F7F47BD000D82DD /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = fodLogViews; sourceTree = "<group>"; };
+		DC2207412F7F4793000D82DD /* fodLogViews */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = fodLogViews; sourceTree = "<group>"; };
 		DC22074B2F7F4838000D82DD /* dataManagers */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = dataManagers; sourceTree = "<group>"; };
 		DC22074C2F7F4852000D82DD /* settingsViews */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = settingsViews; sourceTree = "<group>"; };
 		DC22074D2F7F487E000D82DD /* baseProjectHelpers */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = baseProjectHelpers; sourceTree = "<group>"; };
@@ -152,7 +138,9 @@
 		DC9F16B42CCA6A750091B6C0 /* WorkoutTests */ = {
 			isa = PBXGroup;
 			children = (
+				DCFA7C232FB01B8E00723E69 /* workouts.json */,
 				DC9F16B52CCA6A750091B6C0 /* WorkoutTests.swift */,
+				DCFA7C222FAF17A500723E69 /* Workout.xctestplan */,
 			);
 			path = WorkoutTests;
 			sourceTree = "<group>";
@@ -288,6 +276,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DCFA7C242FB01B8E00723E69 /* workouts.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

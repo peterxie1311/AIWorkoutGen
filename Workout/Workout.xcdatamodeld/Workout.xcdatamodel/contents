@@ -18,13 +18,23 @@
         <attribute name="foodID" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="grams" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="isActive" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
+        <attribute name="moddate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="protein" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+    </entity>
+    <entity name="SavedFoods" representedClassName="SavedFoods" syncable="YES" codeGenerationType="class">
+        <attribute name="carbs" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="fat" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="grams" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="image" optional="YES" attributeType="String"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="protein" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
+        <attribute name="savedFoodref" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
     </entity>
     <entity name="Setrep" representedClassName="Setrep" syncable="YES" codeGenerationType="class">
         <attribute name="completed" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="duration_sec" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="finishTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
-        <attribute name="plannedWeekday" optional="YES" attributeType="Integer 16" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="moddate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="rep_qty" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="repid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -52,6 +62,8 @@
         <attribute name="endTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="location" optional="YES" attributeType="String"/>
+        <attribute name="moddate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="rest_duration" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="workout_genre" optional="YES" attributeType="String"/>
         <attribute name="workouttab" optional="YES" attributeType="String"/>

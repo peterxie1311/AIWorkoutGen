@@ -78,6 +78,7 @@ class SetrepManager {
     // Update an existing Setrep
     func updateSetrep(repid:UUID,updatedSetrep:Setrep) {
         if let index = Setreps.firstIndex(where: { $0.repid == repid}) {
+            updatedSetrep.moddate = Date()
             Setreps[index] = updatedSetrep
             saveSetreps()
             print("Updated rep! \(repid)")
@@ -123,7 +124,7 @@ class SetrepManager {
         return false
     }
     
-    func initSetRep(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64) -> Setrep {
+    func initSetRep(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64,uuid:UUID = UUID()) -> Setrep {
         let context = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer.viewContext ?? NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
 
         let newSetrep = Setrep(context: context)
@@ -134,6 +135,7 @@ class SetrepManager {
         newSetrep.completed = false
         newSetrep.weight = weight
         newSetrep.repid = UUID()
+        newSetrep.moddate = Date()
         
         return newSetrep
     }

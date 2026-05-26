@@ -35,6 +35,10 @@ extension UIViewController {
         let viewWorkoutVC = WorkoutfoodTrackerViewController(i_date: Date());
         navigationController?.pushViewController(viewWorkoutVC, animated: true)
     }
+    func goToofoodtracker(i_date:Date) {
+        let viewWorkoutVC = WorkoutfoodTrackerViewController(i_date: i_date);
+        navigationController?.pushViewController(viewWorkoutVC, animated: true)
+    }
     @objc func goToSetRep(s:Setrep){
         let detailViewController = RepViewController(rep: s)
         navigationController?.pushViewController(detailViewController, animated: true)

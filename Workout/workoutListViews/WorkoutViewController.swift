@@ -212,16 +212,8 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
         
         return cell
     }
-//    
-//    @objc func goToAddSetVC() {
-//       
-//            let AddSetVC = AddSetViewController(workout: WorkoutSession )
-//            navigationController?.pushViewController(AddSetVC, animated: true)
-//       
-//    }
     
     private func setupData() {
-        print(self.setreps.count)
         startimelabel.text = "Start Time: " + HelperFunctions.parseDateToStringFull(startTime!)
         endtimelabel.text  = "Finish Time: " + HelperFunctions.parseDateToStringFull(endTime!)
         locationlabel.text = "Location: " + (self.location ?? "")
@@ -238,15 +230,16 @@ class WorkoutTableViewCell: UITableViewCell {
     let qtyLabel = UILabel()
     let kgsLabel = UILabel()
     let secLabel = UILabel()
+    let status   = UIImageView()
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         
-        let stackView = UIStackView(arrangedSubviews: [workoutLabel, qtyLabel, kgsLabel, secLabel])
+        let stackView = UIStackView(arrangedSubviews: [workoutLabel, qtyLabel, kgsLabel, secLabel,status])
         stackView.axis = .horizontal
         stackView.distribution = .fillEqually
         stackView.alignment = .center
-        stackView.spacing = 10
+        stackView.spacing = 8
         
         contentView.addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -261,10 +254,13 @@ class WorkoutTableViewCell: UITableViewCell {
         [workoutLabel, qtyLabel, kgsLabel, secLabel].forEach {
             $0.textAlignment = .center
             $0.font = UIFont.systemFont(ofSize: 16)
-            $0.textColor = .white
+            $0.textColor = .label
         }
-        contentView.backgroundColor = UIColor(white:0.15 , alpha:1.0)
+        status.contentMode = .scaleAspectFit
+        status.tintColor = .white
+        contentView.backgroundColor = .secondarySystemBackground
         backgroundColor = .clear
+
     }
     
     required init?(coder: NSCoder) {
@@ -276,7 +272,14 @@ class WorkoutTableViewCell: UITableViewCell {
         qtyLabel.text = String(setrep.rep_qty)
         kgsLabel.text = String(setrep.weight)
         secLabel.text = String(format: "%.2f",setrep.duration_sec)
-        
+        let isCompleted = setrep.completed // Assuming `isCompleted` is a property of `Setrep`
+                if isCompleted {
+                    status.image = UIImage(systemName: "checkmark.circle") // Checkmark icon
+                    status.tintColor = .systemGreen
+                } else {
+                    status.image = UIImage(systemName: "x.circle") // "X" icon
+                    status.tintColor = .systemRed
+                }
         
         [workoutLabel, qtyLabel, kgsLabel, secLabel].forEach {
                 $0.numberOfLines = 0

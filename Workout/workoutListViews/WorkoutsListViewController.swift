@@ -7,6 +7,11 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
        }
     // UI Components
     private let tableView = UITableView()
+    var sortedWorkouts: [WorkoutSession] {
+        WorkoutSessionManager.shared.workoutSessions.sorted {
+            ($0.endTime ?? .distantPast) > ($1.endTime ?? .distantPast)
+        }
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -84,7 +89,7 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
     
     // UITableViewDataSource Methods
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return WorkoutSessionManager.shared.workoutSessions.count // Number of workouts
+        return sortedWorkouts.count // Number of workouts
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -93,7 +98,7 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
             return UITableViewCell()
         }
         
-        let workout = WorkoutSessionManager.shared.workoutSessions[indexPath.row]
+        let workout = sortedWorkouts[indexPath.row]
         cell.configure(with: workout)
         
        
@@ -103,7 +108,7 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
 
     // UITableViewDelegate Method
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let workout = WorkoutSessionManager.shared.workoutSessions[indexPath.row]
+        let workout = sortedWorkouts[indexPath.row]
         let workoutViewController = WorkoutViewController(workout: workout)
         navigationController?.pushViewController(workoutViewController, animated: true)
         

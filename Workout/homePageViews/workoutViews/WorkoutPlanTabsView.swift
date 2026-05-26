@@ -7,7 +7,7 @@
 import UIKit
 
 final class WorkoutPlanTabsView: UIView {
-
+    private let tabScrollView = UIScrollView()
     private let tabStack = UIStackView()
     private let tableView = UITableView(frame: .zero, style: .plain)
     
@@ -15,15 +15,11 @@ final class WorkoutPlanTabsView: UIView {
     private var selectedIndex = 0
     private var headerCreated = false
     var onSetRepSelectedFunc: ((Setrep) -> Void)?
+    var onTabSelectedFunc:((WorkoutSession) -> Void)?
     var selectedWorkoutSession:WorkoutSession?{
         guard workoutSessions.indices.contains(selectedIndex) else {return nil}
         return workoutSessions[selectedIndex]
     }
-    
-    
-
-   
-    
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -35,10 +31,18 @@ final class WorkoutPlanTabsView: UIView {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
+    func changeTab(i_selectedIndex:Int){
+        selectedIndex = i_selectedIndex
+    }
     
-    func configure(i_workoutSessions: [WorkoutSession],onSetRepSelected: @escaping (Setrep) -> Void) {
-        onSetRepSelectedFunc = onSetRepSelected
+    func configure(
+        i_workoutSessions: [WorkoutSession],
+        i_onSetRepSelected: ((Setrep) -> Void)? = nil,
+        i_onTabSelectedFunc:((WorkoutSession)->Void)? = nil
+    ) {
+        onSetRepSelectedFunc = i_onSetRepSelected
         workoutSessions = i_workoutSessions
+        onTabSelectedFunc = i_onTabSelectedFunc
 
         reloadTabs()
         tableView.reloadData()
@@ -66,11 +70,15 @@ final class WorkoutPlanTabsView: UIView {
 
 
     private func build() {
-        addSubview(tabStack)
+        addSubview(tabScrollView)
         addSubview(tableView)
+        tabScrollView.addSubview(tabStack)
 
         tabStack.translatesAutoresizingMaskIntoConstraints = false
         tableView.translatesAutoresizingMaskIntoConstraints = false
+        tabScrollView.translatesAutoresizingMaskIntoConstraints = false
+        
+        tabScrollView.showsHorizontalScrollIndicator = false
 
         tabStack.axis = .horizontal
         tabStack.distribution = .fillEqually
@@ -80,18 +88,36 @@ final class WorkoutPlanTabsView: UIView {
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(WorkoutListCell.self, forCellReuseIdentifier: "cell")
-
+        
         NSLayoutConstraint.activate([
-            tabStack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            tabStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            tabStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            tabStack.heightAnchor.constraint(equalToConstant: 36),
+            tabScrollView.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            tabScrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            tabScrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            tabScrollView.heightAnchor.constraint(equalToConstant: 36),
 
-            tableView.topAnchor.constraint(equalTo: tabStack.bottomAnchor, constant: 12),
+            tabStack.topAnchor.constraint(equalTo: tabScrollView.contentLayoutGuide.topAnchor),
+            tabStack.leadingAnchor.constraint(equalTo: tabScrollView.contentLayoutGuide.leadingAnchor),
+            tabStack.trailingAnchor.constraint(equalTo: tabScrollView.contentLayoutGuide.trailingAnchor),
+            tabStack.bottomAnchor.constraint(equalTo: tabScrollView.contentLayoutGuide.bottomAnchor),
+            tabStack.heightAnchor.constraint(equalTo: tabScrollView.frameLayoutGuide.heightAnchor),
+
+            tableView.topAnchor.constraint(equalTo: tabScrollView.bottomAnchor, constant: 12),
             tableView.leadingAnchor.constraint(equalTo: leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: trailingAnchor),
             tableView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+
+//        NSLayoutConstraint.activate([
+//            tabStack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+//            tabStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+//            tabStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+//            tabStack.heightAnchor.constraint(equalToConstant: 36),
+//
+//            tableView.topAnchor.constraint(equalTo: tabStack.bottomAnchor, constant: 12),
+//            tableView.leadingAnchor.constraint(equalTo: leadingAnchor),
+//            tableView.trailingAnchor.constraint(equalTo: trailingAnchor),
+//            tableView.bottomAnchor.constraint(equalTo: bottomAnchor)
+//        ])
     }
 
     private func style() {
@@ -134,9 +160,11 @@ final class WorkoutPlanTabsView: UIView {
 
     private func reloadTabs() {
         tabStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        
 
         for (index, session) in workoutSessions.enumerated() {
             let button = UIButton(type: .system)
+            button.widthAnchor.constraint(greaterThanOrEqualToConstant: 90).isActive = true
             button.setTitle(session.workouttab ?? " ", for: .normal)
             button.tag = index
             button.layer.cornerRadius = 12
@@ -157,6 +185,7 @@ final class WorkoutPlanTabsView: UIView {
 
     @objc private func tabTapped(_ sender: UIButton) {
         selectedIndex = sender.tag
+        onTabSelectedFunc?(workoutSessions[selectedIndex])
         reloadTabs()
         tableView.reloadData()
     }
@@ -170,7 +199,7 @@ extension WorkoutPlanTabsView: UITableViewDataSource, UITableViewDelegate
                return 0
         }
 
-        let array = Array(workoutSessions[selectedIndex].setrep as? Set<Setrep> ?? [])
+        let array = workoutSessions[selectedIndex].setrepArray
         
         return array.count
     }
@@ -179,15 +208,14 @@ extension WorkoutPlanTabsView: UITableViewDataSource, UITableViewDelegate
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
 
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath) as! WorkoutListCell
-        //let setrep = workoutSessions[selectedIndex].setrep[indexPath.row] ??
-        let array = Array(workoutSessions[selectedIndex].setrep as? Set<Setrep> ?? [])
+        let array = workoutSessions[selectedIndex].setrepArray
         cell.configure(with:array[indexPath.row])
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
           tableView.deselectRow(at: indexPath, animated: true)
-          let array = Array(workoutSessions[selectedIndex].setrep as? Set<Setrep> ?? [])
+          let array = workoutSessions[selectedIndex].setrepArray
           let selectedItem = array[indexPath.row]
           onSetRepSelectedFunc?(selectedItem)
       }

@@ -36,41 +36,27 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     // MARK: - Core Data stack
 
-    lazy var persistentContainer: NSPersistentCloudKitContainer = {
-        let container = NSPersistentCloudKitContainer(name: "Workout") // Use your Core Data model name
+    lazy var persistentContainer: NSPersistentContainer = {
 
-        guard let storeDescription = container.persistentStoreDescriptions.first else {
-            fatalError("Persistent store description not found")
-        }
-        
-        print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask))
-        print("SECOND LINE")
-        print(container.persistentStoreDescriptions.first?.url as Any)
-//        storeDescription.shouldMigrateStoreAutomatically = true
-//        storeDescription.shouldInferMappingModelAutomatically = true
-//        
-        
+        let container = NSPersistentContainer(name: "Workout")
 
-//        // Enable iCloud Backup but prevent automatic fetching
-//        storeDescription.setOption(false as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-//        
-//        storeDescription.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.com.pdawg.workout1311")
+//        print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask))
+//        print(container.persistentStoreDescriptions.first?.url as Any)
 
-        container.loadPersistentStores { (storeDescription, error) in
+        container.loadPersistentStores { (_, error) in
             if let error = error as NSError? {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         }
-        
-        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                container.viewContext.automaticallyMergesChangesFromParent = true
 
-                // Pin the viewContext to the current generation to ensure consistency
-                do {
-                    try container.viewContext.setQueryGenerationFrom(.current)
-                } catch {
-                    fatalError("Failed to pin viewContext to the current generation: \(error)")
-                }
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        container.viewContext.automaticallyMergesChangesFromParent = true
+
+        do {
+            try container.viewContext.setQueryGenerationFrom(.current)
+        } catch {
+            fatalError("Failed to pin viewContext: \(error)")
+        }
 
         return container
     }()

@@ -1,0 +1,43 @@
+{
+  "configurations" : [
+    {
+      "id" : "9A092E35-00C5-4D91-B6B6-31622E94F863",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Workout.xcodeproj",
+      "identifier" : "DC9F16972CCA6A720091B6C0",
+      "name" : "Workout"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : false,
+      "selectedTests" : [
+        "WorkoutTests\/testExample()",
+        "WorkoutTests\/testLoadWorkoutSessions()",
+        "WorkoutTests\/testPerformanceExample()"
+      ],
+      "target" : {
+        "containerPath" : "container:Workout.xcodeproj",
+        "identifier" : "DC9F16B02CCA6A750091B6C0",
+        "name" : "WorkoutTests"
+      }
+    },
+    {
+      "enabled" : false,
+      "target" : {
+        "containerPath" : "container:Workout.xcodeproj",
+        "identifier" : "DC9F16BA2CCA6A750091B6C0",
+        "name" : "WorkoutUITests"
+      }
+    }
+  ],
+  "version" : 1
+}
