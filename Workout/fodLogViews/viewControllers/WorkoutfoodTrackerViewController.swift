@@ -75,8 +75,11 @@ class WorkoutfoodTrackerViewController: UIViewController {
                   carbsGoal: carbGoal,
                   
               )
-        let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 11, i_hourGreaterThan: 4)
+        let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 11, i_hourGreaterThan: 0)
        // let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyID(i_id: foodHeadId)
+        
+        print(breakfastFoodLines.count)
+        print(self.foodHeadId)
         breakfastCard.configure(foodLogLines: breakfastFoodLines, totalCalories: calorieGoal,totalProtein: proteinGoal)
         
         let lunchFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 15, i_hourGreaterThan: 12)

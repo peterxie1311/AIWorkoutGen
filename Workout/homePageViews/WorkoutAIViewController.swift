@@ -71,7 +71,11 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         if let curWorkout = planTabsView.selectedWorkoutSession {
             let newWorkout = curWorkout
             newWorkout.endTime = Date()
-            WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:curWorkout,updatedSession:newWorkout)
+            let minutes = newWorkout.endTime!.timeIntervalSince(curWorkout.startTime!) / 60
+            newWorkout.duration_hrs = Float(minutes / 60)
+            Task {
+                await WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:curWorkout,updatedSession:newWorkout)
+            }
         }
         loadViewDatas()
       
@@ -85,7 +89,9 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
             let newWorkout = currworkout
             newWorkout.startTime = Date()
             newWorkout.endTime   = Date()
-            WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currworkout,updatedSession:newWorkout)
+            Task {
+                await WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currworkout,updatedSession:newWorkout)
+            }
             timerView.configureRestTimeDur(i_timeinterval: TimeInterval(newWorkout.rest_duration))
 //            summaryCard.updateTimers(i_startDate: Date(), i_totalRestTimeSec: newWorkout.rest_duration)
             timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
@@ -102,39 +108,20 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     
     }
     
-    
-//    @objc func syncWorkout() {
-//        print("BUTTON TAPPED ✅")
-//        WorkoutSessionManager.shared.loadWorkoutSessions()
-//        Task {
-//            await WorkoutSessionManager.shared.syncworkoutsessionentries()
-//        }
-//    }
-    
-    func initObserver(){
-        NotificationCenter.default.addObserver(self, selector: #selector(loadViewDatas), name: NSNotification.Name(Constants.setRepNotification), object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(loadViewDatas), name: NSNotification.Name(Constants.workoutSessionNotif), object: nil)
-    }
-    
- 
-    
     @objc func loadViewDatas(){
-        DispatchQueue.main.async {
-            self.planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),i_onSetRepSelected: self.handler)
-        }
+        WorkoutSessionManager.shared.loadWorkoutSessions()
+        self.planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),i_onSetRepSelected: self.handler)
+        
     }
-//    override func viewWillAppear(_ animated: Bool) {
-//        super.viewWillAppear(animated)
-//
-//
-//            self.loadViewDatas()
-//        }
-//    }
-//    
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadViewDatas()
+    }
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        initObserver()
+      //  initObserver()
         view.backgroundColor = .systemBackground
         view.addSubview(stackScrollView)
         view.addSubview(toolBar)

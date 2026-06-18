@@ -67,7 +67,7 @@ class FoodLogManager {
         foodLogHead.first { $0.foodHeadID == i_id }
     }
 
-    func removeFoodLogLine(i_foodlogLine: FoodLogLine) {
+    func removeFoodLogLine(i_foodlogLine: FoodLogLine) async{
         guard let context = viewContext else { return }
 
         let tmpFoodHead = foodLogHead.filter { $0.foodHeadID == i_foodlogLine.foodHeadID }
@@ -80,6 +80,7 @@ class FoodLogManager {
         }
 
         do {
+            await DBConnector.shared.deleteFoodLogs(i_ids: [i_foodlogLine.toPayloadRequest()])
             context.delete(i_foodlogLine)
             try context.save()
             NotificationCenter.default.post(
@@ -94,7 +95,6 @@ class FoodLogManager {
 
     func syncFoodLogEntries() async {
         loadFoodLogArrays()
-
         let foodlogArray = await DBConnector.shared.fetchFoodLogs()
 
         let localIds = Set(foodLogLine.map { $0.foodID })
@@ -130,7 +130,8 @@ class FoodLogManager {
         }
 
         if !uploadFoodLogLines.isEmpty {
-         //   await DBConnector.shared.insertFoodLog(i_flls: uploadFoodLogLines)
+            let arr = uploadFoodLogLines.map{$0.toPayloadRequest()}
+            await DBConnector.shared.insertFoodLog(i_flls: arr)
         }
     }
 
@@ -150,7 +151,6 @@ class FoodLogManager {
         loadFoodLogArrays()
         
         let foodlineID = i_foodlineId ?? UUID()
-
         if let firstHead = foodLogHead.first(where: { head in
             guard let date = head.date else { return false }
 
@@ -191,8 +191,9 @@ class FoodLogManager {
                                                        i_date: i_date)
             _ = FoodLogLine.make(in: context, from: dbPayload)
             do {
-                
-                await DBConnector.shared.insertFoodLog(i_flls: [dbPayload])
+                if i_foodlineId == nil {
+                    await DBConnector.shared.insertFoodLog(i_flls: [dbPayload])
+                }
                 try context.save()
                 NotificationCenter.default.post(
                     name: NSNotification.Name(Constants.reloadFoodLogTrigger),
@@ -210,20 +211,34 @@ class FoodLogManager {
             newFoodLogHead.date = i_date
             newFoodLogHead.protein = i_protein
             newFoodLogHead.foodHeadID = i_foodheadId ?? UUID()
+            
+            let dbPayload  = FoodLogLinePayloadRequest(i_foodheadid: newFoodLogHead.foodHeadID!,
+                                                       i_foodlineid: foodlineID,
+                                                       i_calories: i_calories,
+                                                       i_carbs: i_carbs,
+                                                       i_fat: i_fat,
+                                                       i_food: i_food,
+                                                       i_grams: i_grams,
+                                                       i_protein: i_protein,
+                                                       i_date: i_date)
+            _ = FoodLogLine.make(in: context, from: dbPayload)
 
-            let newFoodLine = FoodLogLine(context: context)
-            newFoodLine.calories = i_calories
-            newFoodLine.carbs = i_carbs
-            newFoodLine.fat = i_fat
-            newFoodLine.food = i_food
-            newFoodLine.grams = i_grams
-            newFoodLine.protein = i_protein
-            newFoodLine.foodHeadID = newFoodLogHead.foodHeadID
-            newFoodLine.foodID = foodlineID
-            newFoodLine.date = i_date
+//            let newFoodLine = FoodLogLine(context: context)
+//            newFoodLine.calories = i_calories
+//            newFoodLine.carbs = i_carbs
+//            newFoodLine.fat = i_fat
+//            newFoodLine.food = i_food
+//            newFoodLine.grams = i_grams
+//            newFoodLine.protein = i_protein
+//            newFoodLine.foodHeadID = newFoodLogHead.foodHeadID
+//            newFoodLine.foodID = foodlineID
+//            newFoodLine.date = i_date
 
             do {
                 try context.save()
+                if i_foodlineId == nil {
+                    await DBConnector.shared.insertFoodLog(i_flls: [dbPayload])
+                }
                 NotificationCenter.default.post(
                     name: NSNotification.Name(Constants.reloadFoodLogTrigger),
                     object: nil

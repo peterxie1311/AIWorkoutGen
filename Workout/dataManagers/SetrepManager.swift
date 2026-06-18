@@ -44,7 +44,7 @@ class SetrepManager {
                 
                 // Reload Setreps array
                 loadSetreps()
-                NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
+                //NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
                 
                 print("All Setreps successfully cleared!")
                 
@@ -65,7 +65,7 @@ class SetrepManager {
             
             for setRep in setRepsToDelete{
                 context.delete(setRep)
-            NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
+            //NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
             }
             try context.save()
             loadSetreps()
@@ -82,7 +82,7 @@ class SetrepManager {
             Setreps[index] = updatedSetrep
             saveSetreps()
             print("Updated rep! \(repid)")
-            NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
+          //  NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
         } else {
             print("No Setrep found to update with quantity: \(repid)!")
         }
@@ -95,7 +95,7 @@ class SetrepManager {
         let fetchRequest: NSFetchRequest<Setrep> = Setrep.fetchRequest()
         do {
             Setreps = try context.fetch(fetchRequest)
-            print("Loaded \(Setreps.count) Setreps not associated with any WorkoutSession")
+            print("Loaded \(Setreps.count) Setreps in total")
         } catch {
             print("Failed to load Setreps: \(error)")
         }
@@ -134,7 +134,7 @@ class SetrepManager {
         newSetrep.workoutName = workoutName
         newSetrep.completed = false
         newSetrep.weight = weight
-        newSetrep.repid = UUID()
+        newSetrep.repid = uuid
         newSetrep.moddate = Date()
         
         return newSetrep
@@ -185,7 +185,7 @@ class SetrepManager {
                 try context.save()
                 print("New Setrep added: Quantity: \(qty), Workout Name: \(workoutName)")
                 self.loadSetreps()
-                NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
+                //NotificationCenter.default.post(name: NSNotification.Name("SetRep"), object: nil)
             } catch {
                 print("Failed to add new Setrep: \(error)")
             }

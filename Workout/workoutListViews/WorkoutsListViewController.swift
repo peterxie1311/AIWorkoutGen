@@ -24,44 +24,12 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
     
     
     private func setupUI() {
-        title = ""
-        //setup table header
-        let headerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: 40))
-       // headerView.backgroundColor = .lightGray
-        
-        let titles = ["Focus","Date","Location"]
-        let headerStackView = UIStackView()
-        headerStackView.axis = .horizontal
-        headerStackView.distribution = .fillEqually
-        headerStackView.alignment = .center
-        headerStackView.spacing = 10
-        
-        for title in titles {
-            let label = UILabel()
-            label.text = title
-            label.textAlignment = .center
-            label.font = UIFont.boldSystemFont(ofSize: 16)
-            label.textColor = .systemBlue
-            headerStackView.addArrangedSubview(label)
-        }
-        
-        headerView.addSubview(headerStackView)
-        headerStackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            headerStackView.topAnchor.constraint(equalTo: headerView.topAnchor),
-            headerStackView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 10),
-            headerStackView.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -10),
-            headerStackView.bottomAnchor.constraint(equalTo: headerView.bottomAnchor)
-        ])
-        
-        tableView.tableHeaderView = headerView
-        
-        
         
         // Setup TableView
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(WorkoutListTableViewCell.self, forCellReuseIdentifier: "WorkoutCell")
+        tableView.separatorStyle = .none
         
         // Add TableView to the view
         view.addSubview(tableView)
@@ -99,7 +67,7 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
         }
         
         let workout = sortedWorkouts[indexPath.row]
-        cell.configure(with: workout)
+        cell.cardView.configure(workout: workout)
         
        
         
@@ -117,51 +85,43 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
 
 class WorkoutListTableViewCell: UITableViewCell {
     
-    let genre        = UILabel()
-    let date         = UILabel()
-    let location     = UILabel()
+    let cardView = WorkoutListCardView()
     
-    
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
+    override init(style: UITableViewCell.CellStyle,
+                  reuseIdentifier: String?) {
         
-        let stackView = UIStackView(arrangedSubviews: [genre, date, location ])
-        stackView.axis = .horizontal
-        stackView.distribution = .fillEqually
-        stackView.alignment = .center
-        stackView.spacing = 10
+        super.init(style: style,
+                   reuseIdentifier: reuseIdentifier)
         
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
         
-        addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(cardView)
+        
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: topAnchor, constant: 5),
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 10),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -10),
-            stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -5)
+            cardView.topAnchor.constraint(
+                equalTo: contentView.topAnchor,
+                constant: 8
+            ),
+            cardView.leadingAnchor.constraint(
+                equalTo: contentView.leadingAnchor,
+                constant: 16
+            ),
+            cardView.trailingAnchor.constraint(
+                equalTo: contentView.trailingAnchor,
+                constant: -16
+            ),
+            cardView.bottomAnchor.constraint(
+                equalTo: contentView.bottomAnchor,
+                constant: -8
+            )
         ])
         
-        // Style Labels
-        [genre, date, location ].forEach {
-            $0.textAlignment = .center
-            $0.font = UIFont.systemFont(ofSize: 16)
-        }
     }
     
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    func configure(with workout: WorkoutSession) {
-        genre.text = workout.workout_genre
-        date.text = HelperFunctions.parseDateToStringFull(workout.startTime ?? Date())
-        location.text = workout.location
-        
-        
-        
-        [genre, date, location].forEach {
-                $0.numberOfLines = 0
-                $0.lineBreakMode = .byWordWrapping
-            }
+        fatalError()
     }
 }

@@ -91,17 +91,44 @@ class DBConnector {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         print("trying to insert workouts")
-        
         let payload = AddWorkoutSessionPayload(i_sessionid: session_token,
                                                i_payload: i_ws)
-        print("PAYLOAD")
-        print(payload)
         do {
             request.httpBody = try encoder.encode(payload)
             let (data, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse {
                 print("Status:", http.statusCode)
                 print(response)
+            }
+            if let body = String(data: data, encoding: .utf8) {
+                print("Supabase response body:")
+                print(body)
+            }
+        } catch {
+            print("Error:", error)
+        }
+    }
+    
+    func deleteworkouts(i_ws: [WorkoutSessionUploadDTO]) async {
+        
+        let postgresqlFuncName = "deleteworkoutsession"
+        let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
+        var request = initRequest(i_url: url, i_method: method_POST)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        print("trying to delete workouts")
+        let payload = AddWorkoutSessionPayload(i_sessionid: session_token,
+                                               i_payload: i_ws)
+        do {
+            request.httpBody = try encoder.encode(payload)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse {
+                print("Status:", http.statusCode)
+                print(response)
+            }
+            if let body = String(data: data, encoding: .utf8) {
+                print("Supabase response body:")
+                print(body)
             }
         } catch {
             print("Error:", error)
@@ -180,6 +207,28 @@ class DBConnector {
         
         let payload = AddFoodLogEntriesRequest(i_sessionid: session_token,
                                                i_payload: i_flls)
+
+        do {
+            request.httpBody = try encoder.encode(payload)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse {
+                print("Status:", http.statusCode)
+            }
+
+        } catch {
+            print("Error:", error)
+        }
+    }
+    
+    func deleteFoodLogs(i_ids:[FoodLogLinePayloadRequest]) async {
+        let postgresqlFuncName = "deletefoodlogentries"
+        let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
+        var request = initRequest(i_url: url, i_method: method_POST)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        
+        let payload = AddFoodLogEntriesRequest(i_sessionid: session_token,
+                                               i_payload: i_ids)
 
         do {
             request.httpBody = try encoder.encode(payload)

@@ -20,8 +20,8 @@ struct FoodLogLinePayload: Decodable {
     let userId: UUID
     let genDate: Date
     let food: String
-
 }
+
 //this is the header for the foodloglinepayloadrequest
 struct AddFoodLogEntriesRequest: Encodable {
     let i_sessionid: String
@@ -37,7 +37,6 @@ struct FoodLogLinePayloadRequest: Encodable {
     let i_grams: Double
     let i_protein: Double
     let i_date: Date
-   // var i_userid: String = "ae13ea87-5f4e-4a36-a71a-693b6a3f2539"
 }
 // ---- this is just to make code cleaner in foodlogmanager
 extension FoodLogLine {
@@ -60,4 +59,17 @@ extension FoodLogLine {
         
         return obj
     }
+    func toPayloadRequest() -> FoodLogLinePayloadRequest {
+          return FoodLogLinePayloadRequest(
+              i_foodheadid: self.foodHeadID ?? UUID(),
+              i_foodlineid: self.foodID ?? UUID(),
+              i_calories: self.calories,
+              i_carbs: self.carbs,
+              i_fat: self.fat,
+              i_food: self.food ?? "",
+              i_grams: self.grams,
+              i_protein: self.protein,
+              i_date: self.date ?? Date()
+          )
+      }
 }

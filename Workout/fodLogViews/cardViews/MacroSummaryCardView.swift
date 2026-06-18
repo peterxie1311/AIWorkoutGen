@@ -62,7 +62,7 @@ final class MacroSummaryCardView: UIView {
         
         let calGoal_l  = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(caloriesGoal))",
                                                      fontsize: 16,
-                                                     colour: UIColor.systemGreen)
+                                                     colour: UIColor.systemPurple)
         
         let proteinValue_l = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(proteinCurrent))",
                                                          fontsize: 20,
@@ -184,7 +184,7 @@ final class MacroSummaryCardView: UIView {
         // Bar fills
         // (Leave default blue for bar1; keep bar2 a lighter gray/secondary tint)
         bar1Fill.backgroundColor = .systemBlue
-        bar2Fill.backgroundColor = .systemGreen
+        bar2Fill.backgroundColor = .systemPurple
 
         // Rounded corners will be set after layout when we know heights
         layoutIfNeeded()

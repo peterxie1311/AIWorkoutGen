@@ -56,7 +56,12 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
     }
     
     @objc private func removeWorkout(){
-        WorkoutSessionManager.shared.removeWorkoutSession(workoutid: self.id ?? UUID())
+        Task{
+            await WorkoutSessionManager.shared.removeWorkoutSession(workoutid: self.id ?? UUID())
+            await MainActor.run {
+                  self.navigationController?.popViewController(animated: true)
+              }
+        }
         guard self.id != nil else {
                 print("Workout ID is nil")
                 return

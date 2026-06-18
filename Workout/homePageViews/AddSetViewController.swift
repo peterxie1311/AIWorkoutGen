@@ -78,21 +78,30 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
             setRepArr.forEach {
                 newWorkout.addToSetrep($0)
             }
-
-            WorkoutSessionManager.shared.updateWorkoutSession(
-                prevWorkout: existingWorkout,
-                updatedSession: newWorkout
-            )
+            
+            Task {
+                
+               await WorkoutSessionManager.shared.updateWorkoutSession(
+                    prevWorkout: existingWorkout,
+                    updatedSession: newWorkout
+                )
+            }
         } else {
-            WorkoutSessionManager.shared.addWorkoutSession(
-                durationHrs: 0,
-                endTime: Date(),
-                location: "",
-                startTime: Date(),
-                sets: setRepArr,
-                workoutTab: tmpWorkoutSessionName,
-                rest_duration: tmpRestTime
-            )
+            
+            Task{
+                
+           await     WorkoutSessionManager.shared.addWorkoutSession(
+                    durationHrs: 0,
+                    endTime: Date(),
+                    location: "",
+                    startTime: Date(),
+                    sets: setRepArr,
+                    workoutTab: tmpWorkoutSessionName,
+                    rest_duration: tmpRestTime,
+                    moddate: Date()
+                )
+            }
+            
         }
     }
 
@@ -108,7 +117,6 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
         WorkoutSessionManager.shared.createWorkoutPlan(
             i_workouts: cntWorkouts,
             i_sessions: cntSessions,
-            i_vc: self,
             i_customisations: cust
         )
     }

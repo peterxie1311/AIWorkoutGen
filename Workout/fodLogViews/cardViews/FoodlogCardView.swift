@@ -146,9 +146,11 @@ private final class FoodEntryRowView: UIView {
         }
     }
     
-    @objc private func deleteFoodLogLine () {
+    @objc private func deleteFoodLogLine ()  {
         guard let line else {return}
-        FoodLogManager.shared.removeFoodLogLine(i_foodlogLine: line)
+        Task{
+            await FoodLogManager.shared.removeFoodLogLine(i_foodlogLine: line)
+        }
     }
     
     func configure (
@@ -193,7 +195,7 @@ private final class FoodEntryRowView: UIView {
         
         let percentageCals = workoutDesigns.attributedText(text:"  \("(\(Int(((foodLogline.calories/safeTotalCalories)*100).rounded()))%)")",
                                                        fontsize: 16,
-                                                       colour:UIColor.systemGreen)
+                                                       colour:UIColor.systemPurple)
         let calValue = workoutDesigns.attributedText(text:"\(HelperFunctions.formatNumber(foodLogline.calories))")
         let cal = workoutDesigns.attributedText(text: " Cal",
                                                 fontsize: 16,
@@ -326,7 +328,7 @@ private final class FoodEntryRowView: UIView {
     //    bar2Track.layer.masksToBounds = true
         
         bar1Fill.backgroundColor = .systemBlue
-        bar2Fill.backgroundColor = .systemGreen
+        bar2Fill.backgroundColor = .systemPurple
     }
     
     private func roundBar(track: UIView, fill: UIView) {

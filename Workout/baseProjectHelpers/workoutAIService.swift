@@ -74,11 +74,8 @@ class workoutAIservice {
     
 
     
-    func createWorkoutPlan(i_cntInputData:[WorkoutSessionDTO],i_sessions:Int,i_vc:UIViewController,i_customisations:String) async throws -> [WorkoutSessionDTO]{
+    func createWorkoutPlan(i_cntInputData:[WorkoutSessionDTO],i_sessions:Int,i_customisations:String) async throws -> [WorkoutSessionDTO]{
         guard let url = URL(string: endpoint) else {
-            await MainActor.run {
-                HelperFunctions.showAlert(on: i_vc, title: "Failed to Init URL!", message: "")
-            }
             return []
         }
         
@@ -143,16 +140,12 @@ class workoutAIservice {
             let (data, response) = try await URLSession.shared.data(for: request)
             
             guard let http = response as? HTTPURLResponse else {
-                await MainActor.run {
-                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "Invalid response.")
-                }
+           
                 return []
             }
             
             guard (200...299).contains(http.statusCode) else {
-                await MainActor.run {
-                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "\(http.statusCode)")
-                }
+             
                 return []
             }
             
