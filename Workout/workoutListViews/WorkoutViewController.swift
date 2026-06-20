@@ -98,7 +98,7 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor.systemBackground
-        NotificationCenter.default.addObserver(self, selector: #selector(tableView.reloadData), name: NSNotification.Name("SetRep"), object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("SetRep"), object: nil)
         setupUI()
         setupData()
     }
