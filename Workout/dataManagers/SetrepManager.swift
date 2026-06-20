@@ -8,11 +8,11 @@ class SetrepManager {
     // Stored Setreps as an array of Setrep objects
     var Setreps: [Setrep] = []
 
-    private init() {
-        // Load Setreps from Core Data
-        loadSetreps()
-    }
-    
+//    private init() {
+//        // Load Setreps from Core Data
+//        loadSetreps()
+//    }
+//    
     // Get a Setrep by its quantity
     func getSetrep(uuid: UUID) -> Setrep? {
         for Setrep in Setreps {
@@ -139,6 +139,22 @@ class SetrepManager {
         
         return newSetrep
     }
+    
+    // use this one basically only for the sync methods in the workoutsessionmanager sync
+    // use the first one for basically everything else you need to init a setrep
+    func initSetRepNoContext(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64,uuid:UUID = UUID(),context:NSManagedObjectContext) -> Setrep {
+        let newSetrep = Setrep(context: context)
+        newSetrep.rep_qty = Int64(qty)
+        newSetrep.startTime = startTime
+        newSetrep.finishTime = finishTime
+        newSetrep.workoutName = workoutName
+        newSetrep.completed = false
+        newSetrep.weight = weight
+        newSetrep.repid = uuid
+        newSetrep.moddate = Date()
+        return newSetrep
+    }
+    
     
     func getLatestSetRep(setrepArray:[Setrep]) -> Setrep{
         var latestRep = setrepArray[0]

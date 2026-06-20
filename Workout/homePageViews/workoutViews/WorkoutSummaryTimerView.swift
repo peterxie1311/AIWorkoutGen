@@ -18,7 +18,7 @@ class WorkoutSummaryTimerView: UIView {
     private let vStack          = UIStackView()
     private let restTimerLabel  = UILabel()
     
-    private let startWorkoutButton = workoutDesigns.createStyledButton( title: "Start",
+    private let startWorkoutButton = workoutDesigns.createStyledButton( title: "Start ",
                                                                         titleFontSize: 16,
                                                                         imageSize: 16,
                                                                         systemImageName: "play.fill",
@@ -26,7 +26,7 @@ class WorkoutSummaryTimerView: UIView {
                                                                         cornerRadius: 16,
                                                                         width: 100 ,
                                                                         height: 30)
-    private let finishWorkoutButton = workoutDesigns.createStyledButton( title: "Finish",
+    private let finishWorkoutButton = workoutDesigns.createStyledButton( title: "Finish ",
                                                                          titleFontSize: 16,
                                                                          imageSize: 16,
                                                                         systemImageName: "stop",

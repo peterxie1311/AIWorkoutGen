@@ -1,6 +1,7 @@
 import CoreData
 import UIKit
 
+@MainActor
 class SettingsManager {
     // Singleton instance
     static let shared = SettingsManager()

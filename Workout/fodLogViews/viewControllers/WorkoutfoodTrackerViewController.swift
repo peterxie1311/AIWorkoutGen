@@ -6,7 +6,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
     //MARK: Const Declaration
     
     //Properties -----------------
-    let logDate:Date
+    var logDate:Date
     let totalCals:Double
     let totalProtein:Double
     let totalCarbs:Double
@@ -32,6 +32,36 @@ class WorkoutfoodTrackerViewController: UIViewController {
     
     private let addFoodLogButton = workoutDesigns.createStyledButton(title: "Add Food", width: 50, height: 50)
     private let refresh = workoutDesigns.createStyledButton(title: "Refresh", width: 50, height: 50)
+    
+    private let previousDateButton = workoutDesigns.createStyledButton(
+        title: "",
+        systemImageName: "chevron.left",
+       // backgroundColor: .secondarySystemBackground,
+      //  borderColor: .clear,
+     //   textColor: .label,
+        width: 30,
+        height: 30
+    )
+
+    private let nextDateButton = workoutDesigns.createStyledButton(
+        title: "",
+        systemImageName: "chevron.right",
+     //   backgroundColor: .secondarySystemBackground,
+      //  borderColor: .clear,
+      //  textColor: .label,
+        width: 30,
+        height: 30
+    )
+
+    private let calendarButton = workoutDesigns.createStyledButton(
+        title: "",
+        systemImageName: "calendar",
+       // backgroundColor: .secondarySystemBackground,
+       // borderColor: .secondarySystemBackground,
+      //  textColor: .white,
+        width: 30,
+        height: 30
+    )
     
     init(i_date:Date){
         self.logDate      = i_date
@@ -63,31 +93,44 @@ class WorkoutfoodTrackerViewController: UIViewController {
     
     @objc private func reloadData(){
         view.layoutIfNeeded()
+        guard let foodhead      = FoodLogManager.shared.fetchFoodHeadbyDate(i_date: self.logDate) else {return}
         
-        let foodhead      = FoodLogManager.shared.fetchFoodHeadbyDate(i_date: self.logDate)
-        
+        let tmpID = foodhead.foodHeadID ?? UUID()
+    
         card.configure(
-                  calories: foodhead?.calories ?? 0,
+                  calories: foodhead.calories ?? 0,
                   caloriesGoal: calorieGoal,
-                  proteinCurrent: foodhead?.protein ?? 0,
+                  proteinCurrent: foodhead.protein ?? 0,
                   proteinGoal: proteinGoal,
-                  carbsCurrent: foodhead?.carbs ?? 0,
+                  carbsCurrent: foodhead.carbs ?? 0,
                   carbsGoal: carbGoal,
-                  
               )
-        let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 11, i_hourGreaterThan: 0)
+        
+        let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: tmpID, i_hourLessThan: 11, i_hourGreaterThan: 0)
        // let breakfastFoodLines = FoodLogManager.shared.fetchFoodLinesbyID(i_id: foodHeadId)
         
-        print(breakfastFoodLines.count)
-        print(self.foodHeadId)
         breakfastCard.configure(foodLogLines: breakfastFoodLines, totalCalories: calorieGoal,totalProtein: proteinGoal)
         
-        let lunchFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 15, i_hourGreaterThan: 12)
+        let lunchFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: tmpID, i_hourLessThan: 15, i_hourGreaterThan: 12)
         lunchCard.configure(foodLogLines: lunchFoodLines, totalCalories: self.calorieGoal, totalProtein: self.proteinGoal)
         
-        let dinnerFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: self.foodHeadId, i_hourLessThan: 23, i_hourGreaterThan: 16)
+        let dinnerFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: tmpID, i_hourLessThan: 23, i_hourGreaterThan: 16)
         dinnerCard.configure(foodLogLines: dinnerFoodLines, totalCalories: self.calorieGoal, totalProtein: self.proteinGoal)
         
+        titleLabel.text = "Food Log: " + HelperFunctions.parseDateToString(self.logDate)
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 24)
+        
+    }
+    @objc private func initForward(){
+        guard let nextDate = FoodLogManager.shared.fetchNextFoodLogDate(from: self.logDate) else {return}
+        self.logDate = nextDate
+        reloadData()
+    }
+    
+    @objc private func initBackward(){
+        guard let prevDate = FoodLogManager.shared.fetchPreviousFoodLogDate(from: self.logDate) else {return}
+        self.logDate = prevDate
+        reloadData()
     }
     
     override func viewDidLoad() {
@@ -102,11 +145,6 @@ class WorkoutfoodTrackerViewController: UIViewController {
         stackScrollView.isUserInteractionEnabled = true
         stackView.isUserInteractionEnabled = true
         
-        //Setup labels
-        titleLabel.text = "Food Log: " + HelperFunctions.parseDateToString(self.logDate)
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 24)
-        
-        //
         let breakfastLabelConfig = workoutDesigns.attributedText(text:"Breakfast")
         
         let breakfastlabelConfigSecond = workoutDesigns.attributedText(text: " (12am-12pm)",
@@ -133,8 +171,18 @@ class WorkoutfoodTrackerViewController: UIViewController {
         
         addFoodLogButton.addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
         refresh.addTarget(self, action: #selector(sync), for: .touchUpInside)
+        
+        previousDateButton.addTarget(self, action: #selector(initBackward), for: .touchUpInside)
+        nextDateButton.addTarget(self, action: #selector(initForward), for: .touchUpInside)
+        let dateNavigationStack = UIStackView(arrangedSubviews: [previousDateButton,titleLabel,nextDateButton,calendarButton])
+        
+        dateNavigationStack.axis      = .horizontal
+        dateNavigationStack.alignment = .center
+        dateNavigationStack.spacing   = 8
+        
+        
     
-        var views: [UIView] = [titleLabel,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton]
+        let views: [UIView] = [dateNavigationStack,card,breakFastLabel,breakfastCard,lunchLabel,lunchCard,dinnerLabel,dinnerCard,addFoodLogButton]
         
         for view in views {
             stackView.addArrangedSubview(view)
@@ -160,9 +208,5 @@ class WorkoutfoodTrackerViewController: UIViewController {
         reloadData()
         
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: NSNotification.Name(Constants.reloadFoodLogTrigger), object: nil)
-
-        
-        
-
     }
 }

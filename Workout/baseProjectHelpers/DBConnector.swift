@@ -48,9 +48,15 @@ class DBConnector {
     private let method_DELETE = "DELETE"
     private let method_GET = "GET"
     //private let session_token = "ae13ea87-5f4e-4a36-a71a-693b6a3f2539" // THIS IS JUST FOR TEMP SYNC
-    private let session_token = SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value ?? ""
+    private var session_token = ""
     
-    
+    @MainActor
+    func loadSessionToken() {
+        session_token =
+            SettingsManager.shared
+                .getSetting(name: SettingsManager.sessionKey)?
+                .value ?? ""
+    }
     
     func initRequest (i_url:URL,i_method:String) -> URLRequest {
         var request = URLRequest(url: i_url)

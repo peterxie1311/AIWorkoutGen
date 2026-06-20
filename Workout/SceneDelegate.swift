@@ -20,8 +20,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         let window = UIWindow(windowScene: windowScene)
-        Task { 
-            await WorkoutSessionManager.shared.syncworkoutsessionentries()
+        DBConnector.shared.loadSessionToken()
+        workoutAIservice.shared.loadSessionApiKey()
+        Task {
+            await WorkoutSessionManager.shared.syncWorkoutSessionEntries()
             await FoodLogManager.shared.syncFoodLogEntries()
         }
         let rootVC = WorkoutAIViewController() // Your initial view controller

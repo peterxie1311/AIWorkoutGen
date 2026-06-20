@@ -57,7 +57,7 @@ class workoutAIservice {
     static let shared = workoutAIservice()
     private init() {}
     // we are going to define this in the settings screen
-    private let apiKey = SettingsManager.shared.getSetting(name: "GPT API Key")?.value ?? ""
+    private var apiKey = ""//SettingsManager.shared.getSetting(name: "GPT API Key")?.value ?? ""
     private let endpoint = "https://api.openai.com/v1/chat/completions"
     private let macroEstimateDefault = MacroEstimate(
         foodname: Constants.string_default,
@@ -73,6 +73,13 @@ class workoutAIservice {
     )
     
 
+    @MainActor
+    func loadSessionApiKey() {
+        apiKey =
+            SettingsManager.shared
+            .getSetting(name: SettingsManager.gptAPIKey)?
+                .value ?? ""
+    }
     
     func createWorkoutPlan(i_cntInputData:[WorkoutSessionDTO],i_sessions:Int,i_customisations:String) async throws -> [WorkoutSessionDTO]{
         guard let url = URL(string: endpoint) else {

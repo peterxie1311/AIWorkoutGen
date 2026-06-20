@@ -62,6 +62,36 @@ class FoodLogManager {
             return Calendar.current.isDate(date, inSameDayAs: i_date)
         }
     }
+    
+    func fetchPreviousFoodLogDate(from currentDate: Date) -> Date? {
+        loadFoodLogArrays()
+
+        return foodLogHead
+            .compactMap(\.date)
+            .filter {
+                Calendar.current.compare(
+                    $0,
+                    to: currentDate,
+                    toGranularity: .day
+                ) == .orderedAscending
+            }
+            .max()
+    }
+
+    func fetchNextFoodLogDate(from currentDate: Date) -> Date? {
+        loadFoodLogArrays()
+
+        return foodLogHead
+            .compactMap(\.date)
+            .filter {
+                Calendar.current.compare(
+                    $0,
+                    to: currentDate,
+                    toGranularity: .day
+                ) == .orderedDescending
+            }
+            .min()
+    }
 
     func fetchFoodHeadById(i_id: UUID) -> FoodLogHead? {
         foodLogHead.first { $0.foodHeadID == i_id }
