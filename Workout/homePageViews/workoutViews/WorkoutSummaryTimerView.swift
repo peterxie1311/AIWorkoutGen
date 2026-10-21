@@ -22,7 +22,7 @@ class WorkoutSummaryTimerView: UIView {
                                                                         titleFontSize: 16,
                                                                         imageSize: 16,
                                                                         systemImageName: "play.fill",
-                                                                        backgroundColor: .systemBlue,
+                                                                        backgroundColor: WorkoutTheme.accent,
                                                                         cornerRadius: 16,
                                                                         width: 100 ,
                                                                         height: 30)
@@ -31,8 +31,8 @@ class WorkoutSummaryTimerView: UIView {
                                                                          imageSize: 16,
                                                                         systemImageName: "stop",
                                                                         backgroundColor: .clear,
-                                                                        borderColor: .systemBlue,
-                                                                        textColor: .systemBlue,
+                                                                        borderColor: WorkoutTheme.accent,
+                                                                        textColor: WorkoutTheme.accent,
                                                                         cornerRadius: 16,
                                                                         width: 100 ,
                                                                         height: 30)
@@ -56,15 +56,18 @@ class WorkoutSummaryTimerView: UIView {
         containerView.translatesAutoresizingMaskIntoConstraints = false
         
         //Configure the hstack
-        hStack.axis    = .horizontal
+        hStack.axis    = .vertical
+        hStack.spacing = 12
         hStack.translatesAutoresizingMaskIntoConstraints = false
         vStack.axis    = .vertical
+        vStack.spacing = 12
         vStack.translatesAutoresizingMaskIntoConstraints = false
         
         let buttonHstack = UIStackView()
         buttonHstack.axis = .horizontal
         buttonHstack.distribution = .fillEqually
-       // buttonHstack.spacing      = 
+       buttonHstack.spacing = 12
+       // 
         buttonHstack.alignment    = .fill
         buttonHstack.translatesAutoresizingMaskIntoConstraints = false
         buttonHstack.addArrangedSubview(startWorkoutButton)
@@ -74,10 +77,10 @@ class WorkoutSummaryTimerView: UIView {
      //   finishWorkoutButton.addTarget(self, action: #selector(syncWorkout), for: .touchUpInside)
         containerView.addSubview(hStack)
      
-        vStack.addArrangedSubview(makeDividerHeight(gap: 25))
+        
         vStack.addArrangedSubview(restTimerLabel)
         vStack.addArrangedSubview(buttonHstack)
-        vStack.addArrangedSubview(makeDividerHeight(gap: 25))
+        
         
         let views = [timerView,vStack]
         views.forEach{
@@ -108,10 +111,12 @@ class WorkoutSummaryTimerView: UIView {
     }
     
     private func style(){
-        containerView.backgroundColor = .systemGray6
-        restTimerLabel.text = "Rest Timer"
-        restTimerLabel.textColor = .systemBlue
-        restTimerLabel.font = .systemFont(ofSize: 32, weight: .bold)
+        WorkoutTheme.card(containerView)
+        restTimerLabel.text = "Rest & recover"
+        restTimerLabel.textAlignment = .center
+        restTimerLabel.textColor = WorkoutTheme.accent
+        restTimerLabel.font = .preferredFont(forTextStyle: .headline)
+        restTimerLabel.adjustsFontForContentSizeCategory = true
         
         
         
@@ -202,7 +207,7 @@ private final class TimerView: UIView {
         timeLabel.text = String(format: "%02d:%02d", mins, secs)
         
 //        timeLabel.text = String(format:"%.1f",normalisedRestTime)
-        let progress = min(normalisedRestTime/duration,1)
+        let progress = min(normalisedRestTime / max(duration, 1), 1)
         progressLayer.strokeEnd = CGFloat(progress)
         
     }
@@ -221,16 +226,16 @@ private final class TimerView: UIView {
     }
     private func style(){
         timeLabel.text      = "00:00"
-        timeLabel.textColor = .systemBlue
-        timeLabel.font      = .systemFont(ofSize: 34, weight: .semibold)
+        timeLabel.textColor = WorkoutTheme.accent
+        timeLabel.font      = .monospacedDigitSystemFont(ofSize: 34, weight: .semibold)
         
         // style the track
-        trackLayer.strokeColor = UIColor.systemBlue.withAlphaComponent(0.2).cgColor
+        trackLayer.strokeColor = WorkoutTheme.accent.withAlphaComponent(0.2).cgColor
         trackLayer.fillColor   = UIColor.clear.cgColor
         trackLayer.lineWidth   = 8
         trackLayer.lineCap     = .round
         
-        progressLayer.strokeColor = UIColor.systemBlue.cgColor
+        progressLayer.strokeColor = WorkoutTheme.accent.cgColor
         progressLayer.fillColor   = UIColor.clear.cgColor
         progressLayer.lineWidth   = 8
         progressLayer.lineCap     = .round
@@ -238,3 +243,4 @@ private final class TimerView: UIView {
         
     }
 }
+

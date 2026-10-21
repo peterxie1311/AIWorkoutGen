@@ -64,7 +64,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = UIColor.systemBackground
+        view.backgroundColor = WorkoutTheme.background
 
         setupUI()
         configurePicturePicker()
@@ -615,3 +615,4 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         confidenceLabel.text = "Confidence:\(confidenceLevel)"
     }
 }
+

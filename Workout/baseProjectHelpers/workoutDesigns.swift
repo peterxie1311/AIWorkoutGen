@@ -28,14 +28,21 @@ class workoutDesigns {
         keyboardType: UIKeyboardType,
         delegate: UITextFieldDelegate?
     ) {
-        tf.borderStyle = .roundedRect
+        tf.borderStyle = .none
+        tf.backgroundColor = WorkoutTheme.background
+        tf.layer.cornerRadius = 12
+        tf.font = .preferredFont(forTextStyle: .body)
+        tf.adjustsFontForContentSizeCategory = true
+        let inset = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
+        tf.leftView = inset
+        tf.leftViewMode = .always
         tf.placeholder = placeholder
         tf.keyboardType = keyboardType
         tf.delegate = delegate
         tf.translatesAutoresizingMaskIntoConstraints = false
         tf.isUserInteractionEnabled = true
 
-        tf.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        tf.heightAnchor.constraint(equalToConstant: 50).isActive = true
 
         tf.clearButtonMode = .whileEditing
         tf.returnKeyType = .done
@@ -45,7 +52,7 @@ class workoutDesigns {
         let button = field.button
 
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.heightAnchor.constraint(equalToConstant: 44).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 50).isActive = true
         button.showsMenuAsPrimaryAction = true
         button.contentHorizontalAlignment = .fill
 
@@ -106,7 +113,7 @@ class workoutDesigns {
         fields: [FormField]
     ) -> UIView {
         let containerView = UIView()
-        containerView.backgroundColor = .systemGray6
+        WorkoutTheme.card(containerView)
         containerView.layer.cornerRadius = 16
         containerView.layer.masksToBounds = true
         containerView.translatesAutoresizingMaskIntoConstraints = false
@@ -289,57 +296,37 @@ class workoutDesigns {
         titleFontSize: CGFloat = 16,
         imageSize: CGFloat = 16,
         systemImageName: String? = nil,
-        backgroundColor: UIColor = .systemBlue,
-        borderColor: UIColor = .systemBlue,
-        textColor: UIColor = .white,
+        backgroundColor: UIColor = WorkoutTheme.accent,
+        borderColor: UIColor = WorkoutTheme.accent,
+        textColor: UIColor = WorkoutTheme.onAccent,
         cornerRadius: CGFloat = 20,
         width: CGFloat = 40,
         height: CGFloat = 40
     ) -> UIButton {
-        let config = UIImage.SymbolConfiguration(
-            pointSize: imageSize,
-            weight: .medium,
-            scale: .small
-        )
-
         let button = UIButton(type: .system)
-
-        if let systemImageName {
-            let image = UIImage(
-                systemName: systemImageName,
-                withConfiguration: config
-            )
-
-            button.setImage(image, for: .normal)
-            button.tintColor = textColor
-            button.imageView?.contentMode = .scaleAspectFit
-            button.semanticContentAttribute = .forceRightToLeft
-            button.setTitle(title, for: .normal)
-        } else {
-            button.setTitle(title, for: .normal)
+        var configuration = UIButton.Configuration.filled()
+        configuration.title = title
+        configuration.image = systemImageName.flatMap { UIImage(systemName: $0) }
+        configuration.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(pointSize: imageSize, weight: .semibold)
+        configuration.imagePadding = 10
+        configuration.baseBackgroundColor = backgroundColor
+        configuration.baseForegroundColor = textColor
+        configuration.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16)
+        configuration.background.cornerRadius = cornerRadius
+        configuration.background.strokeColor = borderColor
+        configuration.background.strokeWidth = backgroundColor == .clear ? 1 : 0
+        configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var attributes = incoming
+            attributes.font = UIFont.systemFont(ofSize: titleFontSize, weight: .semibold)
+            return attributes
         }
-
-        button.setTitleColor(textColor, for: .normal)
-        button.titleLabel?.font = .systemFont(
-            ofSize: titleFontSize,
-            weight: .semibold
-        )
-
-        button.backgroundColor = backgroundColor
-
-        button.layer.cornerRadius = height / 2
-        button.layer.shadowOpacity = 0.2
-        button.layer.shadowOffset = CGSize(width: 2, height: 2)
-        button.layer.shadowRadius = 5
-        button.layer.borderWidth = 2
-        button.layer.borderColor = borderColor.cgColor
-
+        button.configuration = configuration
+        button.accessibilityLabel = title.isEmpty ? systemImageName : title
         button.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            button.heightAnchor.constraint(equalToConstant: height),
-            button.widthAnchor.constraint(equalToConstant: width)
-        ])
+        button.heightAnchor.constraint(greaterThanOrEqualToConstant: max(44, height)).isActive = true
+        let minimumWidth = button.widthAnchor.constraint(greaterThanOrEqualToConstant: width)
+        minimumWidth.priority = .defaultHigh
+        minimumWidth.isActive = true
 
         return button
     }
@@ -449,5 +436,55 @@ extension UIViewController {
         )
 
         return UIBarButtonItem(customView: button)
+    }
+}
+
+
+/// Shared semantic colors preserve contrast in both system appearances.
+enum WorkoutTheme {
+    static let accent = UIColor { $0.userInterfaceStyle == .dark
+        ? UIColor(red: 0.32, green: 0.86, blue: 0.77, alpha: 1)
+        : UIColor(red: 0.02, green: 0.43, blue: 0.38, alpha: 1) }
+    static let onAccent = UIColor { $0.userInterfaceStyle == .dark ? .black : .white }
+    static let background = UIColor.systemGroupedBackground
+    static let surface = UIColor.secondarySystemGroupedBackground
+
+    static func card(_ view: UIView) {
+        view.backgroundColor = surface
+        view.layer.cornerRadius = 22
+        view.layer.cornerCurve = .continuous
+    }
+
+    static func section(_ title: String, subtitle: String) -> UIView {
+        let heading = UILabel()
+        heading.text = title
+        heading.font = .preferredFont(forTextStyle: .title2)
+        heading.adjustsFontForContentSizeCategory = true
+        heading.numberOfLines = 0
+        heading.accessibilityTraits = .header
+        let detail = UILabel()
+        detail.text = subtitle
+        detail.font = .preferredFont(forTextStyle: .subheadline)
+        detail.adjustsFontForContentSizeCategory = true
+        detail.textColor = .secondaryLabel
+        detail.numberOfLines = 0
+        let stack = UIStackView(arrangedSubviews: [heading, detail])
+        stack.axis = .vertical
+        stack.spacing = 6
+        return stack
+    }
+
+    static func applyNavigation(to navigation: UINavigationController) {
+        let appearance = UINavigationBarAppearance()
+        appearance.configureWithOpaqueBackground()
+        appearance.backgroundColor = background
+        appearance.shadowColor = .clear
+        appearance.largeTitleTextAttributes = [.foregroundColor: UIColor.label]
+        navigation.navigationBar.standardAppearance = appearance
+        navigation.navigationBar.scrollEdgeAppearance = appearance
+        navigation.navigationBar.compactAppearance = appearance
+        navigation.navigationBar.prefersLargeTitles = true
+        navigation.navigationBar.tintColor = accent
+        navigation.view.backgroundColor = background
     }
 }

@@ -1,76 +1,59 @@
-//
-//  WorkoutToolBar.swift
-//  Workout
-//
-//  Created by Peter Xie on 26/4/2026.
-//
-
 import UIKit
 
-class WorkoutToolBar: UIView {
-    private let toolbar = UIToolbar()
+/// Labeled destinations with comfortable touch targets and explicit action routing.
+final class WorkoutToolBar: UIView {
+    private let destinations = UIStackView()
 
-    override init(frame: CGRect){
-        super.init(frame:frame)
-        build()
-//        style()
-    }
-    required init?(coder: NSCoder){
-        fatalError("look into workoutsummaryCardView def required init?")
-    }
-    struct ToolBarItem{
-        let imageName:String
-        let target:Any?
-        let selector:Selector
-    }
-    
-    func configure(toolbarItems:[ToolBarItem]){
-        var tmptoolbarItems:[UIBarButtonItem] = []
-        let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        toolbarItems.forEach{
-            let button = createCustomButton(imageName: $0.imageName, action: $0.selector,target: $0.self)
-            tmptoolbarItems.append(flexibleSpace)
-            tmptoolbarItems.append(button)
-        }
-        tmptoolbarItems.append(flexibleSpace)
-        self.toolbar.items = tmptoolbarItems
-
+    struct ToolBarItem {
+        let imageName: String
+        weak var target: AnyObject?
+        let selector: Selector
     }
 
-    
-    private func build(){
-        addSubview(toolbar)
-        toolbar.backgroundColor = .systemGray6
-        toolbar.layer.masksToBounds = true
-        toolbar.backgroundColor = .systemBackground
-        toolbar.isTranslucent = false
-        toolbar.translatesAutoresizingMaskIntoConstraints = false
-
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = WorkoutTheme.background
+        destinations.axis = .horizontal
+        destinations.distribution = .fillEqually
+        destinations.spacing = 8
+        destinations.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(destinations)
         NSLayoutConstraint.activate([
-            toolbar.leadingAnchor.constraint(equalTo: leadingAnchor),
-            toolbar.trailingAnchor.constraint(equalTo: trailingAnchor),
-            toolbar.bottomAnchor.constraint(equalTo: bottomAnchor,constant: -15),
-            toolbar.heightAnchor.constraint(equalToConstant: 55)
+            destinations.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            destinations.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            destinations.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+            destinations.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4)
         ])
-        
     }
-    private func createCustomButton(imageName: String, action: Selector,target:Any?) -> UIBarButtonItem {
-        let button = UIButton(type: .system)
-        button.setImage(UIImage(systemName: imageName, withConfiguration: UIImage.SymbolConfiguration(pointSize: 25)), for: .normal)
-        button.addTarget(target, action: action, for: .touchUpInside)
-        return UIBarButtonItem(customView: button)
-    }
-    
-    
-    /*
-    // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destination.
-        // Pass the selected object to the new view controller.
-    }
-    */
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
+    func configure(toolbarItems: [ToolBarItem]) {
+        destinations.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for item in toolbarItems {
+            let title: String
+            switch item.imageName {
+            case "gearshape": title = "Settings"
+            case "dumbbell": title = "History"
+            case "fork.knife": title = "Nutrition"
+            default: title = item.imageName
+            }
+            var configuration = UIButton.Configuration.plain()
+            configuration.title = title
+            configuration.image = UIImage(systemName: item.imageName)
+            configuration.imagePlacement = .top
+            configuration.imagePadding = 5
+            configuration.baseForegroundColor = WorkoutTheme.accent
+            configuration.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+                var attributes = incoming
+                attributes.font = UIFont.preferredFont(forTextStyle: .caption1)
+                return attributes
+            }
+            let button = UIButton(configuration: configuration)
+            button.accessibilityLabel = title
+            button.addTarget(item.target, action: item.selector, for: .touchUpInside)
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            destinations.addArrangedSubview(button)
+        }
+    }
 }
-

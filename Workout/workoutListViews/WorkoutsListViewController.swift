@@ -20,9 +20,12 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = "Workout history"
+        tableView.backgroundColor = WorkoutTheme.background
+        tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 24, right: 0)
         setupUI()
         fetchData()
-        view.backgroundColor = UIColor.systemBackground
+        view.backgroundColor = WorkoutTheme.background
         NotificationCenter.default.addObserver(self, selector: #selector(reloadWorkouts), name: NSNotification.Name("workout"), object: nil)
     }
     
@@ -130,3 +133,4 @@ class WorkoutListTableViewCell: UITableViewCell {
         fatalError()
     }
 }
+

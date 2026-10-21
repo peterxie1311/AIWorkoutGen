@@ -4,13 +4,13 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
     override var prefersHomeIndicatorAutoHidden: Bool {
            return true
        }
-    let tableView = UITableView()
+    let tableView = UITableView(frame: .zero, style: .insetGrouped)
 
     
     override func viewDidLoad() {
         super.viewDidLoad()
         title = "Settings"
-        view.backgroundColor = .white
+        view.backgroundColor = WorkoutTheme.background
         setupStackView()
 //        setupTableView()
         initializeSettings() // Call to initialize settings
@@ -23,7 +23,7 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
         stackView.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(stackView )
         NSLayoutConstraint.activate([
-                stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 230),
+                stackView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 0),
                 stackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
                 stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
                 stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
@@ -94,3 +94,4 @@ extension SettingsViewController: UITextFieldDelegate {
         }
     }
 }
+

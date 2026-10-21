@@ -43,7 +43,7 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = WorkoutTheme.background
         setupUI()
         setupData()
     }
@@ -304,3 +304,4 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
         addSetLabel.text = "Add a Workout Set!"
     }
 }
+

@@ -53,15 +53,18 @@ final class WorkoutSummaryCardView: UIView {
         container.translatesAutoresizingMaskIntoConstraints = false
         let col1 = makeColumn(title: startTimeLabel, value: startTimeValueLabel, align: .left, systemImageName: "clock",imageColour: .systemPurple)
      
-        let col2 = makeColumn(title: durationLabel, value: durationValueLabel, align: .left, systemImageName:"alarm" ,imageColour:.systemBlue)
+        let col2 = makeColumn(title: durationLabel, value: durationValueLabel, align: .left, systemImageName:"alarm" ,imageColour:WorkoutTheme.accent)
 
         let col3 = makeColumn(title: restTimeLabel, value: restTimeValueLabel, align: .left, systemImageName: "timer", imageColour: .systemCyan)
   
         let col4 = makeColumn(title: totalRestTimeLabel, value: totalRestTimeValueLabel, align: .left, systemImageName: "flame", imageColour: .systemOrange)
         
-        let hstack = UIStackView(arrangedSubviews: [col1,col2,col3,col4])
-        hstack.axis = .horizontal
-        hstack.spacing = 8
+        let row1 = UIStackView(arrangedSubviews: [col1, col2])
+        let row2 = UIStackView(arrangedSubviews: [col3, col4])
+        [row1, row2].forEach { $0.distribution = .fillEqually; $0.spacing = 16 }
+        let hstack = UIStackView(arrangedSubviews: [row1, row2])
+        hstack.axis = .vertical
+        hstack.spacing = 20
         hstack.translatesAutoresizingMaskIntoConstraints = false
         hstack.distribution = .fillEqually
         
@@ -83,21 +86,21 @@ final class WorkoutSummaryCardView: UIView {
         
     }
     private func style() {
-        container.backgroundColor = UIColor.systemGray6
+        WorkoutTheme.card(container)
         container.layer.cornerRadius = 18
         container.layer.masksToBounds = true
 
         startTimeLabel.text = "Start"
-        startTimeValueLabel.text = "12:00 PM"
+        startTimeValueLabel.text = "—"
         
         durationLabel.text = "Duration"
         durationValueLabel.text = "00:00:00"
         
         restTimeLabel.text = "Rest"
-        restTimeValueLabel.text = "01:00"
+        restTimeValueLabel.text = "—"
         
         totalRestTimeLabel.text = "Total Rest"
-        totalRestTimeValueLabel.text = "01:00"
+        totalRestTimeValueLabel.text = "00:00"
     }
     
     private func makeDivider() -> UIView {
@@ -110,16 +113,20 @@ final class WorkoutSummaryCardView: UIView {
     
     private func makeColumn(title: UILabel, value: UILabel, align: NSTextAlignment,systemImageName:String,imageColour:UIColor) -> UIStackView {
         title.textAlignment = align
-        title.font = .systemFont(ofSize: 10)
+        title.font = .preferredFont(forTextStyle: .caption1)
+        title.adjustsFontForContentSizeCategory = true
 
         value.textAlignment = align
-        value.font = .systemFont(ofSize: 10, weight: .bold)
+        value.font = .monospacedDigitSystemFont(ofSize: 19, weight: .semibold)
+        value.adjustsFontSizeToFitWidth = true
+        value.minimumScaleFactor = 0.7
         
-        title.textColor = .label
-        value.textColor = .secondaryLabel
+        title.textColor = .secondaryLabel
+        value.textColor = .label
         
         let image = UIImageView(image: UIImage(systemName: systemImageName))
-        image.tintColor = imageColour
+        image.tintColor = WorkoutTheme.accent
+        image.widthAnchor.constraint(equalToConstant: 22).isActive = true
         image.contentMode = .scaleAspectFit
         
         let v = UIStackView(arrangedSubviews: [title, value])
@@ -129,10 +136,11 @@ final class WorkoutSummaryCardView: UIView {
         
         let h = UIStackView(arrangedSubviews: [image,v])
         h.axis = .horizontal
-        h.spacing = 2
+        h.spacing = 10
         h.alignment = .center//align == .left ? .leading : (align == .right ? .trailing : .center)
         h.translatesAutoresizingMaskIntoConstraints = false
         
         return h
     }
 }
+

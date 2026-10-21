@@ -45,7 +45,7 @@ final class FoodlogCardView: UIView {
     }
     
     private func style(){
-        container.backgroundColor = UIColor.systemGray6
+        WorkoutTheme.card(container)
         container.layer.cornerRadius = 18
         container.layer.masksToBounds = true
     }
@@ -191,7 +191,7 @@ private final class FoodEntryRowView: UIView {
         
         let percentageProtein = workoutDesigns.attributedText(text:"  \("(\(Int(((foodLogline.protein/safeTotalProtein)*100).rounded()))%)")",
                                                        fontsize: 16,
-                                                       colour:UIColor.systemBlue)
+                                                       colour:WorkoutTheme.accent)
         
         let percentageCals = workoutDesigns.attributedText(text:"  \("(\(Int(((foodLogline.calories/safeTotalCalories)*100).rounded()))%)")",
                                                        fontsize: 16,
@@ -298,7 +298,7 @@ private final class FoodEntryRowView: UIView {
     }
     
     private func style(){
-        foregroundContainer.backgroundColor = UIColor.systemGray6
+        foregroundContainer.backgroundColor = WorkoutTheme.surface
         //delete button
         backgroundContainer.backgroundColor = .systemRed
         
@@ -327,7 +327,7 @@ private final class FoodEntryRowView: UIView {
      //   bar2Track.backgroundColor = UIColor.systemGray4.withAlphaComponent(0.6)
     //    bar2Track.layer.masksToBounds = true
         
-        bar1Fill.backgroundColor = .systemBlue
+        bar1Fill.backgroundColor = WorkoutTheme.accent
         bar2Fill.backgroundColor = .systemPurple
     }
     
@@ -360,4 +360,5 @@ private final class FoodEntryRowView: UIView {
   
 
 }
+
 

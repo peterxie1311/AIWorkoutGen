@@ -24,31 +24,31 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     }
  
     
-    private let genWorkoutButton = workoutDesigns.createStyledButton( title: "+ Workout",
+    private let genWorkoutButton = workoutDesigns.createStyledButton( title: "Create workout",
                                                                          titleFontSize: 16,
                                                                          imageSize: 16,
                                                                         systemImageName: "heart.text.clipboard",
-                                                                        backgroundColor: .clear,
-                                                                        borderColor: .systemBlue,
-                                                                        textColor: .systemBlue,
+                                                                        backgroundColor: WorkoutTheme.accent,
+                                                                        borderColor: WorkoutTheme.accent,
+                                                                        textColor: WorkoutTheme.onAccent,
 
                                                                         width: 25 ,
                                                                         height: 40)
-    let settingToolbar = WorkoutToolBar.ToolBarItem(
+    lazy var settingToolbar = WorkoutToolBar.ToolBarItem(
         imageName: "gearshape",
-        target: WorkoutAIViewController.self,
+        target: self,
         selector: #selector(goToSettings)
     )
 
-    let viewWorkoutToolbar = WorkoutToolBar.ToolBarItem(
+    lazy var viewWorkoutToolbar = WorkoutToolBar.ToolBarItem(
         imageName: "dumbbell",
-        target: WorkoutAIViewController.self,
+        target: self,
         selector: #selector(goToViewWorkout)
     )
 
-    let foodTrackerToolbar = WorkoutToolBar.ToolBarItem(
+    lazy var foodTrackerToolbar = WorkoutToolBar.ToolBarItem(
         imageName: "fork.knife",
-        target: WorkoutAIViewController.self,
+        target: self,
         selector: #selector(goTofoodtracker)
     )
     
@@ -140,7 +140,10 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
       //  initObserver()
-        view.backgroundColor = .systemBackground
+        title = "Train"
+        navigationItem.backButtonTitle = "Back"
+        view.backgroundColor = WorkoutTheme.background
+        stackScrollView.showsVerticalScrollIndicator = false
         view.addSubview(stackScrollView)
         view.addSubview(toolBar)
         stackScrollView.addSubview(stackView)
@@ -148,14 +151,16 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
         stackView.axis = .vertical
-        stackView.spacing = 16
+        stackView.spacing = 20
         stackView.distribution = .fill
         
        
         
-        planTabsView.heightAnchor.constraint(equalToConstant: 350).isActive = true
+        planTabsView.heightAnchor.constraint(greaterThanOrEqualToConstant: 350).isActive = true
         
-        let views = [summaryCard,timerView,genWorkoutButton,planTabsView]
+        let intro = WorkoutTheme.section("Make every rep count", subtitle: "Your training, at your pace.")
+        let planHeading = WorkoutTheme.section("Your plan", subtitle: "Choose a session to see your exercises.")
+        let views: [UIView] = [intro, summaryCard, timerView, planHeading, genWorkoutButton, planTabsView]
         genWorkoutButton.addTarget(self, action: #selector(goToAddSetVC), for: .touchUpInside)
         
         views.forEach{
@@ -178,13 +183,13 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
 
             toolBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             toolBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            toolBar.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            toolBar.heightAnchor.constraint(equalToConstant: 70),
+            toolBar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            toolBar.heightAnchor.constraint(equalToConstant: 64),
 
-            stackView.topAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.topAnchor),
+            stackView.topAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.topAnchor, constant: 12),
             stackView.leadingAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.leadingAnchor, constant: 20),
             stackView.trailingAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.trailingAnchor, constant: -20),
-            stackView.bottomAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.bottomAnchor),
+            stackView.bottomAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.bottomAnchor, constant: -24),
             stackView.widthAnchor.constraint(equalTo: stackScrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
         loadViewDatas()
@@ -207,3 +212,4 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     */
 
 }
+

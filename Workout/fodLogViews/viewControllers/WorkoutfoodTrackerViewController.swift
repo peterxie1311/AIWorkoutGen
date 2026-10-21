@@ -117,8 +117,11 @@ class WorkoutfoodTrackerViewController: UIViewController {
         let dinnerFoodLines = FoodLogManager.shared.fetchFoodLinesbyIDLessThanHour(i_id: tmpID, i_hourLessThan: 23, i_hourGreaterThan: 16)
         dinnerCard.configure(foodLogLines: dinnerFoodLines, totalCalories: self.calorieGoal, totalProtein: self.proteinGoal)
         
-        titleLabel.text = "Food Log: " + HelperFunctions.parseDateToString(self.logDate)
-        titleLabel.font = UIFont.boldSystemFont(ofSize: 24)
+        titleLabel.text =  HelperFunctions.parseDateToString(self.logDate)
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.numberOfLines = 0
+        titleLabel.textAlignment = .center
         
     }
     @objc private func initForward(){
@@ -135,8 +138,10 @@ class WorkoutfoodTrackerViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        title = "Nutrition"
+        stackScrollView.showsVerticalScrollIndicator = false
         //first init all the UIViews
-        view.backgroundColor = .systemBackground
+        view.backgroundColor = WorkoutTheme.background
         view.addSubview(stackScrollView)
         stackScrollView.translatesAutoresizingMaskIntoConstraints = false
         stackScrollView.addSubview(stackView)
@@ -174,7 +179,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
         
         previousDateButton.addTarget(self, action: #selector(initBackward), for: .touchUpInside)
         nextDateButton.addTarget(self, action: #selector(initForward), for: .touchUpInside)
-        let dateNavigationStack = UIStackView(arrangedSubviews: [previousDateButton,titleLabel,nextDateButton,calendarButton])
+        let dateNavigationStack = UIStackView(arrangedSubviews: [previousDateButton,titleLabel,nextDateButton])
         
         dateNavigationStack.axis      = .horizontal
         dateNavigationStack.alignment = .center
@@ -188,7 +193,7 @@ class WorkoutfoodTrackerViewController: UIViewController {
             stackView.addArrangedSubview(view)
         }
         stackView.axis          = .vertical
-        stackView.spacing       = 10.0
+        stackView.spacing       = 20.0
         
         
         
@@ -197,10 +202,10 @@ class WorkoutfoodTrackerViewController: UIViewController {
             stackScrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             stackScrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             stackScrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-               stackView.topAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.topAnchor),
+               stackView.topAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.topAnchor, constant: 12),
                stackView.leadingAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.leadingAnchor, constant: 20),
                stackView.trailingAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.trailingAnchor, constant: -20),
-               stackView.bottomAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.bottomAnchor),
+               stackView.bottomAnchor.constraint(equalTo: stackScrollView.contentLayoutGuide.bottomAnchor, constant: -24),
 
                stackView.widthAnchor.constraint(equalTo: stackScrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
@@ -210,3 +215,4 @@ class WorkoutfoodTrackerViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(reloadData), name: NSNotification.Name(Constants.reloadFoodLogTrigger), object: nil)
     }
 }
+

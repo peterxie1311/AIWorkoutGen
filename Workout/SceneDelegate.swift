@@ -28,6 +28,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         let rootVC = WorkoutAIViewController() // Your initial view controller
         let navigationController = UINavigationController(rootViewController: rootVC)
+        WorkoutTheme.applyNavigation(to: navigationController)
+        window.tintColor = WorkoutTheme.accent
         window.rootViewController = navigationController
         self.window = window
         window.makeKeyAndVisible()
@@ -66,4 +68,5 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
 }
+
 

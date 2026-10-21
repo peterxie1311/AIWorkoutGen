@@ -111,7 +111,7 @@ final class SavedFoodsView: UIView {
     }
 
     private func style() {
-        backgroundColor = UIColor.systemGray6
+        backgroundColor = WorkoutTheme.surface
 
         layer.cornerRadius = 18
         layer.cornerCurve = .continuous
@@ -122,7 +122,7 @@ final class SavedFoodsView: UIView {
         titleLabel.font = .systemFont(ofSize: 19, weight: .bold)
 
         viewAllButton.setTitle("View All", for: .normal)
-        viewAllButton.setTitleColor(.systemBlue, for: .normal)
+        viewAllButton.setTitleColor(WorkoutTheme.accent, for: .normal)
         viewAllButton.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
 
         scrollView.showsHorizontalScrollIndicator = false
@@ -205,7 +205,7 @@ final class SavedFoodCardView: UIView {
     }
 
     private func style() {
-        backgroundColor = UIColor.white.withAlphaComponent(0.045)
+        backgroundColor = WorkoutTheme.background
 
         layer.cornerRadius = 10
         layer.cornerCurve = .continuous
@@ -228,3 +228,4 @@ final class SavedFoodCardView: UIView {
         amountLabel.numberOfLines = 1
     }
 }
+

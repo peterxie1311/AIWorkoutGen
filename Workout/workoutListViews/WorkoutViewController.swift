@@ -95,7 +95,7 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor.systemBackground
+        view.backgroundColor = WorkoutTheme.background
         NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("SetRep"), object: nil)
         setupUI()
         setupData()
@@ -122,7 +122,7 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
             label.text = title
             label.textAlignment = .center
             label.font = UIFont.boldSystemFont(ofSize: 16)
-            label.textColor = .systemBlue
+            label.textColor = WorkoutTheme.accent
             headerStackView.addArrangedSubview(label)
         }
         
@@ -290,3 +290,4 @@ class WorkoutTableViewCell: UITableViewCell {
             }
     }
 }
+

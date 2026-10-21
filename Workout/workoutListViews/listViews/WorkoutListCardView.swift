@@ -37,18 +37,20 @@ final class WorkoutListCardView: UIView {
     }
 
     private func setup() {
-        backgroundColor = UIColor.secondarySystemBackground
+        WorkoutTheme.card(self)
         layer.cornerRadius = 16
         clipsToBounds = true
 
-        titleLabel.font = .boldSystemFont(ofSize: 18)
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.adjustsFontForContentSizeCategory = true
+        titleLabel.numberOfLines = 0
         titleLabel.textColor = .label
 
         dateLabel.font = .systemFont(ofSize: 13, weight: .medium)
         dateLabel.textColor = .secondaryLabel
 
         ratingLabel.font = .boldSystemFont(ofSize: 18)
-        ratingLabel.textColor = .systemBlue
+        ratingLabel.textColor = WorkoutTheme.accent
         ratingLabel.textAlignment = .right
         
         
@@ -146,3 +148,4 @@ final class WorkoutListCardView: UIView {
         return "\(Int(round((Double(completedSets) / Double(totalSets)) * 100)))%"
     }
 }
+

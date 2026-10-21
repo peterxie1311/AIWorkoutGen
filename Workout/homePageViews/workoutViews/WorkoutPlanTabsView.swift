@@ -42,6 +42,12 @@ final class WorkoutPlanTabsView: UIView {
     ) {
         onSetRepSelectedFunc = i_onSetRepSelected
         workoutSessions = i_workoutSessions
+        selectedIndex = min(selectedIndex, max(0, workoutSessions.count - 1))
+        if workoutSessions.isEmpty {
+            tableView.backgroundView = WorkoutTheme.section("Ready when you are", subtitle: "Create a workout to build your next session.")
+        } else {
+            tableView.backgroundView = nil
+        }
         onTabSelectedFunc = i_onTabSelectedFunc
 
         reloadTabs()
@@ -93,7 +99,7 @@ final class WorkoutPlanTabsView: UIView {
             tabScrollView.topAnchor.constraint(equalTo: topAnchor, constant: 12),
             tabScrollView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
             tabScrollView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            tabScrollView.heightAnchor.constraint(equalToConstant: 36),
+            tabScrollView.heightAnchor.constraint(equalToConstant: 44),
 
             tabStack.topAnchor.constraint(equalTo: tabScrollView.contentLayoutGuide.topAnchor),
             tabStack.leadingAnchor.constraint(equalTo: tabScrollView.contentLayoutGuide.leadingAnchor),
@@ -111,7 +117,7 @@ final class WorkoutPlanTabsView: UIView {
 //            tabStack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
 //            tabStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
 //            tabStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-//            tabStack.heightAnchor.constraint(equalToConstant: 36),
+//            tabStack.heightAnchor.constraint(equalToConstant: 44),
 //
 //            tableView.topAnchor.constraint(equalTo: tabStack.bottomAnchor, constant: 12),
 //            tableView.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -121,12 +127,15 @@ final class WorkoutPlanTabsView: UIView {
     }
 
     private func style() {
-        backgroundColor = .systemGray6
-        layer.cornerRadius = 18
+        backgroundColor = WorkoutTheme.surface
+        layer.cornerRadius = 22
         clipsToBounds = true
 
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
+        tableView.separatorColor = .separator
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 60
     }
     private func createHeader () -> UIView {
         let headerView = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 40))
@@ -143,7 +152,7 @@ final class WorkoutPlanTabsView: UIView {
             label.text          = title
             label.textAlignment = .center
             label.font          = UIFont.boldSystemFont(ofSize: 16)
-            label.textColor     = .systemBlue
+            label.textColor     = WorkoutTheme.accent
             headerStackView.addArrangedSubview(label)
         }
         
@@ -171,11 +180,11 @@ final class WorkoutPlanTabsView: UIView {
             button.titleLabel?.font = .systemFont(ofSize: 14, weight: .semibold)
 
             if index == selectedIndex {
-                button.backgroundColor = .systemBlue
-                button.setTitleColor(.white, for: .normal)
+                button.backgroundColor = WorkoutTheme.accent
+                button.setTitleColor(WorkoutTheme.onAccent, for: .normal)
             } else {
                 button.backgroundColor = .clear
-                button.setTitleColor(.systemBlue, for: .normal)
+                button.setTitleColor(WorkoutTheme.accent, for: .normal)
             }
 
             button.addTarget(self, action: #selector(tabTapped(_:)), for: .touchUpInside)
@@ -292,4 +301,5 @@ class WorkoutListCell: UITableViewCell {
     }
 
 }
+
 
