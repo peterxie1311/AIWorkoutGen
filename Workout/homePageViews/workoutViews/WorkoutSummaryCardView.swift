@@ -43,7 +43,7 @@ final class WorkoutSummaryCardView: UIView {
         let duration = Int(Date().timeIntervalSince(i_startDate))
         startTimeValueLabel.text     = HelperFunctions.parseDateToStringTime(i_startDate)
         durationValueLabel.text      = HelperFunctions.parseIntSecToString  (seconds: duration)
-        restTimeValueLabel.text      = HelperFunctions.parseIntSecToString(seconds: i_restTime)
+        restTimeValueLabel.text      = HelperFunctions.parseIntSecToString  (seconds: i_restTime)
         totalRestTimeValueLabel.text = HelperFunctions.parseIntSecToString  (seconds: i_totalRestTimeSec)
     }
     

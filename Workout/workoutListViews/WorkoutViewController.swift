@@ -66,8 +66,6 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
                 print("Workout ID is nil")
                 return
             }
-           
-        navigationController?.popViewController(animated: true)
     }
     
     @objc private func excludeWorkout() {

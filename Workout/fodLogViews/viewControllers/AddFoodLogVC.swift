@@ -483,6 +483,14 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         ingredientsLabel.numberOfLines = 0
         ingredientsLabel.lineBreakMode = .byWordWrapping
         ingredientsLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        assumptionsLabel.lineBreakMode = .byWordWrapping
+        assumptionsLabel.numberOfLines = 0
+        assumptionsLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        confidenceLabel.lineBreakMode = .byWordWrapping
+        confidenceLabel.numberOfLines = 0
+        confidenceLabel.translatesAutoresizingMaskIntoConstraints = false
 
         proteinGramField.keyboardType = .decimalPad
         carbGramField.keyboardType = .decimalPad

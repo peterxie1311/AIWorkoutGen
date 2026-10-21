@@ -39,6 +39,7 @@
         <attribute name="repid" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
         <attribute name="startTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="weight" optional="YES" attributeType="Integer 64" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="weight_basis" optional="YES" attributeType="String"/>
         <attribute name="workoutName" optional="YES" attributeType="String"/>
         <relationship name="workoutSession" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="WorkoutSession" inverseName="setrep" inverseEntity="WorkoutSession"/>
     </entity>

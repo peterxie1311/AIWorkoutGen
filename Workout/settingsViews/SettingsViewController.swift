@@ -17,7 +17,6 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
     }
     
     func setupStackView(){
-        
         let stackView = UIStackView(arrangedSubviews: [tableView])
         stackView.axis                                      = .vertical
         stackView.spacing                                   = 10
@@ -31,7 +30,6 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
             ])
         
         setupTableView(stackView: stackView)
-        
     }
     
     func setupTableView(stackView:UIStackView) {
@@ -47,8 +45,6 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
             tableView.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: stackView.trailingAnchor)
         ])
-        
-        
     }
     
     func initializeSettings() {

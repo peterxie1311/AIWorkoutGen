@@ -27,6 +27,7 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
     private let setqtyField = UITextField()
     private let repqtyField = UITextField()
     private let weightField = UITextField()
+    private let weightUnit = UIButton()
 
     private let aiCustField = UITextField()
     private let aiCntField = UITextField()
@@ -55,6 +56,11 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
         let tmpSetQty = Int(setqtyField.text ?? "") ?? 0
         let tmpRepQty = Int(repqtyField.text ?? "") ?? 0
         let tmpWeight = Int64(weightField.text ?? "") ?? 0
+        
+        guard !(weightUnit.configuration?.title ?? "").isEmpty else {
+            HelperFunctions.showAlert(on: self, title: "No Weight Unit Selected!", message: "")
+            return
+        }
 
         var setRepArr: [Setrep] = []
 
@@ -64,7 +70,8 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
                 startTime: Date(),
                 finishTime: Date(),
                 workoutName: tmpWorkoutName,
-                weight: tmpWeight
+                weight: tmpWeight,
+                weight_basis: weightUnit.configuration?.title ?? ""
             )
 
             setRepArr.append(tmpSet)
@@ -113,12 +120,14 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
         let cntSessions = Int(aiCntwrkField.text ?? "") ?? 0
         let cntWorkouts = Int(aiCntField.text ?? "") ?? 0
         let cust = aiCustField.text ?? ""
-
-        WorkoutSessionManager.shared.createWorkoutPlan(
-            i_workouts: cntWorkouts,
-            i_sessions: cntSessions,
-            i_customisations: cust
-        )
+        Task{
+            let retInfo = await WorkoutSessionManager.shared.createWorkoutPlan(
+                i_workouts: cntWorkouts,
+                i_sessions: cntSessions,
+                i_customisations: cust
+            )
+            HelperFunctions.showAlert(on: self, title: "Create Workout Plan", message: retInfo)
+        }
     }
 
     func textFieldDidBeginEditing(_ textField: UITextField) {
@@ -134,34 +143,61 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
         addSetButton.addTarget(self, action: #selector(addSet), for: .touchUpInside)
         generateWorkoutButton.addTarget(self, action: #selector(queryChat), for: .touchUpInside)
 
-        let workoutTextFields: [TextField] = [
-            TextField(
-                labelName: "Workout Name",
-                keyboardType: .default,
-                uiTextfield: workoutnameField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
+        let workoutFields: [FormField] = [
+            .textField(
+                TextField(
+                    labelName: "Workout Name",
+                    keyboardType: .default,
+                    uiTextfield: workoutnameField,
+                    useLabelNameAsPlaceHolder: false,
+                    delegate: self
+                )
             ),
-            TextField(
-                labelName: "Set QTY",
-                keyboardType: .numberPad,
-                uiTextfield: setqtyField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
+
+            .dropdown(
+                DropdownField(
+                    labelName: "Weight Unit",
+                    button: weightUnit,
+                    options: [
+                        "total",
+                        "per dumbbell",
+                        "per side",
+                        "bodyweight",
+                        "machine stack",
+                        "added weight"
+                    ],
+                    selectedOption: "total"
+                )
             ),
-            TextField(
-                labelName: "Rep QTY",
-                keyboardType: .numberPad,
-                uiTextfield: repqtyField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
+
+            .textField(
+                TextField(
+                    labelName: "Set QTY",
+                    keyboardType: .numberPad,
+                    uiTextfield: setqtyField,
+                    useLabelNameAsPlaceHolder: false,
+                    delegate: self
+                )
             ),
-            TextField(
-                labelName: "Weight (kg)",
-                keyboardType: .numberPad,
-                uiTextfield: weightField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
+
+            .textField(
+                TextField(
+                    labelName: "Rep QTY",
+                    keyboardType: .numberPad,
+                    uiTextfield: repqtyField,
+                    useLabelNameAsPlaceHolder: false,
+                    delegate: self
+                )
+            ),
+
+            .textField(
+                TextField(
+                    labelName: "Weight (kg)",
+                    keyboardType: .decimalPad,
+                    uiTextfield: weightField,
+                    useLabelNameAsPlaceHolder: false,
+                    delegate: self
+                )
             )
         ]
 
@@ -208,8 +244,8 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
             ]
         )
 
-        let textFieldsView = workoutDesigns.createRoundedSquareViewWithTextFields(
-            textFields: workoutTextFields
+        let textFieldsView = workoutDesigns.createRoundedSquareView(
+            fields: workoutFields
         )
 
         let textFieldsAIView = workoutDesigns.createRoundedSquareViewWithTextFields(

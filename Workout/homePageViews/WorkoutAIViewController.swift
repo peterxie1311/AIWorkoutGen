@@ -34,8 +34,6 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
 
                                                                         width: 25 ,
                                                                         height: 40)
-    // define tool bar items
-    
     let settingToolbar = WorkoutToolBar.ToolBarItem(
         imageName: "gearshape",
         target: WorkoutAIViewController.self,
@@ -64,6 +62,21 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         
     }
     
+    func updateViews(ws:WorkoutSession) {
+        
+        // Start the timer
+        timer?.invalidate() // Invalidate any existing timer
+        if ws.startTime != ws.endTime{
+            timerView.configureRestTimeDur(i_timeinterval: TimeInterval(ws.rest_duration))
+            //            summaryCard.updateTimers(i_startDate: Date(), i_totalRestTimeSec: newWorkout.rest_duration)
+            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                self.updateTimer(i_currWorkout: ws)
+                
+            }
+            loadViewDatas()
+        }
+    }
+    
     @objc func finishWorkout() {
         timer?.invalidate()
         timer = nil // Clear the timer
@@ -71,6 +84,7 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         if let curWorkout = planTabsView.selectedWorkoutSession {
             let newWorkout = curWorkout
             newWorkout.endTime = Date()
+            newWorkout.isComplete = true
             let minutes = newWorkout.endTime!.timeIntervalSince(curWorkout.startTime!) / 60
             newWorkout.duration_hrs = Float(minutes / 60)
             Task {
@@ -88,7 +102,7 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         if let currworkout = planTabsView.selectedWorkoutSession{
             let newWorkout = currworkout
             newWorkout.startTime = Date()
-            newWorkout.endTime   = Date()
+           // newWorkout.endTime   = Date()
             Task {
                 await WorkoutSessionManager.shared.updateWorkoutSession(prevWorkout:currworkout,updatedSession:newWorkout)
             }
@@ -108,9 +122,13 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     
     }
     
+    
+    
     @objc func loadViewDatas(){
         WorkoutSessionManager.shared.loadWorkoutSessions()
-        self.planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),i_onSetRepSelected: self.handler)
+        self.planTabsView.configure(i_workoutSessions: WorkoutSessionManager.shared.getOpenWorkouts(),i_onSetRepSelected: self.handler, i_onTabSelectedFunc: { [weak self] workout in
+            self?.updateViews(ws: workout)
+        })
         
     }
 

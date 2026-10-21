@@ -122,6 +122,7 @@ class WorkoutSessionManager {
                     localWorkout.startTime = dbWorkout.startTime
                     localWorkout.workout_genre = dbWorkout.workout_genre
                     localWorkout.workouttab = dbWorkout.workouttab
+                    localWorkout.isComplete = dbWorkout.iscompleted ?? false
 
                     didChange = true
                     print("updated local workout session")
@@ -171,6 +172,7 @@ class WorkoutSessionManager {
                             workoutName: dto.workoutName ?? "",
                             weight: Int64(dto.weight),
                             uuid: dto.repid,
+                            weight_basis: dto.weight_basis ?? "",
                             context:context
                         )
 
@@ -198,6 +200,7 @@ class WorkoutSessionManager {
                         workoutName: dto.workoutName ?? "",
                         weight: Int64(dto.weight),
                         uuid: dto.repid,
+                        weight_basis: dto.weight_basis ?? "",
                         context:context
                     )
 
@@ -217,8 +220,8 @@ class WorkoutSessionManager {
                         workoutTab: dbWorkout.workouttab ?? dbWorkout.workout_genre ?? "",
                         uuid: dbWorkout.id,
                         moddate: dbWorkout.moddate ?? Date(),
-                        context:context
-                    )
+                        isCompleted: dbWorkout.iscompleted ?? false,
+                        context:context )
                 
 
                 didChange = true
@@ -242,15 +245,8 @@ class WorkoutSessionManager {
    
     
     func syncWorkoutSessionEntries() async {
-        
         let startTime = Date()
-        
-        
-        
-//        clearAllWorkoutData()
-
         let dbWorkouts = await DBConnector.shared.fetchWorkoutSessions()
-        
         guard let appDelegate = await UIApplication.shared.delegate as? AppDelegate else {
             return
         }
@@ -267,7 +263,6 @@ class WorkoutSessionManager {
             }
             
             // now we gotta switch to the main actor again and update all the UIS
-            
             await MainActor.run{
                 self.loadWorkoutSessions()
                 SetrepManager.shared.loadSetreps()
@@ -286,184 +281,18 @@ class WorkoutSessionManager {
         }catch {
             print("Workout sync failed: \(error)")
         }
-
-//        if didChange {
-//            saveWorkoutSessions()
-//        }
-//
-
-//
-//        if uploadArr.count > 0 {
-//            print("uploading \(uploadArr.count) workout(s) to database")
-//            await DBConnector.shared.insertWorkouts(i_ws: uploadArr)
-//        } else {
-//            print("sync complete, no database update needed")
-//        }
-//        
         let finishTime = Date()
         
         let seconds = finishTime.timeIntervalSince(startTime)
         print(seconds)
     }
     
-//    @MainActor
-//    func syncWorkoutSessionEntries() async {
-//        
-//        let startTime = Date()
-//        
-//        
-//        
-//        WorkoutSessionManager.shared.loadWorkoutSessions()
-//        let finishTimeLoadWorkouts = Date()
-//        
-////        clearAllWorkoutData()
-//
-//        let dbWorkouts = await DBConnector.shared.fetchWorkoutSessions()
-//        
-//        let finishTimeLoadWorkoutss = Date()
-//        var uploadArr: [WorkoutSessionUploadDTO] = []
-//        var didChange = false
-//
-//        for dbWorkout in dbWorkouts {
-//            var shouldUpdateDatabase = false
-//
-//            if let localWorkout = workoutSessions.first(where: { $0.id == dbWorkout.id }) {
-//
-//                let workoutDiff = dateDiffSeconds(localWorkout.moddate, dbWorkout.moddate)
-//
-//                if localIsNewer(localWorkout.moddate, than: dbWorkout.moddate) {
-//                    //print("should update database with local workout session")
-//                    print("local workout moddate: \(String(describing: localWorkout.moddate)) | db workout moddate: \(String(describing: dbWorkout.moddate)) | diff: \(workoutDiff)")
-//                    shouldUpdateDatabase = true
-//
-//                } else if remoteIsNewer(localWorkout.moddate, than: dbWorkout.moddate) {
-//                    localWorkout.duration_hrs = Float(dbWorkout.duration_hrs)
-//                    localWorkout.endTime = dbWorkout.endTime
-//                    localWorkout.location = dbWorkout.location
-//                    localWorkout.moddate = dbWorkout.moddate
-//                    localWorkout.rest_duration = dbWorkout.rest_duration ?? localWorkout.rest_duration
-//                    localWorkout.startTime = dbWorkout.startTime
-//                    localWorkout.workout_genre = dbWorkout.workout_genre
-//                    localWorkout.workouttab = dbWorkout.workouttab
-//
-//                    didChange = true
-//                   // print("updated local workout session")
-//                    print("local workout was older by \(abs(workoutDiff)) seconds")
-//                } else {
-//                    print("workout session same, skip")
-//                }
-//
-//                for dto in dbWorkout.setreps {
-//                    if let localSetrep = localWorkout.setrepArray.first(where: { $0.repid == dto.repid }) {
-//
-//                        let setrepDiff = dateDiffSeconds(localSetrep.moddate, dto.moddate)
-//
-//                        if localIsNewer(localSetrep.moddate, than: dto.moddate) {
-//                            print("should update database with local setrep")
-//                            print("local setrep moddate: \(String(describing: localSetrep.moddate)) | db setrep moddate: \(String(describing: dto.moddate)) | diff: \(setrepDiff)")
-//                            shouldUpdateDatabase = true
-//
-//                        } else if remoteIsNewer(localSetrep.moddate, than: dto.moddate) {
-//                            localSetrep.duration_sec = Float(dto.duration_sec)
-//                            localSetrep.finishTime = dto.finishTime
-//                            localSetrep.rep_qty = Int64(dto.rep_qty)
-//                            localSetrep.startTime = dto.startTime
-//                            localSetrep.weight = Int64(dto.weight)
-//                            localSetrep.workoutName = dto.workoutName
-//                            localSetrep.completed = dto.completed
-//                            localSetrep.moddate = dto.moddate
-//
-//                            didChange = true
-//                            print("updated local setrep")
-//                            print("local setrep was older by \(abs(setrepDiff)) seconds")
-//                        } else {
-//                            print("setrep same, skip")
-//                        }
-//
-//                    } else {
-//                        let newSetrep = SetrepManager.shared.initSetRep(
-//                            qty: dto.rep_qty,
-//                            startTime: dto.startTime ?? Date(),
-//                            finishTime: dto.finishTime ?? Date(),
-//                            workoutName: dto.workoutName ?? "",
-//                            weight: Int64(dto.weight),
-//                            uuid: dto.repid
-//                        )
-//
-//                        newSetrep.duration_sec = Float(dto.duration_sec)
-//                        newSetrep.completed = dto.completed
-//                        newSetrep.moddate = dto.moddate
-//
-//                        localWorkout.addToSetrep(newSetrep)
-//
-//                        didChange = true
-//                        print("inserted missing setrep into local workout")
-//                    }
-//                }
-//
-//                if shouldUpdateDatabase {
-//                    uploadArr.append(localWorkout.toDTO())
-//                }
-//
-//            } else {
-//                let sets = dbWorkout.setreps.map { dto in
-//                    let setrep = SetrepManager.shared.initSetRep(
-//                        qty: dto.rep_qty,
-//                        startTime: dto.startTime ?? Date(),
-//                        finishTime: dto.finishTime ?? Date(),
-//                        workoutName: dto.workoutName ?? "",
-//                        weight: Int64(dto.weight),
-//                        uuid: dto.repid
-//                    )
-//
-//                    setrep.duration_sec = Float(dto.duration_sec)
-//                    setrep.completed = dto.completed
-//                    setrep.moddate = dto.moddate
-//
-//                    return setrep
-//                }
-//                    
-//                 await addWorkoutSession(
-//                        durationHrs: Float(dbWorkout.duration_hrs),
-//                        endTime: dbWorkout.endTime ?? Date(),
-//                        location: dbWorkout.location ?? "",
-//                        startTime: dbWorkout.startTime ?? Date(),
-//                        sets: sets,
-//                        workoutTab: dbWorkout.workouttab ?? dbWorkout.workout_genre ?? "",
-//                        uuid: dbWorkout.id,
-//                        moddate: dbWorkout.moddate ?? Date()
-//                    )
-//                
-//
-//                didChange = true
-//                print("inserted missing workout session")
-//            }
-//        }
-//
-//        if didChange {
-//            saveWorkoutSessions()
-//        }
-//
-//        for localWorkout in workoutSessions {
-//            if !dbWorkouts.contains(where: { $0.id == localWorkout.id }) {
-//                uploadArr.append(localWorkout.toDTO())
-//                print("local workout missing from database, queued for upload")
-//            }
-//        }
-//
-//        if uploadArr.count > 0 {
-//            print("uploading \(uploadArr.count) workout(s) to database")
-//            await DBConnector.shared.insertWorkouts(i_ws: uploadArr)
-//        } else {
-//            print("sync complete, no database update needed")
-//        }
-//        
-//        let finishTime = Date()
-//        print(finishTime.timeIntervalSince(startTime))
-//        print(finishTimeLoadWorkouts.timeIntervalSince(startTime))
-//        print(finishTimeLoadWorkoutss.timeIntervalSince(startTime))
-//    }
-
+    struct SetRepGroupKey:Hashable{
+        let workoutName:String
+        let reps:Int
+        let weight:Double
+        let weight_basis:String
+    }
 
 
     @MainActor
@@ -472,8 +301,7 @@ class WorkoutSessionManager {
         i_sessions: Int,
         //i_vc: UIViewController,
         i_customisations: String
-    )  {
-        Task {
+    ) async -> String {
             do {
 
                 let sortedWorkouts = workoutSessions.sorted {
@@ -481,22 +309,18 @@ class WorkoutSessionManager {
                 }
 
                 let recentWorkouts = Array(sortedWorkouts.prefix(i_workouts))
-
                 let workoutArray: [WorkoutSessionDTO] = recentWorkouts.map { workout in
-
-                    let setreps: [SetrepDTO] = workout.setrepArray.compactMap { setrep in
-                        guard setrep.completed == true else {
-                            return nil
-                        }
-
-                        return SetrepDTO(
-                            workoutName: setrep.workoutName ?? "",
-                            rep_qty: Int(setrep.rep_qty),
-                            weight: Int(setrep.weight),
-                            set_qty: 1
-                        )
+                    let completedSets = workout.setrepArray.filter(\.completed)
+                    // this is basically just like group by in plsql
+                    let groupedSets = Dictionary(grouping:completedSets){setrep in
+                        SetRepGroupKey(workoutName: setrep.workoutName ?? "", reps: Int(setrep.rep_qty), weight: Double(setrep.weight),weight_basis: setrep.weight_basis ?? "")
                     }
-
+                    let setreps = groupedSets.map{key,sets in
+                        SetrepDTO(
+                            workoutName: key.workoutName, rep_qty: key.reps, weight: Int(key.weight), set_qty: sets.count, weight_basis: key.weight_basis
+                        )
+                        
+                    }
                     return WorkoutSessionDTO(
                         workouttab: workout.workouttab ?? "",
                         location: workout.location,
@@ -505,18 +329,12 @@ class WorkoutSessionManager {
                         setreps: setreps
                     )
                 }
-                
-       
                let arr = try await workoutAIservice.shared.createWorkoutPlan(
                     i_cntInputData: workoutArray,
                     i_sessions: i_sessions,
                     //i_vc: i_vc,
                     i_customisations: i_customisations
                 )
-                
-               
-                
-          
                     arr.forEach { w in
                         Task{
                             await addWorkoutSession(
@@ -526,20 +344,15 @@ class WorkoutSessionManager {
                                 moddate: Date()
                             )
                         }
-                        
                     }
-           
-                
-             
-                
-                
-
-            } catch {
-                
+                return "Workout Plan succesfully generated!"
+            } catch let e as chatGPTError{
+                return "Status Code: \(e.statusCode)  Message:\(e.message)"
+            } catch let e {
+                return e.localizedDescription
             }
-        }
     }
-
+    @MainActor
     func removeWorkoutSession(workoutid:UUID) async{
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
@@ -563,15 +376,20 @@ class WorkoutSessionManager {
     }
 
     func getOpenWorkouts() -> [WorkoutSession]{
-        var arr:[WorkoutSession]=[]
-        for session in workoutSessions {
-            let startTimeString = session.startTime != nil ? HelperFunctions.parseDateToStringFull(session.startTime!) : "1"
-            let endTimeString = session.endTime != nil ? HelperFunctions.parseDateToStringFull(session.endTime!) : "2"
-            if startTimeString == endTimeString{
-                arr.append(session)
-            }
+//        var arr:[WorkoutSession]=[]
+        
+//        for session in workoutSessions {
+//            let startTimeString = session.startTime != nil ? HelperFunctions.parseDateToStringFull(session.startTime!) : "1"
+//            let endTimeString = session.endTime != nil ? HelperFunctions.parseDateToStringFull(session.endTime!) : "2"
+//            if startTimeString == endTimeString{
+//                arr.append(session)
+//            }
+//        }
+        let openWorkouts = workoutSessions.filter { ws in ws.isComplete == false }
+        let sortedArr = openWorkouts.sorted {
+            ($0.workouttab ?? "") < ($1.workouttab ?? "")
         }
-        return arr;
+        return sortedArr
     }
     
     // Update an existing workout session
@@ -579,7 +397,7 @@ class WorkoutSessionManager {
         if let index = workoutSessions.firstIndex(where: { $0.id == prevWorkout.id }) {
             updatedSession.moddate = Date()
             workoutSessions[index] = updatedSession // Update the workout session object
-            saveWorkoutSessions() // Save after updating
+            await saveWorkoutSessions() // Save after updating
             await DBConnector.shared.insertWorkouts(i_ws: [updatedSession.toDTO()])
             NotificationCenter.default.post(name: NSNotification.Name("workout"), object: nil)
         } else {
@@ -671,6 +489,7 @@ class WorkoutSessionManager {
     }
     
     // Save workout sessions to Core Data
+    @MainActor
     func saveWorkoutSessions() {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         let context = appDelegate.persistentContainer.viewContext
@@ -730,6 +549,7 @@ class WorkoutSessionManager {
         uuid: UUID = UUID(),
         restDuration: Float = 0,
         moddate: Date,
+        isCompleted:Bool,
         context: NSManagedObjectContext
     ) -> WorkoutSession {
         let newSession = WorkoutSession(context: context)
@@ -741,6 +561,7 @@ class WorkoutSessionManager {
         newSession.startTime = startTime
         newSession.workouttab = workoutTab
         newSession.rest_duration = restDuration
+        newSession.isComplete = isCompleted
         newSession.moddate = moddate
 
         for set in sets {

@@ -124,7 +124,7 @@ class SetrepManager {
         return false
     }
     
-    func initSetRep(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64,uuid:UUID = UUID()) -> Setrep {
+    func initSetRep(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64,weight_basis:String,uuid:UUID = UUID()) -> Setrep {
         let context = (UIApplication.shared.delegate as? AppDelegate)?.persistentContainer.viewContext ?? NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
 
         let newSetrep = Setrep(context: context)
@@ -136,13 +136,14 @@ class SetrepManager {
         newSetrep.weight = weight
         newSetrep.repid = uuid
         newSetrep.moddate = Date()
+        newSetrep.weight_basis = weight_basis
         
         return newSetrep
     }
     
     // use this one basically only for the sync methods in the workoutsessionmanager sync
     // use the first one for basically everything else you need to init a setrep
-    func initSetRepNoContext(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64,uuid:UUID = UUID(),context:NSManagedObjectContext) -> Setrep {
+    func initSetRepNoContext(qty: Int, startTime: Date, finishTime: Date, workoutName: String, weight: Int64,uuid:UUID = UUID(),weight_basis:String,context:NSManagedObjectContext) -> Setrep {
         let newSetrep = Setrep(context: context)
         newSetrep.rep_qty = Int64(qty)
         newSetrep.startTime = startTime
@@ -152,6 +153,7 @@ class SetrepManager {
         newSetrep.weight = weight
         newSetrep.repid = uuid
         newSetrep.moddate = Date()
+        newSetrep.weight_basis = weight_basis
         return newSetrep
     }
     

@@ -29,6 +29,7 @@ struct SetrepDTO: Codable {
     let rep_qty: Int
     let weight: Int
     let set_qty: Int
+    let weight_basis: String
 
     var asSetreps: [Setrep] {
         (0..<set_qty).map { _ in
@@ -37,7 +38,8 @@ struct SetrepDTO: Codable {
                 startTime: Date(),
                 finishTime: Date(),
                 workoutName: workoutName,
-                weight: Int64(weight)
+                weight: Int64(weight),
+                weight_basis: weight_basis
             )
         }
     }
@@ -52,6 +54,22 @@ struct Choice: Decodable {
 
 struct Message: Decodable {
     let content: String
+}
+
+struct OpenAIErrorResponse: Decodable {
+    let error: OpenAIError
+}
+
+struct OpenAIError: Decodable {
+    let message: String
+    let type: String
+    let param: String?
+    let code: String?
+}
+
+struct chatGPTError:LocalizedError{
+    let statusCode:Int
+    let message:String
 }
 class workoutAIservice {
     static let shared = workoutAIservice()
@@ -88,7 +106,6 @@ class workoutAIservice {
         
         let workoutData = try JSONEncoder().encode(i_cntInputData)
         let workoutJSONString = String(data: workoutData, encoding: .utf8) ?? "[]"
-        
         let inputString =
         """
         You are a fitness assistant.
@@ -112,6 +129,14 @@ class workoutAIservice {
         - rep_qty (Integer)
         - set_qty (Integer)
         - weight (Integer)
+        - weight_basis (String)
+        weight_basis MUST be one of the following values:
+        - "total" = total weight lifted (e.g. barbell bench, squat, deadlift)
+        - "per dumbbell" = weight of a single dumbbell (e.g. 20 kg dumbbells)
+        - "per side" = weight on one side of a machine or bar (only if appropriate)
+        - "bodyweight" = exercise uses bodyweight only
+        - "machine stack" = machine stack weight
+        - "added weight" = extra weight added to bodyweight (e.g. weighted pull-ups)
 
         rep_qty, set_qty, and weight MUST be integers only.
         Do not use ranges.
@@ -152,8 +177,9 @@ class workoutAIservice {
             }
             
             guard (200...299).contains(http.statusCode) else {
-             
-                return []
+                // error handelling WOO!
+                let e = try JSONDecoder().decode(OpenAIErrorResponse.self,from:data)
+                throw chatGPTError(statusCode: http.statusCode, message: e.error.message)
             }
             
             
@@ -173,6 +199,7 @@ class workoutAIservice {
             else {
                 return []
             }
+            
 
             return try JSONDecoder().decode([WorkoutSessionDTO].self, from: jsonData)
         }
@@ -221,7 +248,7 @@ class workoutAIservice {
             "fiber": Double,
             "assumptions": [String],
             "confidence": String,
-            "icon": String
+            "imageName": String
           }
         ]
 

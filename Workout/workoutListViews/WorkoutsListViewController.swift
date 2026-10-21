@@ -12,6 +12,11 @@ class WorkoutsListViewController: UIViewController, UITableViewDataSource, UITab
             ($0.endTime ?? .distantPast) > ($1.endTime ?? .distantPast)
         }
     }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        reloadWorkouts()
+    }
     
     override func viewDidLoad() {
         super.viewDidLoad()

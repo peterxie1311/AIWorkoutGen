@@ -22,6 +22,7 @@ struct WorkoutSessionUploadDTO: Encodable,Decodable {
     let workouttab: String?
     let rest_duration:Float?
     let moddate:Date?
+    let iscompleted: Bool?
     let setreps: [SetrepUploadDTO]
 }
 
@@ -35,6 +36,24 @@ struct SetrepUploadDTO: Encodable,Decodable {
     let workoutName: String?
     let completed: Bool
     let moddate:Date?
+    let weight_basis:String?
+}
+
+struct InsUpdWorkoutRequest: Encodable {
+    let i_completed: Bool?
+    let i_duration_sec: Float?
+    let i_finishtime: Date?
+    let i_repqty: Int64?
+    let i_repid: UUID?
+    let i_starttime: Date?
+    let i_weight: Int64?
+    let i_workoutname: String?
+    let i_wsid: UUID?
+    let i_wsdur: Float?
+    let i_wsendtime: Date?
+    let i_wslocation: String?
+    let i_wsstarttime: Date?
+    let i_wsgenre: String?
 }
 
 class DBConnector {
@@ -69,26 +88,6 @@ class DBConnector {
         return request
     }
     
-    
-    struct InsUpdWorkoutRequest: Encodable {
-        let i_completed: Bool?
-        let i_duration_sec: Float?
-        let i_finishtime: Date?
-        let i_repqty: Int64?
-        let i_repid: UUID?
-        let i_starttime: Date?
-        let i_weight: Int64?
-        let i_workoutname: String?
-        let i_wsid: UUID?
-        let i_wsdur: Float?
-        let i_wsendtime: Date?
-        let i_wslocation: String?
-        let i_wsstarttime: Date?
-        let i_wsgenre: String?
-    }
-    
-
-    
     func insertWorkouts(i_ws: [WorkoutSessionUploadDTO]) async {
         
         let postgresqlFuncName = "insupdateworkoutsession"
@@ -116,7 +115,6 @@ class DBConnector {
     }
     
     func deleteworkouts(i_ws: [WorkoutSessionUploadDTO]) async {
-        
         let postgresqlFuncName = "deleteworkoutsession"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
@@ -142,7 +140,6 @@ class DBConnector {
     }
     
     func fetchWorkoutSessions() async -> [WorkoutSessionUploadDTO] {
-        
         let functionName = "get_workout_sessions"
         let url = URL(string: "\(projectString)\(functionName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
@@ -159,8 +156,6 @@ class DBConnector {
                 print("Status:", http.statusCode)
                 
             }
-           
-//            print(String(data: data, encoding: .utf8) ?? "")
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
             let result = try decoder.decode([WorkoutSessionUploadDTO].self, from: data)

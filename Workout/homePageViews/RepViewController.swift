@@ -17,6 +17,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
     var startTime:Date
     var weight: Int64
     var WorkoutName:String
+    var WeightBasis:String
     let startTimeButton:String  = "Start Timer"
     let finishTimeButton:String = "Finish Timer"
     let videoButtonLabel:String = "View Video"
@@ -45,6 +46,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
     private let startTimeLabel    = UILabel()
     private let duration_secLabel = UILabel()
     private let weight_label      = UILabel()
+    private let weight_basisLabel = UILabel()
     
     private let personalBestLabelWeight = UILabel()
     private let personalBestLabelReps   = UILabel()
@@ -82,6 +84,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         self.workoutURL = ""
       //  self.workoutURL = WorkoutManager.shared.getWorkout(workoutName: WorkoutName)?.video ?? ""
         self.setRep = rep
+        self.WeightBasis = rep.weight_basis ?? ""
         self.repButtonString = self.phase_1
         
         super.init(nibName: nil, bundle: nil)
@@ -97,7 +100,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         setupUI()
 //        addDoneButtonToKeyboard()
 //        NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("workout"), object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("SetRep"), object: nil)
+//        NotificationCenter.default.addObserver(self, selector: #selector(reload), name: NSNotification.Name("SetRep"), object: nil)
     }
     
     @objc private func reload(){
@@ -141,6 +144,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         duration_secLabel.text = timerprefix + "0"
         weight_label.text      = weightprefix + String(weight)
         status.text            = statusPrefix + String(completed)
+        weight_basisLabel.text = "Weight Basis: " + WeightBasis
         
         
         if let personalBest:Setrep = getPersonalBest(workout: WorkoutName){
@@ -187,7 +191,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         changeSetQTY.delegate = self
 
         // Add Subviews and Set Constraints
-        let stackView = UIStackView(arrangedSubviews: [nameLabel, rep_qtyLabel,status, weight_label,startTimeLabel, duration_secLabel,personalBestLabelWeight,personalBestLabelReps,RepButton,deleteRepButton,changeWorkoutName,changeRepWeight,changeSetQTY,changeRepWeightButton])
+        let stackView = UIStackView(arrangedSubviews: [nameLabel, rep_qtyLabel,status, weight_label,weight_basisLabel,startTimeLabel, duration_secLabel,personalBestLabelWeight,personalBestLabelReps,RepButton,deleteRepButton,changeWorkoutName,changeRepWeight,changeSetQTY,changeRepWeightButton])
         stackView.axis = .vertical
         stackView.spacing = 10
         stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -244,6 +248,7 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         updatedSetrep.workoutName = newWorkoutName
 
         SetrepManager.shared.updateSetrep(repid: repid, updatedSetrep: updatedSetrep)
+        reload()
 
         // Optionally update the UI or show feedback
         changeRepWeight.text = ""

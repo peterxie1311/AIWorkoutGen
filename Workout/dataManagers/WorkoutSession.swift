@@ -35,6 +35,7 @@ extension WorkoutSession {
              workouttab: self.workouttab,
              rest_duration: self.rest_duration,
              moddate: self.moddate,
+             iscompleted: self.isComplete,
              setreps: self.setrepArray.map {
                  $0.toDTO()
              }
