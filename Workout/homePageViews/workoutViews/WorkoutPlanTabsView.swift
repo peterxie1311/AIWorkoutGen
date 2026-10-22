@@ -88,7 +88,7 @@ final class WorkoutPlanTabsView: UIView {
 
         tabStack.axis = .horizontal
         tabStack.distribution = .fillEqually
-        tabStack.spacing = 6
+        tabStack.spacing = 8
         
       //  tableView.tableHeaderView = createHeader()
         tableView.dataSource = self
@@ -134,26 +134,29 @@ final class WorkoutPlanTabsView: UIView {
         tableView.backgroundColor = .clear
         tableView.separatorStyle = .singleLine
         tableView.separatorColor = .separator
+        tableView.separatorInset = UIEdgeInsets(top: 0, left: 18, bottom: 0, right: 18)
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 60
     }
     private func createHeader () -> UIView {
         let headerView = UIView(frame: CGRect(x: 0, y: 0, width: tableView.frame.width, height: 40))
         
-        let titles = ["Workout", "QTY", "Kgs", "Status"]
+        let titles = ["Exercise", "Reps", "kg", "Done"]
         let headerStackView = UIStackView()
         headerStackView.axis = .horizontal
-        headerStackView.distribution = .fillEqually
+        headerStackView.distribution = .fill
         headerStackView.alignment = .center
         headerStackView.spacing = 10
         
         for title in titles {
             let label           = UILabel()
             label.text          = title
-            label.textAlignment = .center
-            label.font          = UIFont.boldSystemFont(ofSize: 16)
+            label.textAlignment = title == "Exercise" ? .left : .center
+            label.font          = .preferredFont(forTextStyle: .caption1)
+            label.adjustsFontForContentSizeCategory = true
             label.textColor     = WorkoutTheme.accent
             headerStackView.addArrangedSubview(label)
+            if title != "Exercise" { label.widthAnchor.constraint(equalToConstant: title == "Done" ? 44 : 48).isActive = true }
         }
         
         headerView.addSubview(headerStackView)
@@ -183,8 +186,8 @@ final class WorkoutPlanTabsView: UIView {
                 button.backgroundColor = WorkoutTheme.accent
                 button.setTitleColor(WorkoutTheme.onAccent, for: .normal)
             } else {
-                button.backgroundColor = .clear
-                button.setTitleColor(WorkoutTheme.accent, for: .normal)
+                button.backgroundColor = WorkoutTheme.background
+                button.setTitleColor(.secondaryLabel, for: .normal)
             }
 
             button.addTarget(self, action: #selector(tabTapped(_:)), for: .touchUpInside)
@@ -193,7 +196,9 @@ final class WorkoutPlanTabsView: UIView {
     }
 
     @objc private func tabTapped(_ sender: UIButton) {
+        guard workoutSessions.indices.contains(sender.tag) else { return }
         selectedIndex = sender.tag
+        UISelectionFeedbackGenerator().selectionChanged()
         onTabSelectedFunc?(workoutSessions[selectedIndex])
         reloadTabs()
         tableView.reloadData()
@@ -243,7 +248,7 @@ class WorkoutListCell: UITableViewCell {
         
         let stackView = UIStackView(arrangedSubviews: [workoutLabel, qtyLabel, kgsLabel, status])
         stackView.axis = .horizontal
-        stackView.distribution = .fillEqually
+        stackView.distribution = .fill
         stackView.alignment = .center
         stackView.spacing = 8
 
@@ -254,10 +259,10 @@ class WorkoutListCell: UITableViewCell {
         contentView.addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
             stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 12),
             stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -12),
-            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8)
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16)
         ])
         
         // Style Labels
@@ -267,10 +272,20 @@ class WorkoutListCell: UITableViewCell {
             $0.textColor = .label
         }
         
+        workoutLabel.textAlignment = .left
+        workoutLabel.font = .preferredFont(forTextStyle: .headline)
+        [workoutLabel, qtyLabel, kgsLabel].forEach { $0.adjustsFontForContentSizeCategory = true }
+        [qtyLabel, kgsLabel].forEach {
+            $0.widthAnchor.constraint(equalToConstant: 48).isActive = true
+            $0.font = .preferredFont(forTextStyle: .subheadline)
+            $0.textColor = .secondaryLabel
+        }
+        status.widthAnchor.constraint(equalToConstant: 44).isActive = true
+        status.heightAnchor.constraint(equalToConstant: 22).isActive = true
         status.contentMode = .scaleAspectFit
         status.tintColor   = .white
         
-        contentView.backgroundColor = .secondarySystemBackground
+        contentView.backgroundColor = WorkoutTheme.surface
         backgroundColor = .clear
     }
     
@@ -284,13 +299,15 @@ class WorkoutListCell: UITableViewCell {
         workoutLabel.text = setrep.workoutName
         qtyLabel.text = String(setrep.rep_qty)
         kgsLabel.text = String(setrep.weight)
+        isAccessibilityElement = true
+        accessibilityLabel = "\(setrep.workoutName ?? "Exercise"), \(setrep.rep_qty) reps, \(setrep.weight) kilograms, \(setrep.completed ? "completed" : "pending")"
         let isCompleted = setrep.completed // Assuming `isCompleted` is a property of `Setrep`
                 if isCompleted {
-                    status.image = UIImage(systemName: "checkmark.circle") // Checkmark icon
+                    status.image = UIImage(systemName: "checkmark.circle.fill") // Checkmark icon
                     status.tintColor = .systemGreen
                 } else {
-                    status.image = UIImage(systemName: "x.circle") // "X" icon
-                    status.tintColor = .systemRed
+                    status.image = UIImage(systemName: "circle") // "X" icon
+                    status.tintColor = .tertiaryLabel
                 }
         
         

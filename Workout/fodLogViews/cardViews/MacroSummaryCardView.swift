@@ -1,277 +1,123 @@
-//
-//  MacroSummaryCardView.swift
-//  Workout
-//
-//  Created by Peter Xie on 26/1/2026.
-//
-
-
 import UIKit
 
+/// A daily energy overview with independently labelled nutrient goals.
 final class MacroSummaryCardView: UIView {
-
-    // MARK: - UI
-
-    private let container = UIView()
-
-    private let caloriesTitle = UILabel()
     private let caloriesValue = UILabel()
-
-    private let proteinTitle = UILabel()
+    private let caloriesDetail = UILabel()
+    private let energyProgress = UIProgressView(progressViewStyle: .bar)
     private let proteinValue = UILabel()
-
-    private let carbsTitle = UILabel()
     private let carbsValue = UILabel()
-
-    private let divider1 = UIView()
-    private let divider2 = UIView()
-
-    // “Bars” (use plain UIViews so we can control height + rounded corners easily)
-    private let bar1Track = UIView()
-    private let bar1Fill  = UIView()
-
-    private let bar2Track = UIView()
-    private let bar2Fill  = UIView()
-
-    // MARK: - Init
+    private let proteinProgress = UIProgressView(progressViewStyle: .bar)
+    private let carbsProgress = UIProgressView(progressViewStyle: .bar)
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         build()
-        style()
     }
 
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Public API
-
-    func configure(
-        calories: Double, caloriesGoal:Double,
-        proteinCurrent: Double, proteinGoal: Double,
-        carbsCurrent: Double, carbsGoal: Double
-    ) {
-        
-//        let carbs = workoutDesigns.attributedText(text: "Carbs:",
-//                                                  fontsize: 16,
-//                                                  colour: UIColor.secondaryLabel)
-        let calValue_l  = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(calories))",
-                                                      fontsize: 20,
-                                                        colour:.label)
-        
-        let calGoal_l  = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(caloriesGoal))",
-                                                     fontsize: 16,
-                                                     colour: UIColor.systemPurple)
-        
-        let proteinValue_l = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(proteinCurrent))",
-                                                         fontsize: 20,
-                                                           colour: .label)
-        
-        let proteinGoal_l = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(proteinGoal))",
-                                                         fontsize: 16,
-                                                          colour: WorkoutTheme.accent)
-        let carbsValue_l  = workoutDesigns.attributedText(text: "\(HelperFunctions.formatNumber(carbsCurrent))",
-                                                        fontsize: 20)
-        
-        let carbsGoal_l  = workoutDesigns.attributedText(text: "/\(HelperFunctions.formatNumber(carbsGoal))",
-                                                       fontsize: 16,
-                                                         colour: .secondaryLabel)
-        
-        caloriesValue.attributedText = workoutDesigns.makeAttributedString(textArray:[calValue_l,calGoal_l])
-        proteinValue.attributedText = workoutDesigns.makeAttributedString(textArray: [proteinValue_l,proteinGoal_l])
-        carbsValue.attributedText = workoutDesigns.makeAttributedString(textArray: [carbsValue_l,carbsGoal_l])
-        
-//        caloriesValue.attributedText = makeSplitValue(main: "\(HelperFunctions.formatNumber(calories))", sub: "/\(HelperFunctions.formatNumber(caloriesGoal))")
-
-//        proteinValue.attributedText = makeSplitValue(main: "\(HelperFunctions.formatNumber(proteinCurrent))",
-//                                                      sub: "/\(HelperFunctions.formatNumber(proteinGoal))"
-//                                                     )
-        
-//        carbsValue.attributedText   = makeSplitValue(main: "\(HelperFunctions.formatNumber(carbsCurrent))", sub: "/\(HelperFunctions.formatNumber(carbsGoal))")
-        
-        let bar1Progress = CGFloat(min(1, max(0, Float(proteinCurrent) / Float(proteinGoal))))
-        let bar2Progress = CGFloat(min(1, max(0, Float(calories) / Float(caloriesGoal))))
-    
-        setProgress(bar1Progress, fill: bar1Fill, in: bar1Track)
-        setProgress(bar2Progress, fill: bar2Fill, in: bar2Track)
-    }
-
-    // MARK: - Build
-
     private func build() {
-        addSubview(container)
-        container.translatesAutoresizingMaskIntoConstraints = false
+        WorkoutTheme.card(self)
+        let eyebrow = UILabel()
+        eyebrow.text = "DAILY NUTRITION"
+        eyebrow.font = .preferredFont(forTextStyle: .caption1)
+        eyebrow.textColor = WorkoutTheme.accent
+        eyebrow.adjustsFontForContentSizeCategory = true
+        eyebrow.accessibilityTraits = .header
 
-        // Top row: 3 columns with dividers
-        let col1 = makeColumn(title: caloriesTitle, value: caloriesValue, align: .left)
-        let col2 = makeColumn(title: proteinTitle,  value: proteinValue,  align: .center)
-        let col3 = makeColumn(title: carbsTitle,    value: carbsValue,    align: .right)
+        caloriesValue.font = UIFontMetrics(forTextStyle: .largeTitle).scaledFont(
+            for: .monospacedDigitSystemFont(ofSize: 38, weight: .bold))
+        caloriesValue.adjustsFontForContentSizeCategory = true
+        caloriesValue.numberOfLines = 0
+        caloriesDetail.font = .preferredFont(forTextStyle: .subheadline)
+        caloriesDetail.adjustsFontForContentSizeCategory = true
+        caloriesDetail.textColor = .secondaryLabel
+        caloriesDetail.numberOfLines = 0
 
-        divider1.translatesAutoresizingMaskIntoConstraints = false
-        divider2.translatesAutoresizingMaskIntoConstraints = false
+        let energy = UIStackView(arrangedSubviews: [caloriesValue, caloriesDetail])
+        energy.axis = .vertical
+        energy.spacing = 4
+        energy.isAccessibilityElement = true
+        energy.accessibilityLabel = "Calories"
 
-        let topRow = UIStackView(arrangedSubviews: [col1, divider1, col2, divider2, col3])
-        topRow.axis = .horizontal
-        topRow.alignment = .center
-        topRow.distribution = .fill
-        topRow.spacing = 12
-        topRow.translatesAutoresizingMaskIntoConstraints = false
-
-        // Make dividers fixed width
-        NSLayoutConstraint.activate([
-            divider1.widthAnchor.constraint(equalToConstant: 1),
-            divider2.widthAnchor.constraint(equalToConstant: 1)
+        let macros = UIStackView(arrangedSubviews: [
+            nutrient(title: "Protein", value: proteinValue, progress: proteinProgress, color: WorkoutTheme.accent),
+            nutrient(title: "Carbs", value: carbsValue, progress: carbsProgress, color: .systemOrange)
         ])
+        macros.axis = .vertical
+        macros.spacing = 18
 
-        // Bars stack
-        let bars = UIStackView(arrangedSubviews: [makeBar(track: bar1Track, fill: bar1Fill, height: 8),
-                                                  makeBar(track: bar2Track, fill: bar2Fill, height: 8)])
-        bars.axis = .vertical
-        bars.spacing = 10
-        bars.translatesAutoresizingMaskIntoConstraints = false
+        let divider = UIView()
+        divider.backgroundColor = .separator
+        divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale).isActive = true
 
-        container.addSubview(topRow)
-        container.addSubview(bars)
-
+        let stack = UIStackView(arrangedSubviews: [eyebrow, energy, energyProgress, divider, macros])
+        stack.axis = .vertical
+        stack.spacing = 18
+        addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: topAnchor),
-            container.leadingAnchor.constraint(equalTo: leadingAnchor),
-            container.trailingAnchor.constraint(equalTo: trailingAnchor),
-            container.bottomAnchor.constraint(equalTo: bottomAnchor),
-
-            topRow.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
-            topRow.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            topRow.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-
-            bars.topAnchor.constraint(equalTo: topRow.bottomAnchor, constant: 12),
-            bars.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
-            bars.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            bars.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14)
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 22),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 22),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -22),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -22)
         ])
-    }
-
-    private func style() {
-        // Card look
-        WorkoutTheme.card(container)
-        container.layer.cornerRadius = 18
-        container.layer.masksToBounds = true
-
-        // Titles
-        [caloriesTitle, proteinTitle, carbsTitle].forEach {
-            $0.font = .systemFont(ofSize: 14, weight: .semibold)
-            $0.textColor = .secondaryLabel
+        [energyProgress, proteinProgress, carbsProgress].forEach {
+            $0.trackTintColor = .tertiarySystemFill
+            $0.layer.cornerRadius = 3
+            $0.clipsToBounds = true
+            $0.heightAnchor.constraint(equalToConstant: 6).isActive = true
         }
-        caloriesTitle.text = "Calories"
-        proteinTitle.text = "Protein"
-        carbsTitle.text = "Carbs"
+        energyProgress.progressTintColor = WorkoutTheme.accent
+    }
 
-        caloriesValue.textColor = .label
-        proteinValue.textColor = .label
-        carbsValue.textColor = .label
+    private func nutrient(title: String, value: UILabel, progress: UIProgressView, color: UIColor) -> UIView {
+        let label = UILabel()
+        label.text = title
+        label.font = .preferredFont(forTextStyle: .subheadline)
+        label.adjustsFontForContentSizeCategory = true
+        value.font = .preferredFont(forTextStyle: .headline)
+        value.adjustsFontForContentSizeCategory = true
+        value.textColor = .secondaryLabel
+        value.numberOfLines = 0
+        let heading = UIStackView(arrangedSubviews: [label, value])
+        heading.axis = .vertical
+        heading.spacing = 4
+        progress.progressTintColor = color
+        let stack = UIStackView(arrangedSubviews: [heading, progress])
+        stack.axis = .vertical
+        stack.spacing = 8
+        return stack
+    }
 
-        // Dividers
-        [divider1, divider2].forEach {
-            $0.backgroundColor = UIColor.systemGray3.withAlphaComponent(0.6)
+    func configure(calories: Double, caloriesGoal: Double,
+                   proteinCurrent: Double, proteinGoal: Double,
+                   carbsCurrent: Double, carbsGoal: Double) {
+        let format = HelperFunctions.formatNumber
+        caloriesValue.text = "\(format(calories)) kcal"
+        if caloriesGoal > 0 {
+            let difference = caloriesGoal - calories
+            caloriesDetail.text = "\(format(abs(difference))) kcal \(difference >= 0 ? "remaining" : "over goal") · Goal \(format(caloriesGoal))"
+        } else {
+            caloriesDetail.text = "Set a calorie goal to track your day"
         }
-
-        // Bar tracks
-        [bar1Track, bar2Track].forEach {
-            $0.backgroundColor = UIColor.systemGray4.withAlphaComponent(0.6)
-            $0.layer.masksToBounds = true
-        }
-
-        // Bar fills
-        // (Leave default blue for bar1; keep bar2 a lighter gray/secondary tint)
-        bar1Fill.backgroundColor = WorkoutTheme.accent
-        bar2Fill.backgroundColor = .systemPurple
-
-        // Rounded corners will be set after layout when we know heights
-        layoutIfNeeded()
-        roundBar(track: bar1Track, fill: bar1Fill)
-        roundBar(track: bar2Track, fill: bar2Fill)
+        caloriesValue.superview?.accessibilityValue = "\(caloriesValue.text ?? ""), \(caloriesDetail.text ?? "")"
+        proteinValue.text = "\(format(proteinCurrent)) / \(format(proteinGoal)) g"
+        carbsValue.text = "\(format(carbsCurrent)) / \(format(carbsGoal)) g"
+        let animated = window != nil && !UIAccessibility.isReduceMotionEnabled
+        energyProgress.setProgress(ratio(calories, caloriesGoal), animated: animated)
+        proteinProgress.setProgress(ratio(proteinCurrent, proteinGoal), animated: animated)
+        carbsProgress.setProgress(ratio(carbsCurrent, carbsGoal), animated: animated)
+        energyProgress.accessibilityLabel = "Calorie goal"
+        proteinProgress.accessibilityLabel = "Protein goal"
+        carbsProgress.accessibilityLabel = "Carbohydrate goal"
     }
 
-    // MARK: - Helpers
-
-    private func makeColumn(title: UILabel, value: UILabel, align: NSTextAlignment) -> UIStackView {
-        title.textAlignment = align
-
-        value.textAlignment = align
-        // default font for split value; calories uses its own bigger font
-        value.font = .systemFont(ofSize: 26, weight: .bold)
-
-        let v = UIStackView(arrangedSubviews: [title, value])
-        v.axis = .vertical
-        v.spacing = 4
-        v.alignment = align == .left ? .leading : (align == .right ? .trailing : .center)
-        return v
-    }
-
-    private func makeBar(track: UIView, fill: UIView, height: CGFloat) -> UIView {
-        track.translatesAutoresizingMaskIntoConstraints = false
-        fill.translatesAutoresizingMaskIntoConstraints = false
-
-        track.addSubview(fill)
-
-        NSLayoutConstraint.activate([
-            track.heightAnchor.constraint(equalToConstant: height),
-
-            fill.leadingAnchor.constraint(equalTo: track.leadingAnchor),
-            fill.topAnchor.constraint(equalTo: track.topAnchor),
-            fill.bottomAnchor.constraint(equalTo: track.bottomAnchor),
-
-            // start at 0 width; we’ll update in setProgress(...)
-            fill.widthAnchor.constraint(equalToConstant: 0)
-        ])
-
-        return track
-    }
-
-    private func setProgress(_ progress: CGFloat, fill: UIView, in track: UIView) {
-        let clamped = max(0, min(1, progress))
-        let width = track.bounds.width * clamped
-
-        // Update the width constraint we created in makeBar(...)
-        if let widthConstraint = fill.constraints.first(where: { $0.firstAttribute == .width }) {
-            widthConstraint.constant = width
-        }
-        // Animate if you want:
-        UIView.animate(withDuration: 1) {
-            self.layoutIfNeeded()
-        }
-        roundBar(track: track, fill: fill)
-    }
-
-    private func roundBar(track: UIView, fill: UIView) {
-        track.layer.cornerRadius = track.bounds.height / 2
-        fill.layer.cornerRadius = fill.bounds.height / 2
-    }
-
-    private func makeSplitValue(main: String,
-                                sub: String,
-                                mainColour:UIColor = UIColor.label,
-                                secondaryColour:UIColor = UIColor.secondaryLabel) -> NSAttributedString {
-        let big = UIFont.systemFont(ofSize: 20, weight: .bold)
-        let small = UIFont.systemFont(ofSize: 16, weight: .semibold)
-
-        let result = NSMutableAttributedString(
-            string: main,
-            attributes: [.font: big, .foregroundColor: mainColour]
-        )
-        result.append(NSAttributedString(
-            string: sub,
-            attributes: [.font: small, .foregroundColor: secondaryColour]
-        ))
-        return result
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        // Keep corners correct on rotation / constraint changes
-        container.layer.cornerRadius = 18
-        roundBar(track: bar1Track, fill: bar1Fill)
-        roundBar(track: bar2Track, fill: bar2Fill)
+    private func ratio(_ current: Double, _ goal: Double) -> Float {
+        guard goal > 0, goal.isFinite, current.isFinite else { return 0 }
+        return Float(min(1, max(0, current / goal)))
     }
 }
-

@@ -76,10 +76,10 @@ final class WorkoutSummaryCardView: UIView {
             container.trailingAnchor.constraint(equalTo: trailingAnchor),
             container.bottomAnchor.constraint(equalTo: bottomAnchor),
 
-            hstack.topAnchor.constraint(equalTo: container.topAnchor, constant: 14),
+            hstack.topAnchor.constraint(equalTo: container.topAnchor, constant: 20),
             hstack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             hstack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            hstack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -14)
+            hstack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -20)
         ])
         
         
@@ -87,7 +87,7 @@ final class WorkoutSummaryCardView: UIView {
     }
     private func style() {
         WorkoutTheme.card(container)
-        container.layer.cornerRadius = 18
+        container.layer.cornerRadius = 22
         container.layer.masksToBounds = true
 
         startTimeLabel.text = "Start"
@@ -117,7 +117,8 @@ final class WorkoutSummaryCardView: UIView {
         title.adjustsFontForContentSizeCategory = true
 
         value.textAlignment = align
-        value.font = .monospacedDigitSystemFont(ofSize: 19, weight: .semibold)
+        value.font = UIFontMetrics(forTextStyle: .title3).scaledFont(for: .monospacedDigitSystemFont(ofSize: 22, weight: .semibold))
+        value.adjustsFontForContentSizeCategory = true
         value.adjustsFontSizeToFitWidth = true
         value.minimumScaleFactor = 0.7
         
@@ -125,8 +126,10 @@ final class WorkoutSummaryCardView: UIView {
         value.textColor = .label
         
         let image = UIImageView(image: UIImage(systemName: systemImageName))
-        image.tintColor = WorkoutTheme.accent
-        image.widthAnchor.constraint(equalToConstant: 22).isActive = true
+        image.tintColor = imageColour
+        image.widthAnchor.constraint(equalToConstant: 28).isActive = true
+        image.heightAnchor.constraint(equalToConstant: 28).isActive = true
+        image.preferredSymbolConfiguration = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
         image.contentMode = .scaleAspectFit
         
         let v = UIStackView(arrangedSubviews: [title, value])

@@ -38,7 +38,7 @@ final class WorkoutListCardView: UIView {
 
     private func setup() {
         WorkoutTheme.card(self)
-        layer.cornerRadius = 16
+        layer.cornerRadius = 22
         clipsToBounds = true
 
         titleLabel.font = .preferredFont(forTextStyle: .headline)
@@ -49,9 +49,11 @@ final class WorkoutListCardView: UIView {
         dateLabel.font = .systemFont(ofSize: 13, weight: .medium)
         dateLabel.textColor = .secondaryLabel
 
-        ratingLabel.font = .boldSystemFont(ofSize: 18)
+        ratingLabel.font = .monospacedDigitSystemFont(ofSize: 18, weight: .bold)
+        ratingLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
         ratingLabel.textColor = WorkoutTheme.accent
         ratingLabel.textAlignment = .right
+        ratingLabel.numberOfLines = 2
         
         
 
@@ -70,7 +72,8 @@ final class WorkoutListCardView: UIView {
         headerStack.addArrangedSubview(ratingLabel)
 
         [durationLabel, setsLabel, volumeLabel,totalrestTimeLabel].forEach {
-            $0.font = .boldSystemFont(ofSize: 15)
+            $0.font = .preferredFont(forTextStyle: .subheadline)
+            $0.adjustsFontForContentSizeCategory = true
             $0.textColor = .secondaryLabel
             $0.textAlignment = .center
             $0.numberOfLines = 2
@@ -85,8 +88,12 @@ final class WorkoutListCardView: UIView {
         statsStack.addArrangedSubview(totalrestTimeLabel)
 
         mainStack.axis = .vertical
-        mainStack.spacing = 12
+        mainStack.spacing = 16
         mainStack.addArrangedSubview(headerStack)
+        let divider = UIView()
+        divider.backgroundColor = .separator
+        divider.heightAnchor.constraint(equalToConstant: 1 / UIScreen.main.scale).isActive = true
+        mainStack.addArrangedSubview(divider)
         mainStack.addArrangedSubview(statsStack)
         mainStack.addArrangedSubview(exercisesLabel)
 
@@ -94,9 +101,9 @@ final class WorkoutListCardView: UIView {
         mainStack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+            mainStack.topAnchor.constraint(equalTo: topAnchor, constant: 20),
             mainStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 16),
-            mainStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
+            mainStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
             mainStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
         ])
     }
@@ -130,21 +137,21 @@ final class WorkoutListCardView: UIView {
         setsLabel.text = "\(setCount)\nsets"
         volumeLabel.text = "\(totalVolume)\nkg"
 
-        let exercises = Array(
-            Set(workout.setrepArray.compactMap { $0.workoutName })
-        )
+        var seen = Set<String>()
+        let exercises = workout.setrepArray.compactMap { $0.workoutName }.filter { seen.insert($0).inserted }
         .prefix(3)
         .joined(separator: ", ")
 
         exercisesLabel.text = exercises.isEmpty ? "No exercises yet" : exercises
 
-        ratingLabel.text = makeRating(workout: workout)
-        totalrestTimeLabel.text = "\(WorkoutSessionManager.shared.getTotalRestTime(i_workout: workout)) sec"
+        ratingLabel.text = makeRating(workout: workout) + "\ncomplete"
+        totalrestTimeLabel.text = "\(WorkoutSessionManager.shared.getTotalRestTime(i_workout: workout))\nrest (sec)"
     }
 
     private func makeRating(workout: WorkoutSession) -> String {
         let completedSets = workout.setrepArray.filter { $0.completed }.count
         let totalSets = workout.setrepArray.count
+        guard totalSets > 0 else { return "0%" }
         return "\(Int(round((Double(completedSets) / Double(totalSets)) * 100)))%"
     }
 }
