@@ -7,10 +7,47 @@
 
 import Foundation
 
-/// The RPC returns moddate too; sync only needs the setting name and value.
+/// Wire names match the settings RPC. Keep dates when copying between stores.
 struct AccountSettingDTO: Codable, Equatable {
     let settingName: String
     let value: String
+    let moddate: Date
+
+    init(settingName: String, value: String, moddate: Date = .distantPast) {
+        self.settingName = settingName
+        self.value = value
+        self.moddate = moddate
+    }
+
+    private enum CodingKeys: String, CodingKey { case settingName, value, moddate }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        settingName = try container.decode(String.self, forKey: .settingName)
+        value = try container.decode(String.self, forKey: .value)
+        let text = try container.decode(String.self, forKey: .moddate)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var date = formatter.date(from: text)
+        if date == nil {
+            formatter.formatOptions = [.withInternetDateTime]
+            date = formatter.date(from: text)
+        }
+        guard let date = date else {
+            throw DecodingError.dataCorruptedError(forKey: .moddate, in: container,
+                                                   debugDescription: "Invalid settings timestamp.")
+        }
+        moddate = date
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(settingName, forKey: .settingName)
+        try container.encode(value, forKey: .value)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        try container.encode(formatter.string(from: moddate), forKey: .moddate)
+    }
 }
 
 private struct SettingsUpdatePayload: Encodable {
@@ -343,5 +380,6 @@ class DBConnector {
     
     
 }
+
 
 

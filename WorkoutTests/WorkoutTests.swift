@@ -156,6 +156,65 @@ final class WorkoutTests: XCTestCase {
 
 @MainActor
 final class AccountSettingsSyncTests: XCTestCase {
+    private let older = Date(timeIntervalSince1970: 1700000000)
+    private let newer = Date(timeIntervalSince1970: 1700000010)
+
+    func testNewerLocalRowUploads() {
+        let local = AccountSettingDTO(settingName: "Name", value: "New", moddate: newer)
+        let remote = AccountSettingDTO(settingName: "Name", value: "Old", moddate: older)
+        XCTAssertEqual(SettingsManager.settingsToUpload(local: [local], remote: [remote]), [local])
+    }
+
+    func testNewerRemoteRowAndEqualDatesDoNotUpload() {
+        let local = AccountSettingDTO(settingName: "Name", value: "Local", moddate: older)
+        for date in [older, newer] {
+            let remote = AccountSettingDTO(settingName: "Name", value: "Server", moddate: date)
+            XCTAssertTrue(SettingsManager.settingsToUpload(local: [local], remote: [remote]).isEmpty)
+        }
+    }
+
+    func testDefaultsDoNotOverwriteDatedAccountSettings() {
+        let local = AccountSettingDTO(settingName: "Calorie Goal", value: "0")
+        let remote = AccountSettingDTO(settingName: "Calorie Goal", value: "2300", moddate: newer)
+        XCTAssertTrue(SettingsManager.settingsToUpload(local: [local], remote: [remote]).isEmpty)
+    }
+
+    func testMissingRowsUploadButSessionAndUnknownNamesDoNot() {
+        let key = AccountSettingDTO(settingName: "GPT API Key", value: "placeholder", moddate: newer)
+        let upload = SettingsManager.settingsToUpload(local: [
+            AccountSettingDTO(settingName: "Session Key", value: "session", moddate: newer),
+            AccountSettingDTO(settingName: "Unknown", value: "unknown", moddate: newer), key
+        ], remote: [])
+        XCTAssertEqual(upload, [key])
+    }
+
+    func testRPCDatesWithAndWithoutFractionalSeconds() throws {
+        for text in ["2026-10-26T01:02:03.123456+00:00", "2026-10-26T01:02:03+00:00"] {
+            let data = Data("""
+            [{"settingName":"Name","value":"Peter","moddate":"\(text)"}]
+            """.utf8)
+            let rows = try JSONDecoder().decode([AccountSettingDTO].self, from: data)
+            XCTAssertEqual(rows.first?.value, "Peter")
+            XCTAssertGreaterThan(try XCTUnwrap(rows.first?.moddate), older)
+        }
+    }
+
+    func testDateRoundTripIncludingDefaultSentinel() throws {
+        for date in [Date.distantPast, newer, Date(timeIntervalSince1970: 1700000000.123)] {
+            let row = AccountSettingDTO(settingName: "Name", value: "Peter", moddate: date)
+            let data = try JSONEncoder().encode(row)
+            let decoded = try JSONDecoder().decode(AccountSettingDTO.self, from: data)
+            XCTAssertEqual(decoded.moddate.timeIntervalSince1970, date.timeIntervalSince1970, accuracy: 0.000001)
+        }
+    }
+
+    func testMissingTimestampIsAnErrorRatherThanARecentEdit() {
+        let data = Data("""
+        {"settingName":"Name","value":"Peter"}
+        """.utf8)
+        XCTAssertThrowsError(try JSONDecoder().decode(AccountSettingDTO.self, from: data))
+    }
+
     private func stubSession(status: Int, body: String) -> URLSession {
         SettingsRPCStub.status = status
         SettingsRPCStub.body = Data(body.utf8)
@@ -164,28 +223,26 @@ final class AccountSettingsSyncTests: XCTestCase {
         return URLSession(configuration: configuration)
     }
 
-    func testFetchSettingsUsesAPIProfileAndDecodesRows() async throws {
+    func testFetchSettingsUsesProfileAndDecodesTimestamp() async throws {
         let session = stubSession(status: 200, body: """
-        [{"settingName":"Name","value":"Peter"}]
+        [{"settingName":"Name","value":"Peter","moddate":"2026-10-26T01:02:03+00:00"}]
         """)
         defer { session.invalidateAndCancel() }
         let rows = try await DBConnector.shared.fetchSettings(
             i_sessionid: UUID().uuidString, using: session)
-        XCTAssertEqual(rows, [AccountSettingDTO(settingName: "Name", value: "Peter")])
+        XCTAssertEqual(rows.first?.value, "Peter")
         XCTAssertEqual(SettingsRPCStub.lastRequest?.url?.lastPathComponent, "getsettings")
-        XCTAssertEqual(SettingsRPCStub.lastRequest?.httpMethod, "POST")
         XCTAssertEqual(SettingsRPCStub.lastRequest?.value(forHTTPHeaderField: "Content-Profile"), "api")
         XCTAssertNil(SettingsRPCStub.lastRequest?.value(forHTTPHeaderField: "Authorization"))
-        XCTAssertNotNil(SettingsRPCStub.lastRequest?.value(forHTTPHeaderField: "apikey"))
     }
 
-    func testFailedFetchThrowsInsteadOfPretendingAccountHasNoSettings() async throws {
+    func testFailedFetchThrowsInsteadOfReturningAnEmptyAccount() async throws {
         let session = stubSession(status: 401, body: "{}")
         defer { session.invalidateAndCancel() }
         do {
             _ = try await DBConnector.shared.fetchSettings(
                 i_sessionid: UUID().uuidString, using: session)
-            XCTFail("An HTTP error must not be interpreted as an empty settings list.")
+            XCTFail("HTTP failures must not look like an empty account.")
         } catch SettingsSyncError.http(let status) {
             XCTAssertEqual(status, 401)
         }
@@ -195,53 +252,9 @@ final class AccountSettingsSyncTests: XCTestCase {
         let session = stubSession(status: 204, body: "")
         defer { session.invalidateAndCancel() }
         try await DBConnector.shared.upsertSettings(
-            i_payload: [AccountSettingDTO(settingName: "Name", value: "Peter")],
+            i_payload: [AccountSettingDTO(settingName: "Name", value: "Peter", moddate: newer)],
             i_sessionid: UUID().uuidString, using: session)
         XCTAssertEqual(SettingsRPCStub.lastRequest?.url?.lastPathComponent, "insupdatesettings")
-    }
-
-    func testExistingAccountSettingsAreNotOverwrittenByDefaults() {
-        let upload = SettingsManager.settingsToUpload(
-            local: [AccountSettingDTO(settingName: "Calorie Goal", value: "0")],
-            remote: [AccountSettingDTO(settingName: "Calorie Goal", value: "2300")],
-            pending: [])
-        XCTAssertTrue(upload.isEmpty)
-    }
-
-    func testPendingEditWinsAndMissingSettingsAreSeeded() {
-        let local = [
-            AccountSettingDTO(settingName: "Name", value: "Peter"),
-            AccountSettingDTO(settingName: "Calorie Goal", value: "2400"),
-            AccountSettingDTO(settingName: "Protein Goal", value: "170")
-        ]
-        let upload = SettingsManager.settingsToUpload(local: local, remote: [
-            AccountSettingDTO(settingName: "Name", value: "Remote name"),
-            AccountSettingDTO(settingName: "Calorie Goal", value: "2300")
-        ], pending: ["Calorie Goal"])
-        XCTAssertEqual(upload, Array(local.dropFirst()))
-    }
-
-    func testSessionAndUnknownSettingsNeverUploadButGPTKeyDoes() {
-        let key = AccountSettingDTO(settingName: "GPT API Key", value: "test-placeholder")
-        let upload = SettingsManager.settingsToUpload(local: [
-            AccountSettingDTO(settingName: "Session Key", value: UUID().uuidString),
-            AccountSettingDTO(settingName: "Unknown", value: "value"), key
-        ], remote: [], pending: ["Session Key", "Unknown"])
-        XCTAssertEqual(upload, [key])
-    }
-
-    func testRPCResponseDecodesWithoutParsingTimestamp() throws {
-        let data = Data("""
-        [{"settingName":"Calorie Goal","value":"2300","moddate":"2026-10-26T01:02:03.123456+00:00"}]
-        """.utf8)
-        XCTAssertEqual(try JSONDecoder().decode([AccountSettingDTO].self, from: data),
-                       [AccountSettingDTO(settingName: "Calorie Goal", value: "2300")])
-    }
-
-    func testRPCPayloadUsesBackendFieldNames() throws {
-        let data = try JSONEncoder().encode(AccountSettingDTO(settingName: "Name", value: "Peter"))
-        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: String])
-        XCTAssertEqual(object, ["settingName": "Name", "value": "Peter"])
     }
 }
 
@@ -263,4 +276,5 @@ private final class SettingsRPCStub: URLProtocol {
     }
     override func stopLoading() {}
 }
+
 

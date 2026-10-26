@@ -24,14 +24,8 @@ class SettingsManager {
         name, enableNotifications, gptAPIKey, excludeWorkout,
         calorieGoal, proteinGoal, carbGoal
     ]
-    private let pendingNamesKey = "SettingsManager.pendingAccountSettings"
     private var syncTask: Task<Void, Error>?
     private var syncGeneration = 0
-
-    private var pendingNames: Set<String> {
-        get { Set(UserDefaults.standard.stringArray(forKey: pendingNamesKey) ?? []) }
-        set { UserDefaults.standard.set(Array(newValue), forKey: pendingNamesKey) }
-    }
 
     private var currentSession: String? {
         guard let value = getSetting(name: Self.sessionKey)?.value,
@@ -44,10 +38,9 @@ class SettingsManager {
         syncGeneration += 1
         syncTask?.cancel()
         syncTask = nil
-        pendingNames = []
     }
 
-    /// Single owner of pull/merge/upload, including retries of locally saved edits.
+    /// Sync each row using its modification date; failed uploads stay newer locally.
     func syncSettings() async throws {
         if let task = syncTask {
             try await task.value
@@ -83,15 +76,17 @@ class SettingsManager {
             try checkSyncSession(session, generation: generation)
             loadSettings()
 
-            // Server values win unless this device has an unsent edit.
+            // Copy only rows newer than the local value, preserving their timestamp.
             for entry in remote where Self.syncableNames.contains(entry.settingName) {
-                guard !pendingNames.contains(entry.settingName) else { continue }
                 if let local = getSetting(name: entry.settingName) {
+                    guard entry.moddate > (local.modDate ?? .distantPast) else { continue }
                     local.value = entry.value
+                    local.modDate = entry.moddate
                 } else {
                     let local = Setting(context: context)
                     local.settingName = entry.settingName
                     local.value = entry.value
+                    local.modDate = entry.moddate
                     settings.append(local)
                 }
             }
@@ -107,32 +102,25 @@ class SettingsManager {
 
             let local = settings.compactMap { setting -> AccountSettingDTO? in
                 guard let name = setting.settingName, let value = setting.value else { return nil }
-                return AccountSettingDTO(settingName: name, value: value)
+                return AccountSettingDTO(settingName: name, value: value, moddate: setting.modDate ?? .distantPast)
             }
-            let upload = Self.settingsToUpload(local: local, remote: remote, pending: pendingNames)
+            let upload = Self.settingsToUpload(local: local, remote: remote)
             guard !upload.isEmpty else { return }
             try await DBConnector.shared.upsertSettings(i_payload: upload, i_sessionid: session)
             try checkSyncSession(session, generation: generation)
 
-            // An edit made while uploading must remain queued.
-            var pending = pendingNames
-            for entry in upload {
-                if getSetting(name: entry.settingName)?.value == entry.value {
-                    pending.remove(entry.settingName)
-                }
-            }
-            pendingNames = pending
-        } while !pendingNames.isEmpty
+            // Fetch again to settle server-side races or edits made during upload.
+        } while true
     }
 
-    /// Shared merge policy: never upload a session key or overwrite a saved
-    /// account value with this device's defaults.
-    static func settingsToUpload(local: [AccountSettingDTO], remote: [AccountSettingDTO],
-                                 pending: Set<String>) -> [AccountSettingDTO] {
-        let remoteNames = Set(remote.map { $0.settingName })
-        return local.filter {
-            syncableNames.contains($0.settingName) &&
-                (pending.contains($0.settingName) || !remoteNames.contains($0.settingName))
+    static func settingsToUpload(local: [AccountSettingDTO],
+                                 remote: [AccountSettingDTO]) -> [AccountSettingDTO] {
+        var serverDates: [String: Date] = [:]
+        for entry in remote { serverDates[entry.settingName] = entry.moddate }
+        return local.filter { row in
+            guard syncableNames.contains(row.settingName) else { return false }
+            guard let serverDate = serverDates[row.settingName] else { return true }
+            return row.moddate > serverDate
         }
     }
 
@@ -142,7 +130,7 @@ class SettingsManager {
             do {
                 try await syncSettings()
             } catch {
-                // Pending names remain persisted for the next sync attempt.
+                // The local date remains newer, so the next sync retries naturally.
                 NotificationCenter.default.post(
                     name: NSNotification.Name("settingsSyncFailed"), object: nil)
             }
@@ -188,15 +176,18 @@ class SettingsManager {
             if setting.settingName == name {
                 guard setting.value != newValue else { return }
                 let previousValue = setting.value
+                let previousDate = setting.modDate
                 setting.value = newValue
+                // Match the millisecond precision used in the JSON timestamp.
+                let nowMillis = floor(Date().timeIntervalSince1970 * 1000)
+                let previousMillis = floor((previousDate ?? .distantPast).timeIntervalSince1970 * 1000)
+                setting.modDate = Date(timeIntervalSince1970: max(nowMillis, previousMillis + 1) / 1000)
                 guard saveSettings() else {
                     setting.value = previousValue
+                    setting.modDate = previousDate
                     return
                 }
                 if Self.syncableNames.contains(name) {
-                    var pending = pendingNames
-                    pending.insert(name)
-                    pendingNames = pending
                     workoutAIservice.shared.loadSessionApiKey()
                     queueSettingsSync()
                 }
@@ -270,7 +261,12 @@ class SettingsManager {
 
         do {
             // Execute the fetch request
-            settings = try context.fetch(fetchRequest) // Fetch and assign directly to settings
+            settings = try context.fetch(fetchRequest)
+            // Old stores have no timestamp; their values are older than dated account settings.
+            for setting in settings where setting.modDate == nil {
+                setting.modDate = .distantPast
+            }
+            if context.hasChanges { try context.save() }
         } catch {
             print("Failed to load settings: \(error)")
         }
@@ -303,6 +299,7 @@ class SettingsManager {
         let newSetting = Setting(context: context)
         newSetting.settingName = name
         newSetting.value = value
+        newSetting.modDate = .distantPast
         
         // Save the context
         do {
@@ -314,4 +311,5 @@ class SettingsManager {
         }
     }
 }
+
 
