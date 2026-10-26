@@ -4,7 +4,8 @@ import CoreData
 /// Session-key entry for the app's existing sync identity.
 final class LogonViewController: UIViewController, UITextFieldDelegate {
     var onLogon: (() -> Void)?
-    private let sessionKeyField = UITextField()
+    private let userNameField = UITextField()
+    private let passwordField = UITextField()
     private let errorLabel = UILabel()
     private let continueButton = UIButton(type: .system)
 
@@ -45,29 +46,49 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         subtitle.numberOfLines = 0
 
         let fieldLabel = UILabel()
-        fieldLabel.text = "Session key"
+        fieldLabel.text = "Login"
         fieldLabel.font = .preferredFont(forTextStyle: .headline)
         fieldLabel.adjustsFontForContentSizeCategory = true
 
-        sessionKeyField.placeholder = "Enter your session key"
-        sessionKeyField.accessibilityLabel = "Session key"
-        sessionKeyField.accessibilityIdentifier = "logon.sessionKey"
-        sessionKeyField.font = .preferredFont(forTextStyle: .body)
-        sessionKeyField.adjustsFontForContentSizeCategory = true
-        sessionKeyField.isSecureTextEntry = true
-        sessionKeyField.autocapitalizationType = .none
-        sessionKeyField.autocorrectionType = .no
-        sessionKeyField.smartQuotesType = .no
-        sessionKeyField.smartDashesType = .no
-        sessionKeyField.spellCheckingType = .no
-        sessionKeyField.returnKeyType = .go
-        sessionKeyField.delegate = self
-        sessionKeyField.backgroundColor = WorkoutTheme.background
-        sessionKeyField.layer.cornerRadius = 12
-        sessionKeyField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
-        sessionKeyField.leftViewMode = .always
-        sessionKeyField.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
-        sessionKeyField.addTarget(self, action: #selector(clearError), for: .editingChanged)
+        userNameField.placeholder = "User Name"
+        userNameField.accessibilityLabel = "User Name"
+        userNameField.accessibilityIdentifier = "logon.userName"
+        userNameField.font = .preferredFont(forTextStyle: .body)
+        userNameField.adjustsFontForContentSizeCategory = true
+        userNameField.isSecureTextEntry = true
+        userNameField.autocapitalizationType = .none
+        userNameField.autocorrectionType = .no
+        userNameField.smartQuotesType = .no
+        userNameField.smartDashesType = .no
+        userNameField.spellCheckingType = .no
+        userNameField.returnKeyType = .go
+        userNameField.delegate = self
+        userNameField.backgroundColor = WorkoutTheme.background
+        userNameField.layer.cornerRadius = 12
+        userNameField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
+        userNameField.leftViewMode = .always
+        userNameField.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
+        userNameField.addTarget(self, action: #selector(clearError), for: .editingChanged)
+        
+        passwordField.placeholder = "Password"
+        passwordField.accessibilityLabel = "Password"
+        passwordField.accessibilityIdentifier = "logon.password"
+        passwordField.font = .preferredFont(forTextStyle: .body)
+        passwordField.adjustsFontForContentSizeCategory = true
+        passwordField.isSecureTextEntry = true
+        passwordField.autocapitalizationType = .none
+        passwordField.autocorrectionType = .no
+        passwordField.smartQuotesType = .no
+        passwordField.smartDashesType = .no
+        passwordField.spellCheckingType = .no
+        passwordField.returnKeyType = .go
+        passwordField.delegate = self
+        passwordField.backgroundColor = WorkoutTheme.background
+        passwordField.layer.cornerRadius = 12
+        passwordField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
+        passwordField.leftViewMode = .always
+        passwordField.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
+        passwordField.addTarget(self, action: #selector(clearError), for: .editingChanged)
 
         errorLabel.font = .preferredFont(forTextStyle: .footnote)
         errorLabel.adjustsFontForContentSizeCategory = true
@@ -89,7 +110,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         continueButton.accessibilityIdentifier = "logon.continue"
         continueButton.addTarget(self, action: #selector(logOn), for: .touchUpInside)
 
-        let form = UIStackView(arrangedSubviews: [fieldLabel, sessionKeyField, errorLabel, continueButton])
+        let form = UIStackView(arrangedSubviews: [fieldLabel, userNameField, passwordField,errorLabel, continueButton])
         form.axis = .vertical
         form.spacing = 14
         form.isLayoutMarginsRelativeArrangement = true
@@ -123,30 +144,52 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
     }
 
     @objc private func logOn() {
-        let key = sessionKeyField.text?.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let key = key, !Self.requiresLogon(key) else {
-            showError("Enter your session key to continue.")
-            sessionKeyField.becomeFirstResponder()
+        guard continueButton.isEnabled else { return }
+
+        let username = userNameField.text?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let password = passwordField.text ?? ""
+
+        guard !username.isEmpty else {
+            showError("Enter your username.")
+            userNameField.becomeFirstResponder()
             return
         }
-        guard let setting = SettingsManager.shared.getSetting(name: SettingsManager.sessionKey),
-              let context = setting.managedObjectContext else {
-            showError("Your settings could not be loaded. Please reopen the app and try again.")
+
+        guard !password.isEmpty else {
+            showError("Enter your password.")
+            passwordField.becomeFirstResponder()
             return
         }
-        let previousValue = setting.value
-        setting.value = key
-        do {
-            try context.save()
-        } catch {
-            setting.value = previousValue
-            showError("Your session key could not be saved. Please try again.")
-            return
-        }
-        continueButton.isEnabled = false
+
+        clearError()
         view.endEditing(true)
-        sessionKeyField.text = nil
-        onLogon?()
+
+        continueButton.isEnabled = false
+        continueButton.configuration?.showsActivityIndicator = true
+        userNameField.isEnabled = false
+        passwordField.isEnabled = false
+
+        Task { @MainActor in
+            defer {
+                continueButton.isEnabled = true
+                continueButton.configuration?.showsActivityIndicator = false
+                userNameField.isEnabled = true
+                passwordField.isEnabled = true
+            }
+
+            do {
+                try await DBConnector.shared.login(
+                    i_username: username,
+                    i_password: password
+                )
+
+                passwordField.text = nil
+                onLogon?()
+            } catch {
+                showError(error.localizedDescription)
+            }
+        }
     }
 
     private func showError(_ message: String) {

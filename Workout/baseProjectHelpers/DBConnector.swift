@@ -88,6 +88,47 @@ class DBConnector {
         return request
     }
     
+    @MainActor
+    func login(i_username: String, i_password: String) async throws {
+        let url = URL(string: "\(projectString)login")!
+        var request = initRequest(i_url: url, i_method: method_POST)
+
+        // Publishable keys belong in the apikey header, not Bearer auth.
+        request.setValue(nil, forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "i_username": i_username,
+            "i_password": i_password
+        ])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let http = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        guard (200...299).contains(http.statusCode) else {
+            struct APIError: Decodable {
+                let message: String
+            }
+
+            let message = (try? JSONDecoder().decode(
+                APIError.self,
+                from: data
+            ))?.message ?? "Login failed (HTTP \(http.statusCode))."
+
+            throw NSError(
+                domain: "DBConnector.Login",
+                code: http.statusCode,
+                userInfo: [NSLocalizedDescriptionKey: message]
+            )
+        }
+
+        let sessionID = try JSONDecoder().decode(UUID.self, from: data)
+        session_token = sessionID.uuidString
+        SettingsManager.shared.updateSetting(name: SettingsManager.sessionKey, newValue: session_token)
+    }
     func insertWorkouts(i_ws: [WorkoutSessionUploadDTO]) async {
         
         let postgresqlFuncName = "insupdateworkoutsession"
