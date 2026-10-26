@@ -253,3 +253,54 @@ gantt
 - [WorkoutAIViewController.swift](Workout/homePageViews/WorkoutAIViewController.swift)
 
 > **Implementation note:** Do the history/lifecycle fixes before building sophisticated AI questions. Otherwise the AI may ask questions based on misleading workout data.
+
+
+---
+
+## 🧩 Audit addendum — actual customisation prompt vs app schema (26 Oct 2026)
+
+The user supplies an extensive customisation prompt covering progressive overload, squat exclusions, exercise continuity, fatigue management, muscle-group balance and recovery. **Do not treat those programming rules as missing from the effective prompt when the customisation text is provided.** The remaining gaps are largely **enforcement, data fidelity, persistence and DTO expressiveness**.
+
+### 🔴 P0 — Resolve incompatible instructions and output contract
+
+- [ ] Align the prompt's distinct-exercise minimum: section 2 says normally **5–7**; final validation says **4–7** and fewer than **3** is invalid. Adopt one consistent rule (normally 5–7, fewer only for documented shortened/recovery sessions).
+- [ ] Support target **rep ranges** (e.g. 6–10) instead of only `rep_qty: Int`; preserve a sensible fixed-rep fallback for legacy records.
+- [ ] Support **per-exercise rest** rather than only session-level `rest_time`. Preserve the current session rest timer until UI migration is complete.
+- [ ] Allow **nullable suggested weight** when history is insufficient; never fabricate a load simply because `weight: Int` is required.
+- [ ] Support fractional weights (e.g. 2.5 kg increments), preserving existing `weight_basis` semantics and DB/Core Data compatibility.
+- [ ] Add optional target **RIR/RPE** and clear working-set vs warm-up/back-off set classification where supported.
+- [ ] Decide whether to version the DTO/API response and migrate persisted data or use a compatibility adapter. Update decoder, UI, Core Data and Supabase consistently.
+- [ ] Validate the actual model output against the schema and programming rules **in Swift**; prompt instructions alone do not guarantee compliance.
+
+### 🟠 P1 — Ensure customisation rules are truly applied
+
+- [ ] Move durable programming rules from manually pasted `i_customisations` into a **versioned built-in prompt**, keeping the user field for actual preferences, constraints and temporary context.
+- [ ] Merge stored goals/exclusions with free-text customisations using a documented precedence policy.
+- [ ] Explicitly enforce **no squat variations**, including hack, Smith, goblet and renamed variants, with exercise IDs/aliases and post-generation validation.
+- [ ] Keep continuity of comparable exercises across weeks, rather than rotating movements for novelty.
+- [ ] Implement progression decisions based on **completed working sets**, comparable equipment and weight convention; only increase load after appropriate rep achievement.
+- [ ] Distinguish comparable barbell/dumbbell/machine variations; do not assume a dumbbell log is per-hand without explicit `weight_basis`.
+- [ ] Use recent completed-session **sequence**, not simply the calendar week, so missed leg/chest sessions carry forward.
+- [ ] Track and respect recent fatigue, training gaps, illness/recovery information **when actually supplied**; don't infer illness solely from one weak workout.
+- [ ] Calculate reasonable weekly muscle-group volume and indirect work without treating ranges as mandatory quotas.
+- [ ] Enforce a balanced weekly program (press/pull; anterior/posterior lower body) and 5–7 distinct movements in normal sessions.
+- [ ] Preserve exercise order and distinct exercise entries; don't create separate exercise names for each set.
+- [ ] Add an optional per-exercise progression rationale to internal/debug metadata, while keeping user-facing structured-only output where requested.
+
+### 🧪 Verification scenarios to add to tests
+
+- [ ] All prior squat aliases rejected, even if the model emits a squat despite the prompt.
+- [ ] `80 kg × 8,8,8,8` vs `80 kg × 8,7,6,6` produce different progression decisions.
+- [ ] A missed leg session remains a priority even when a new calendar week starts.
+- [ ] Generated-but-unstarted sessions do not count as training and don't cause false adherence penalties.
+- [ ] Sparse history results in an **omitted weight**, not a made-up load.
+- [ ] Mixed-case exercise aliases normalise, while genuinely different equipment variants stay distinct.
+- [ ] Fractional weights, rep ranges, per-exercise rest and optional RIR/RPE round-trip through decoding, persistence and display.
+- [ ] A deliberately short recovery session is allowed, but an unjustified 2–4-exercise normal session is flagged.
+- [ ] The same set of customisation rules remains effective even when the user doesn't paste the long prompt again.
+
+### 📝 Audit caveats
+
+- The previous 5/10 rating was based on the Swift generation pipeline, **not** on the full effective customisation prompt. The supplied prompt is substantially stronger than the basic hard-coded system message.
+- Previously observed unusual workout categories and missed sets may reflect manual edits or unstarted plans; investigate provenance before classifying them as model errors.
+- The source review is static; verify behaviour with automated tests and representative real plan outputs.
