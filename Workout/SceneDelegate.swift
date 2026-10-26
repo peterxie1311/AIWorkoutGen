@@ -3,6 +3,7 @@ import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
+    private var openingTask: Task<Void, Never>?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
@@ -31,6 +32,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
     }
     private func clearAllCoreData() throws {
+        SettingsManager.shared.resetSettingsSync()
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
             throw NSError(
                 domain: "SceneDelegate",
@@ -80,6 +82,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func showLogon() {
+        openingTask?.cancel()
+        openingTask = nil
         do {
             try clearAllCoreData()
         } catch {
@@ -114,11 +118,52 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     private func openWorkout() {
+        guard openingTask == nil else { return }
         DBConnector.shared.loadSessionToken()
-        let navigation = UINavigationController(rootViewController: WorkoutAIViewController())
-        WorkoutTheme.applyNavigation(to: navigation)
-        window?.rootViewController = navigation
-        Task {
+        let session = SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value
+        let loading = UIViewController()
+        loading.view.backgroundColor = WorkoutTheme.background
+        let spinner = UIActivityIndicatorView(style: .large)
+        spinner.accessibilityLabel = "Loading account settings"
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        loading.view.addSubview(spinner)
+        NSLayoutConstraint.activate([
+            spinner.centerXAnchor.constraint(equalTo: loading.view.centerXAnchor),
+            spinner.centerYAnchor.constraint(equalTo: loading.view.centerYAnchor)
+        ])
+        spinner.startAnimating()
+        window?.rootViewController = loading
+
+        openingTask = Task { @MainActor [weak self] in
+            guard let self = self else { return }
+            var settingsSyncFailed = false
+            do {
+                try await SettingsManager.shared.syncSettings()
+            } catch {
+                settingsSyncFailed = true
+            }
+            guard !Task.isCancelled,
+                  self.window?.rootViewController === loading,
+                  SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value == session else {
+                return
+            }
+            workoutAIservice.shared.loadSessionApiKey()
+            let navigation = UINavigationController(rootViewController: WorkoutAIViewController())
+            WorkoutTheme.applyNavigation(to: navigation)
+            self.window?.rootViewController = navigation
+            self.openingTask = nil
+
+            if settingsSyncFailed {
+                let alert = UIAlertController(
+                    title: "Settings could not sync",
+                    message: "Your local settings are still available. Pending changes will retry when you reopen the app.",
+                    preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                alert.addAction(UIAlertAction(title: "Retry", style: .default) { [weak self] _ in
+                    self?.openWorkout()
+                })
+                navigation.present(alert, animated: true)
+            }
             await WorkoutSessionManager.shared.syncWorkoutSessionEntries()
             await FoodLogManager.shared.syncFoodLogEntries()
         }
@@ -137,3 +182,4 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         (UIApplication.shared.delegate as? AppDelegate)?.saveContext()
     }
 }
+

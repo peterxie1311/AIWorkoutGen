@@ -153,3 +153,114 @@ final class WorkoutTests: XCTestCase {
   //  }
 
 }
+
+@MainActor
+final class AccountSettingsSyncTests: XCTestCase {
+    private func stubSession(status: Int, body: String) -> URLSession {
+        SettingsRPCStub.status = status
+        SettingsRPCStub.body = Data(body.utf8)
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [SettingsRPCStub.self]
+        return URLSession(configuration: configuration)
+    }
+
+    func testFetchSettingsUsesAPIProfileAndDecodesRows() async throws {
+        let session = stubSession(status: 200, body: """
+        [{"settingName":"Name","value":"Peter"}]
+        """)
+        defer { session.invalidateAndCancel() }
+        let rows = try await DBConnector.shared.fetchSettings(
+            i_sessionid: UUID().uuidString, using: session)
+        XCTAssertEqual(rows, [AccountSettingDTO(settingName: "Name", value: "Peter")])
+        XCTAssertEqual(SettingsRPCStub.lastRequest?.url?.lastPathComponent, "getsettings")
+        XCTAssertEqual(SettingsRPCStub.lastRequest?.httpMethod, "POST")
+        XCTAssertEqual(SettingsRPCStub.lastRequest?.value(forHTTPHeaderField: "Content-Profile"), "api")
+        XCTAssertNil(SettingsRPCStub.lastRequest?.value(forHTTPHeaderField: "Authorization"))
+        XCTAssertNotNil(SettingsRPCStub.lastRequest?.value(forHTTPHeaderField: "apikey"))
+    }
+
+    func testFailedFetchThrowsInsteadOfPretendingAccountHasNoSettings() async throws {
+        let session = stubSession(status: 401, body: "{}")
+        defer { session.invalidateAndCancel() }
+        do {
+            _ = try await DBConnector.shared.fetchSettings(
+                i_sessionid: UUID().uuidString, using: session)
+            XCTFail("An HTTP error must not be interpreted as an empty settings list.")
+        } catch SettingsSyncError.http(let status) {
+            XCTAssertEqual(status, 401)
+        }
+    }
+
+    func testUpsertHandlesVoidResponse() async throws {
+        let session = stubSession(status: 204, body: "")
+        defer { session.invalidateAndCancel() }
+        try await DBConnector.shared.upsertSettings(
+            i_payload: [AccountSettingDTO(settingName: "Name", value: "Peter")],
+            i_sessionid: UUID().uuidString, using: session)
+        XCTAssertEqual(SettingsRPCStub.lastRequest?.url?.lastPathComponent, "insupdatesettings")
+    }
+
+    func testExistingAccountSettingsAreNotOverwrittenByDefaults() {
+        let upload = SettingsManager.settingsToUpload(
+            local: [AccountSettingDTO(settingName: "Calorie Goal", value: "0")],
+            remote: [AccountSettingDTO(settingName: "Calorie Goal", value: "2300")],
+            pending: [])
+        XCTAssertTrue(upload.isEmpty)
+    }
+
+    func testPendingEditWinsAndMissingSettingsAreSeeded() {
+        let local = [
+            AccountSettingDTO(settingName: "Name", value: "Peter"),
+            AccountSettingDTO(settingName: "Calorie Goal", value: "2400"),
+            AccountSettingDTO(settingName: "Protein Goal", value: "170")
+        ]
+        let upload = SettingsManager.settingsToUpload(local: local, remote: [
+            AccountSettingDTO(settingName: "Name", value: "Remote name"),
+            AccountSettingDTO(settingName: "Calorie Goal", value: "2300")
+        ], pending: ["Calorie Goal"])
+        XCTAssertEqual(upload, Array(local.dropFirst()))
+    }
+
+    func testSessionAndUnknownSettingsNeverUploadButGPTKeyDoes() {
+        let key = AccountSettingDTO(settingName: "GPT API Key", value: "test-placeholder")
+        let upload = SettingsManager.settingsToUpload(local: [
+            AccountSettingDTO(settingName: "Session Key", value: UUID().uuidString),
+            AccountSettingDTO(settingName: "Unknown", value: "value"), key
+        ], remote: [], pending: ["Session Key", "Unknown"])
+        XCTAssertEqual(upload, [key])
+    }
+
+    func testRPCResponseDecodesWithoutParsingTimestamp() throws {
+        let data = Data("""
+        [{"settingName":"Calorie Goal","value":"2300","moddate":"2026-10-26T01:02:03.123456+00:00"}]
+        """.utf8)
+        XCTAssertEqual(try JSONDecoder().decode([AccountSettingDTO].self, from: data),
+                       [AccountSettingDTO(settingName: "Calorie Goal", value: "2300")])
+    }
+
+    func testRPCPayloadUsesBackendFieldNames() throws {
+        let data = try JSONEncoder().encode(AccountSettingDTO(settingName: "Name", value: "Peter"))
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: String])
+        XCTAssertEqual(object, ["settingName": "Name", "value": "Peter"])
+    }
+}
+
+/// Settings tests never contact the real backend.
+private final class SettingsRPCStub: URLProtocol {
+    static var status = 200
+    static var body = Data()
+    static var lastRequest: URLRequest?
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        Self.lastRequest = request
+        let response = HTTPURLResponse(url: request.url!, statusCode: Self.status,
+                                       httpVersion: nil, headerFields: ["Content-Type": "application/json"])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Self.body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
+}
+

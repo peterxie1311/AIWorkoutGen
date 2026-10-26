@@ -7,6 +7,33 @@
 
 import Foundation
 
+/// The RPC returns moddate too; sync only needs the setting name and value.
+struct AccountSettingDTO: Codable, Equatable {
+    let settingName: String
+    let value: String
+}
+
+private struct SettingsUpdatePayload: Encodable {
+    let i_sessionid: String
+    let i_payload: [AccountSettingDTO]
+}
+
+enum SettingsSyncError: LocalizedError {
+    case missingSession
+    case sessionChanged
+    case localStorage
+    case http(Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .missingSession: return "Log on before syncing settings."
+        case .sessionChanged: return "The account changed while settings were syncing."
+        case .localStorage: return "Settings could not be saved on this device."
+        case .http(let status): return "Settings could not sync (HTTP \(status)). Please try again."
+        }
+    }
+}
+
 struct AddWorkoutSessionPayload: Encodable {
     let i_sessionid: String
     let i_payload: [WorkoutSessionUploadDTO]
@@ -83,7 +110,6 @@ class DBConnector {
         
         request.setValue(self.httpHeadField, forHTTPHeaderField: "Content-Type")
         request.setValue(self.publicAPIKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(publicAPIKey)", forHTTPHeaderField: "Authorization")
         request.setValue("api", forHTTPHeaderField: "Content-Profile")
         return request
     }
@@ -129,6 +155,37 @@ class DBConnector {
         session_token = sessionID.uuidString
         SettingsManager.shared.updateSetting(name: SettingsManager.sessionKey, newValue: session_token)
     }
+    func fetchSettings(i_sessionid: String, using session: URLSession = .shared) async throws -> [AccountSettingDTO] {
+        let body = try JSONEncoder().encode(["i_sessionid": i_sessionid])
+        let data = try await settingsRequest(function: "getsettings", body: body, session: session)
+        return try JSONDecoder().decode([AccountSettingDTO].self, from: data)
+    }
+
+    func upsertSettings(i_payload: [AccountSettingDTO], i_sessionid: String,
+                        using session: URLSession = .shared) async throws {
+        guard !i_payload.isEmpty else { return }
+        let body = try JSONEncoder().encode(SettingsUpdatePayload(
+            i_sessionid: i_sessionid, i_payload: i_payload))
+        _ = try await settingsRequest(function: "insupdatesettings", body: body, session: session)
+    }
+
+    private func settingsRequest(function: String, body: Data, session: URLSession) async throws -> Data {
+        let url = URL(string: "\(projectString)\(function)")!
+        var request = initRequest(i_url: url, i_method: method_POST)
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.timeoutInterval = 20
+        request.httpBody = body
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        guard (200...299).contains(http.statusCode) else {
+            // Never log request/response bodies: settings can contain API keys.
+            throw SettingsSyncError.http(http.statusCode)
+        }
+        return data
+    }
+
     func insertWorkouts(i_ws: [WorkoutSessionUploadDTO]) async {
         
         let postgresqlFuncName = "insupdateworkoutsession"
@@ -286,4 +343,5 @@ class DBConnector {
     
     
 }
+
 

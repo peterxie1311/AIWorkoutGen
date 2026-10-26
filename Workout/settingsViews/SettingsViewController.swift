@@ -15,6 +15,11 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
 //        setupTableView()
         initializeSettings() // Call to initialize settings
     }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        view.endEditing(true)
+        super.viewWillDisappear(animated)
+    }
     
     func setupStackView(){
         let stackView = UIStackView(arrangedSubviews: [tableView])
@@ -80,7 +85,8 @@ class SettingsViewController: UIViewController, UITableViewDataSource, UITableVi
         // Update the corresponding setting
         let indexPath = IndexPath(row: 0, section: 0) // Change index based on your settings logic
         let setting = SettingsManager.shared.settings[indexPath.row]
-        setting.value = sender.isOn ? "true" : "false"
+        guard let name = setting.settingName else { return }
+        SettingsManager.shared.updateSetting(name: name, newValue: sender.isOn ? "true" : "false")
     }
 }
 
@@ -90,8 +96,10 @@ extension SettingsViewController: UITextFieldDelegate {
         if let cell = textField.superview?.superview as? SettingsTableViewCell,
            let indexPath = tableView.indexPath(for: cell) {
             let setting = SettingsManager.shared.settings[indexPath.row]
-            setting.value = textField.text // Update the setting value
+            guard let name = setting.settingName else { return }
+            SettingsManager.shared.updateSetting(name: name, newValue: textField.text ?? "")
         }
     }
 }
+
 
