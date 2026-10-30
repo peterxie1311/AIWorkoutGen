@@ -61,10 +61,10 @@ final class WorkoutSummaryCardView: UIView {
         
         let row1 = UIStackView(arrangedSubviews: [col1, col2])
         let row2 = UIStackView(arrangedSubviews: [col3, col4])
-        [row1, row2].forEach { $0.distribution = .fillEqually; $0.spacing = 16 }
+        [row1, row2].forEach { $0.distribution = .fillEqually; $0.spacing = Constants.Design.Spacing.large }
         let hstack = UIStackView(arrangedSubviews: [row1, row2])
         hstack.axis = .vertical
-        hstack.spacing = 20
+        hstack.spacing = Constants.Design.Spacing.xlarge
         hstack.translatesAutoresizingMaskIntoConstraints = false
         hstack.distribution = .fillEqually
         
@@ -87,7 +87,7 @@ final class WorkoutSummaryCardView: UIView {
     }
     private func style() {
         WorkoutTheme.card(container)
-        container.layer.cornerRadius = 22
+        container.layer.cornerRadius = Constants.Design.Radius.card
         container.layer.masksToBounds = true
 
         startTimeLabel.text = "Start"
@@ -134,7 +134,7 @@ final class WorkoutSummaryCardView: UIView {
         
         let v = UIStackView(arrangedSubviews: [title, value])
         v.axis = .vertical
-        v.spacing = 4
+        v.spacing = Constants.Design.Spacing.xsmall
         v.alignment = align == .left ? .leading : (align == .right ? .trailing : .center)
         
         let h = UIStackView(arrangedSubviews: [image,v])
