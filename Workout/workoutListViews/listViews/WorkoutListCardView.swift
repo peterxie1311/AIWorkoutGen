@@ -63,7 +63,7 @@ final class WorkoutListCardView: UIView {
 
         let leftHeader = UIStackView(arrangedSubviews: [titleLabel, dateLabel])
         leftHeader.axis = .vertical
-        leftHeader.spacing = 4
+        leftHeader.spacing = Constants.Design.Spacing.xsmall
 
         headerStack.axis = .horizontal
         headerStack.alignment = .top
@@ -81,14 +81,14 @@ final class WorkoutListCardView: UIView {
 
         statsStack.axis = .horizontal
         statsStack.distribution = .fillEqually
-        statsStack.spacing = 8
+        statsStack.spacing = Constants.Design.Spacing.small
         statsStack.addArrangedSubview(durationLabel)
         statsStack.addArrangedSubview(setsLabel)
         statsStack.addArrangedSubview(volumeLabel)
         statsStack.addArrangedSubview(totalrestTimeLabel)
 
         mainStack.axis = .vertical
-        mainStack.spacing = 16
+        mainStack.spacing = Constants.Design.Spacing.large
         mainStack.addArrangedSubview(headerStack)
         let divider = UIView()
         divider.backgroundColor = .separator
