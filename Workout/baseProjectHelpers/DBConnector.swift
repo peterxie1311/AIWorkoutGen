@@ -101,6 +101,7 @@ struct SetrepUploadDTO: Encodable,Decodable {
     let completed: Bool
     let moddate:Date?
     let weight_basis:String?
+    let iconName:String?
 }
 
 struct InsUpdWorkoutRequest: Encodable {
