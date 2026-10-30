@@ -210,7 +210,7 @@ final class SavedFoodCardView: UIView {
         layer.cornerRadius = 10
         layer.cornerCurve = .continuous
         layer.borderWidth = 1
-        layer.borderColor = UIColor.white.withAlphaComponent(0.08).cgColor
+        layer.borderColor = UIColor.separator.resolvedColor(with: traitCollection).cgColor
 
         imageView.contentMode = .scaleAspectFit
         imageView.clipsToBounds = false
