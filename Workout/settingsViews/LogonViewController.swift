@@ -64,7 +64,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         userNameField.returnKeyType = .go
         userNameField.delegate = self
         userNameField.backgroundColor = WorkoutTheme.background
-        userNameField.layer.cornerRadius = 12
+        userNameField.layer.cornerRadius = Constants.Design.Radius.field
         userNameField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
         userNameField.leftViewMode = .always
         userNameField.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
@@ -84,7 +84,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         passwordField.returnKeyType = .go
         passwordField.delegate = self
         passwordField.backgroundColor = WorkoutTheme.background
-        passwordField.layer.cornerRadius = 12
+        passwordField.layer.cornerRadius = Constants.Design.Radius.field
         passwordField.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
         passwordField.leftViewMode = .always
         passwordField.heightAnchor.constraint(greaterThanOrEqualToConstant: 54).isActive = true
@@ -104,7 +104,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         configuration.imagePadding = 10
         configuration.baseBackgroundColor = WorkoutTheme.accent
         configuration.baseForegroundColor = WorkoutTheme.onAccent
-        configuration.background.cornerRadius = 14
+        configuration.background.cornerRadius = Constants.Design.Radius.button
         configuration.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 20, bottom: 16, trailing: 20)
         continueButton.configuration = configuration
         continueButton.accessibilityIdentifier = "logon.continue"
@@ -119,7 +119,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
 
         let stack = UIStackView(arrangedSubviews: [icon, title, subtitle, form])
         stack.axis = .vertical
-        stack.spacing = 24
+        stack.spacing = Constants.Design.Spacing.section
         stack.translatesAutoresizingMaskIntoConstraints = false
         scroll.addSubview(stack)
         NSLayoutConstraint.activate([
