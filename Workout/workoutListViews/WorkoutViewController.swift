@@ -105,101 +105,119 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
         tableView.reloadData()
     }
     
-    private func setupUI() {
-        //setup table header
-        let headerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.width, height: 40))
-       // headerView.backgroundColor = .lightGray
-        
-        let titles = ["Workout", "QTY", "Kgs", "Sec"]
-        let headerStackView = UIStackView()
-        headerStackView.axis = .horizontal
-        headerStackView.distribution = .fillEqually
-        headerStackView.alignment = .center
-        headerStackView.spacing = 10
-        
-        for title in titles {
-            let label = UILabel()
-            label.text = title
-            label.textAlignment = .center
-            label.font = UIFont.boldSystemFont(ofSize: 16)
-            label.textColor = WorkoutTheme.accent
-            headerStackView.addArrangedSubview(label)
-        }
-        
-        headerView.addSubview(headerStackView)
-        headerStackView.translatesAutoresizingMaskIntoConstraints = false
+    private func summaryCard(_ title: String, _ value: String) -> UIView {
+        let titleLabel = UILabel()
+        titleLabel.text = title.uppercased()
+        titleLabel.font = .systemFont(ofSize: 11, weight: .semibold)
+        titleLabel.textColor = .secondaryLabel
+        let valueLabel = UILabel()
+        valueLabel.text = value
+        valueLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        valueLabel.textColor = .label
+        valueLabel.numberOfLines = 2
+        let stack = UIStackView(arrangedSubviews: [titleLabel, valueLabel])
+        stack.axis = .vertical
+        stack.spacing = 6
+        stack.alignment = .center
+        let card = UIView()
+        WorkoutTheme.card(card)
+        card.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            headerStackView.topAnchor.constraint(equalTo: headerView.topAnchor),
-            headerStackView.leadingAnchor.constraint(equalTo: headerView.leadingAnchor, constant: 10),
-            headerStackView.trailingAnchor.constraint(equalTo: headerView.trailingAnchor, constant: -10),
-            headerStackView.bottomAnchor.constraint(equalTo: headerView.bottomAnchor)
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 18),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -18),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 6),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -6)
         ])
-        
-        tableView.tableHeaderView = headerView
-        
-        
-        // setup table
+        return card
+    }
+
+    private func setupUI() {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "HH:mm"
+        let start = startTime.map { dateFormatter.string(from: $0) } ?? "—"
+        let end = endTime.map { dateFormatter.string(from: $0) } ?? "—"
+        let duration = (startTime != nil && endTime != nil)
+            ? max(0, Int((endTime!.timeIntervalSince(startTime!)) / 60))
+            : Int(duration_hrs * 60)
+        let title = UILabel()
+        title.text = (workoutGenre?.isEmpty == false ? workoutGenre : nil) ?? "Workout Session"
+        title.font = .systemFont(ofSize: 30, weight: .bold)
+        title.textColor = .label
+        title.numberOfLines = 0
+        let date = UILabel()
+        date.text = startTime.map { DateFormatter.localizedString(from: $0, dateStyle: .medium, timeStyle: .none) } ?? "Session details"
+        date.font = .systemFont(ofSize: 15)
+        date.textColor = .secondaryLabel
+        let header = UIStackView(arrangedSubviews: [title, date])
+        header.axis = .vertical
+        header.spacing = 6
+
+        let stats = UIStackView(arrangedSubviews: [
+            summaryCard("Start", start),
+            summaryCard("Finish", end),
+            summaryCard("Duration", "\(duration) min")
+        ])
+        stats.axis = .horizontal
+        stats.spacing = 8
+        stats.distribution = .fillEqually
+
+        let heading = UILabel()
+        heading.text = "Exercises  •  \(setreps.count) sets"
+        heading.font = .systemFont(ofSize: 22, weight: .bold)
+        heading.textColor = .label
+
         tableView.dataSource = self
         tableView.delegate = self
         tableView.register(WorkoutTableViewCell.self, forCellReuseIdentifier: "WorkoutCell")
-        
         tableView.backgroundColor = .clear
-        tableView.backgroundView = UIView()
-        tableView.backgroundView?.backgroundColor = .clear
-        tableView.tableFooterView = UIView() // removes empty-cell area tint
-        
-        // Setup UI Components
-        startimelabel.font = UIFont.systemFont(ofSize: 18)
-        endtimelabel.font  = UIFont.systemFont(ofSize: 18)
-        locationlabel.font = UIFont.systemFont(ofSize: 18)
-       // endtimelabel.font = UIFont.systemFont(ofSize: 18)
-        durationlabel.font = UIFont.systemFont(ofSize: 18)
-        workoutLabel.font  = UIFont.systemFont(ofSize: 18)
-        
-        // Configure Description TextView
+        tableView.separatorStyle = .none
+        tableView.isScrollEnabled = false
+        tableView.rowHeight = UITableView.automaticDimension
+        tableView.estimatedRowHeight = 100
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        tableView.heightAnchor.constraint(equalToConstant: CGFloat(setreps.count) * 108 + 20).isActive = true
+
         deleteButton.setTitle("Delete Workout", for: .normal)
-        deleteButton.addTarget(self, action: #selector(removeWorkout), for: .touchUpInside)
-        
-        AddSetRep.addTarget(self, action: #selector(goToAddSetVC), for: .touchUpInside)
-        
-        excludeButton.setTitle("Exclude Workout", for: .normal)
+        deleteButton.addTarget(self, action: #selector(confirmDeleteWorkout), for: .touchUpInside)
+        deleteButton.configuration?.baseBackgroundColor = .systemRed.withAlphaComponent(0.12)
+        deleteButton.configuration?.baseForegroundColor = .systemRed
         excludeButton.addTarget(self, action: #selector(excludeWorkout), for: .touchUpInside)
-        
-        view.addSubview(scrollView)
+        excludeButton.configuration?.baseBackgroundColor = .secondarySystemGroupedBackground
+        excludeButton.configuration?.baseForegroundColor = .label
+        AddSetRep.addTarget(self, action: #selector(goToAddSetVC), for: .touchUpInside)
+
+        let actionRow = UIStackView(arrangedSubviews: [deleteButton, excludeButton])
+        actionRow.axis = .horizontal
+        actionRow.spacing = 10
+        actionRow.distribution = .fillEqually
+        let root = UIStackView(arrangedSubviews: [header, stats, AddSetRep, heading, tableView, actionRow])
+        root.axis = .vertical
+        root.spacing = Constants.Design.Spacing.large
         scrollView.translatesAutoresizingMaskIntoConstraints = false
-
-        
+        root.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(root)
         NSLayoutConstraint.activate([
-              scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-              scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-              scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-              scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-          ])
-        
-        // Add Subviews and Set Constraints
-        // Add stackView inside scrollView
-        let stackView = UIStackView(arrangedSubviews: [
-            workoutLabel, startimelabel, locationlabel,
-            endtimelabel, durationlabel, deleteButton,
-            excludeButton, AddSetRep, tableView
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            root.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor, constant: 20),
+            root.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor, constant: -32),
+            root.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 20),
+            root.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -20),
+            root.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
-        
-        stackView.axis = .vertical
-        stackView.spacing = 10
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-
-        scrollView.addSubview(stackView)
-
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            stackView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 20),
-            stackView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -20),
-            stackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor, constant: -40)
-        ])
-        tableView.heightAnchor.constraint(equalToConstant: 400).isActive = true
     }
-    
+
+    @objc private func confirmDeleteWorkout() {
+        let alert = UIAlertController(title: "Delete Workout?", message: "This session and its sets will be removed.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in self?.removeWorkout() })
+        present(alert, animated: true)
+    }
+
     // UITableViewDataSource Methods
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return self.setreps.count  // Number of workouts
@@ -216,78 +234,50 @@ class WorkoutViewController: UIViewController, UITableViewDataSource, UITableVie
         return cell
     }
     
-    private func setupData() {
-        startimelabel.text = "Start Time: " + HelperFunctions.parseDateToStringFull(startTime!)
-        endtimelabel.text  = "Finish Time: " + HelperFunctions.parseDateToStringFull(endTime!)
-        locationlabel.text = "Location: " + (self.location ?? "")
-        durationlabel.text = "Duration (mins): " + String(self.duration_hrs)
-        workoutLabel.text =  "Workout: \(self.workoutGenre ?? "")"
-        
-    }
-    
+    private func setupData() { }
 }
 
 class WorkoutTableViewCell: UITableViewCell {
-    
-    let workoutLabel = UILabel()
-    let qtyLabel = UILabel()
-    let kgsLabel = UILabel()
-    let secLabel = UILabel()
-    let status   = UIImageView()
-    
+    private let name = UILabel()
+    private let details = UILabel()
+    private let status = UIImageView()
+
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        
-        let stackView = UIStackView(arrangedSubviews: [workoutLabel, qtyLabel, kgsLabel, secLabel,status])
-        stackView.axis = .horizontal
-        stackView.distribution = .fillEqually
-        stackView.alignment = .center
-        stackView.spacing = 8
-        
-        contentView.addSubview(stackView)
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
-            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
-            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -5)
-        ])
-        
-        // Style Labels
-        [workoutLabel, qtyLabel, kgsLabel, secLabel].forEach {
-            $0.textAlignment = .center
-            $0.font = UIFont.systemFont(ofSize: 16)
-            $0.textColor = .label
-        }
-        status.contentMode = .scaleAspectFit
-        status.tintColor = .white
-        contentView.backgroundColor = .secondarySystemBackground
+        selectionStyle = .none
         backgroundColor = .clear
-
+        contentView.backgroundColor = WorkoutTheme.surface
+        contentView.layer.cornerRadius = Constants.Design.Radius.compactCard
+        contentView.layer.cornerCurve = .continuous
+        name.font = .systemFont(ofSize: 17, weight: .semibold)
+        name.textColor = .label
+        name.numberOfLines = 2
+        details.font = .systemFont(ofSize: 14)
+        details.textColor = .secondaryLabel
+        details.numberOfLines = 2
+        let labels = UIStackView(arrangedSubviews: [name, details])
+        labels.axis = .vertical
+        labels.spacing = 8
+        status.contentMode = .scaleAspectFit
+        status.widthAnchor.constraint(equalToConstant: 26).isActive = true
+        let row = UIStackView(arrangedSubviews: [labels, status])
+        row.axis = .horizontal
+        row.spacing = 12
+        row.alignment = .center
+        row.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(row)
+        NSLayoutConstraint.activate([
+            row.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            row.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -16),
+            row.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            row.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16)
+        ])
     }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
     func configure(with setrep: Setrep) {
-        workoutLabel.text = setrep.workoutName
-        qtyLabel.text = String(setrep.rep_qty)
-        kgsLabel.text = String(setrep.weight)
-        secLabel.text = String(format: "%.2f",setrep.duration_sec)
-        let isCompleted = setrep.completed // Assuming `isCompleted` is a property of `Setrep`
-                if isCompleted {
-                    status.image = UIImage(systemName: "checkmark.circle") // Checkmark icon
-                    status.tintColor = .systemGreen
-                } else {
-                    status.image = UIImage(systemName: "x.circle") // "X" icon
-                    status.tintColor = .systemRed
-                }
-        
-        [workoutLabel, qtyLabel, kgsLabel, secLabel].forEach {
-                $0.numberOfLines = 0
-                $0.lineBreakMode = .byWordWrapping
-            }
+        name.text = setrep.workoutName ?? "Exercise"
+        details.text = "\(setrep.rep_qty) reps  •  \(setrep.weight) kg  •  " + String(format: "%.1f sec", setrep.duration_sec)
+        status.image = UIImage(systemName: setrep.completed ? "checkmark.circle.fill" : "circle")
+        status.tintColor = setrep.completed ? .systemGreen : .tertiaryLabel
     }
 }
-
