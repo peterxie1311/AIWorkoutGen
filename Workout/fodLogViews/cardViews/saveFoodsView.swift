@@ -130,7 +130,7 @@ final class SavedFoodsView: UIView {
         scrollView.alwaysBounceVertical = false
 
         foodsStack.axis = .horizontal
-        foodsStack.spacing = 12
+        foodsStack.spacing = Constants.Design.Spacing.medium
         foodsStack.alignment = .fill
         foodsStack.distribution = .fill
     }
