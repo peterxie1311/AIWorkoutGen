@@ -30,6 +30,7 @@ struct SetrepDTO: Codable {
     let weight: Int
     let set_qty: Int
     let weight_basis: String
+    let iconName: String?
 
     var asSetreps: [Setrep] {
         (0..<set_qty).map { _ in
@@ -39,7 +40,8 @@ struct SetrepDTO: Codable {
                 finishTime: Date(),
                 workoutName: workoutName,
                 weight: Int64(weight),
-                weight_basis: weight_basis
+                weight_basis: weight_basis,
+                iconName: iconName
             )
         }
     }
@@ -130,6 +132,9 @@ class workoutAIservice {
         - set_qty (Integer)
         - weight (Integer)
         - weight_basis (String)
+        - iconName (String): select exactly one allowed muscle illustration asset name.
+        Allowed iconName values: \(ExerciseIcon.allowedIconNamesForPrompt)
+        Do not invent icon names. Choose the primary muscle trained; use "muscle_full_body" if unclear.
         weight_basis MUST be one of the following values:
         - "total" = total weight lifted (e.g. barbell bench, squat, deadlift)
         - "per dumbbell" = weight of a single dumbbell (e.g. 20 kg dumbbells)
