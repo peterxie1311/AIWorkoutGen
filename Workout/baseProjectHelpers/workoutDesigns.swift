@@ -30,7 +30,7 @@ class workoutDesigns {
     ) {
         tf.borderStyle = .none
         tf.backgroundColor = WorkoutTheme.background
-        tf.layer.cornerRadius = 12
+        tf.layer.cornerRadius = Constants.Design.Radius.field
         tf.font = .preferredFont(forTextStyle: .body)
         tf.adjustsFontForContentSizeCategory = true
         let inset = UIView(frame: CGRect(x: 0, y: 0, width: 14, height: 1))
@@ -114,13 +114,13 @@ class workoutDesigns {
     ) -> UIView {
         let containerView = UIView()
         WorkoutTheme.card(containerView)
-        containerView.layer.cornerRadius = 16
+        containerView.layer.cornerRadius = Constants.Design.Spacing.large
         containerView.layer.masksToBounds = true
         containerView.translatesAutoresizingMaskIntoConstraints = false
 
         let stackView = UIStackView()
         stackView.axis = .vertical
-        stackView.spacing = 12
+        stackView.spacing = Constants.Design.Spacing.medium
         stackView.translatesAutoresizingMaskIntoConstraints = false
 
         containerView.addSubview(stackView)
@@ -206,7 +206,7 @@ class workoutDesigns {
         )
 
         fieldStack.axis = .vertical
-        fieldStack.spacing = 4
+        fieldStack.spacing = Constants.Design.Spacing.xsmall
 
         stackView.addArrangedSubview(fieldStack)
     }
@@ -299,7 +299,7 @@ class workoutDesigns {
         backgroundColor: UIColor = WorkoutTheme.accent,
         borderColor: UIColor = WorkoutTheme.accent,
         textColor: UIColor = WorkoutTheme.onAccent,
-        cornerRadius: CGFloat = 20,
+        cornerRadius: CGFloat = Constants.Design.Spacing.xlarge,
         width: CGFloat = 40,
         height: CGFloat = 40
     ) -> UIButton {
@@ -451,7 +451,7 @@ enum WorkoutTheme {
 
     static func card(_ view: UIView) {
         view.backgroundColor = surface
-        view.layer.cornerRadius = 22
+        view.layer.cornerRadius = Constants.Design.Radius.card
         view.layer.cornerCurve = .continuous
     }
 
