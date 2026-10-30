@@ -136,85 +136,157 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
        return personalBest
     }
     
+    private func detailLabel(_ text: String, prominent: Bool = false) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = .systemFont(ofSize: prominent ? 24 : 15, weight: prominent ? .bold : .medium)
+        label.textColor = prominent ? .label : .secondaryLabel
+        label.numberOfLines = 0
+        return label
+    }
+
+    private func panel(_ children: [UIView]) -> UIView {
+        let stack = UIStackView(arrangedSubviews: children)
+        stack.axis = .vertical
+        stack.spacing = Constants.Design.Spacing.medium
+        let container = UIView()
+        WorkoutTheme.card(container)
+        container.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 18),
+            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -18),
+            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 18),
+            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -18)
+        ])
+        return container
+    }
+
     private func setupUI() {
-        view.backgroundColor   = .systemBackground
-        nameLabel.text         = WorkoutName
-        rep_qtyLabel.text      = "Rep Qty: " + String(rep_qty)
-        startTimeLabel.text    = "Start Date: " + parseDateToString(startTime)
-        duration_secLabel.text = timerprefix + "0"
-        weight_label.text      = weightprefix + String(weight)
-        status.text            = statusPrefix + String(completed)
-        weight_basisLabel.text = "Weight Basis: " + WeightBasis
-        
-        
-        if let personalBest:Setrep = getPersonalBest(workout: WorkoutName){
-            personalBestLabelReps.text = "Personal Best (Reps): " + String(personalBest.rep_qty)
-            personalBestLabelWeight.text = "Personal Best (Wgt): " + String(personalBest.weight)
-            
-        }
-        
-        
-        // Setup UI Components
-        nameLabel.font = UIFont.boldSystemFont(ofSize: 24)
-        rep_qtyLabel.font = UIFont.systemFont(ofSize: 18)
-        startTimeLabel.font = UIFont.systemFont(ofSize: 18)
-        duration_secLabel.font = UIFont.systemFont(ofSize: 18)
-        weight_label.font = UIFont.systemFont(ofSize: 18)
-        
-        RepButton.setTitle(repButtonString, for: .normal)
-        RepButton.addTarget(self, action: #selector(startworkout), for: .touchUpInside)
-        
-        changeRepWeightButton.addTarget(self, action:#selector(executechangerepweight), for: .touchUpInside)
-        deleteRepButton.addTarget(self, action: #selector(deleteRep), for: .touchUpInside)
-        
-        RepButton.isUserInteractionEnabled       = true
-        deleteRepButton.isUserInteractionEnabled = true
-        changeRepWeight.isUserInteractionEnabled = true
-        
-        changeWorkoutName.borderStyle = .roundedRect
-        changeWorkoutName.placeholder = "Change Workout Name"
-        changeWorkoutName.keyboardType = .alphabet
-        changeWorkoutName.delegate = self
-        changeWorkoutName.translatesAutoresizingMaskIntoConstraints = false
-        changeWorkoutName.isUserInteractionEnabled = true
-        
-        changeRepWeight.borderStyle = .roundedRect
-        changeRepWeight.placeholder = "Change rep weight"
-        changeRepWeight.keyboardType = .numberPad
-        changeRepWeight.delegate = self
-        changeRepWeight.translatesAutoresizingMaskIntoConstraints = false
-        
-        changeSetQTY.isUserInteractionEnabled = true
-        changeSetQTY.borderStyle = .roundedRect
-        changeSetQTY.placeholder = "Change Set QTY"
-        changeSetQTY.keyboardType = .numberPad
-        changeSetQTY.delegate = self
-
-        // Add Subviews and Set Constraints
-        let stackView = UIStackView(arrangedSubviews: [nameLabel, rep_qtyLabel,status, weight_label,weight_basisLabel,startTimeLabel, duration_secLabel,personalBestLabelWeight,personalBestLabelReps,RepButton,deleteRepButton,changeWorkoutName,changeRepWeight,changeSetQTY,changeRepWeightButton])
-        stackView.axis = .vertical
-        stackView.spacing = 10
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-    
+        view.backgroundColor = WorkoutTheme.background
+        scrollViewBase.subviews.forEach { $0.removeFromSuperview() }
+        if scrollViewBase.superview == nil { view.addSubview(scrollViewBase) }
         scrollViewBase.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(scrollViewBase)
-        scrollViewBase.addSubview(stackView)
-        scrollViewBase.keyboardDismissMode = .interactive   // or .onDrag
-
-        
+        scrollViewBase.keyboardDismissMode = .interactive
         NSLayoutConstraint.activate([
             scrollViewBase.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            scrollViewBase.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollViewBase.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             scrollViewBase.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-               stackView.topAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.topAnchor),
-               stackView.leadingAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.leadingAnchor, constant: 20),
-               stackView.trailingAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.trailingAnchor, constant: -20),
-               stackView.bottomAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.bottomAnchor),
-
-               stackView.widthAnchor.constraint(equalTo: scrollViewBase.frameLayoutGuide.widthAnchor, constant: -40)
+            scrollViewBase.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollViewBase.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
+        nameLabel.text = WorkoutName
+        nameLabel.font = .systemFont(ofSize: 32, weight: .bold)
+        nameLabel.textColor = .label
+        nameLabel.numberOfLines = 0
+        let subtitle = detailLabel(WeightBasis.isEmpty ? "Exercise details" : WeightBasis.capitalized)
+        let heading = UIStackView(arrangedSubviews: [nameLabel, subtitle])
+        heading.axis = .vertical
+        heading.spacing = 6
+
+        weight_label.text = "\(weight) kg"
+        rep_qtyLabel.text = "\(rep_qty) reps"
+        status.text = completed ? "Completed" : (repButtonString == phase_2 ? "In progress" : "Not started")
+        let metrics = UIStackView(arrangedSubviews: [
+            metric(title: "WEIGHT", value: weight_label),
+            metric(title: "REPS", value: rep_qtyLabel),
+            metric(title: "STATUS", value: status)
+        ])
+        metrics.axis = .horizontal
+        metrics.spacing = 8
+        metrics.distribution = .fillEqually
+
+        let best = getPersonalBest(workout: WorkoutName)
+        personalBestLabelWeight.text = best.map { "\($0.weight) kg" } ?? "—"
+        personalBestLabelReps.text = best.map { "\($0.rep_qty) reps" } ?? "—"
+        let records = UIStackView(arrangedSubviews: [
+            metric(title: "BEST WEIGHT", value: personalBestLabelWeight),
+            metric(title: "BEST REPS", value: personalBestLabelReps)
+        ])
+        records.axis = .horizontal
+        records.distribution = .fillEqually
+        records.spacing = 12
+
+        startTimeLabel.text = "Added  •  " + parseDateToString(startTime)
+        duration_secLabel.text = "Duration  •  " + String(format: "%.0f sec", duration_sec)
+        weight_basisLabel.text = "Equipment  •  " + (WeightBasis.isEmpty ? "Not specified" : WeightBasis)
+        let info = panel([weight_basisLabel, startTimeLabel, duration_secLabel])
+        [weight_basisLabel, startTimeLabel, duration_secLabel].forEach {
+            $0.textColor = .secondaryLabel
+            $0.font = .systemFont(ofSize: 14)
+        }
+
+        RepButton.setTitle(completed ? phase_3 : repButtonString, for: .normal)
+        RepButton.isEnabled = !completed
+        RepButton.addTarget(self, action: #selector(startworkout), for: .touchUpInside)
+        deleteRepButton.addTarget(self, action: #selector(confirmDeleteRep), for: .touchUpInside)
+        deleteRepButton.configuration?.baseBackgroundColor = .systemRed.withAlphaComponent(0.12)
+        deleteRepButton.configuration?.baseForegroundColor = .systemRed
+        changeRepWeightButton.setTitle("Save Changes", for: .normal)
+        changeRepWeightButton.addTarget(self, action: #selector(executechangerepweight), for: .touchUpInside)
+
+        let editTitle = detailLabel("Edit Details", prominent: true)
+        changeWorkoutName.text = WorkoutName
+        changeRepWeight.text = String(weight)
+        changeSetQTY.text = String(rep_qty)
+        let editFields: [(UITextField, String, UIKeyboardType)] = [
+            (changeWorkoutName, "Exercise name", .default),
+            (changeRepWeight, "Weight (kg)", .numberPad),
+            (changeSetQTY, "Reps", .numberPad)
+        ]
+        let editStack = UIStackView()
+        editStack.axis = .vertical
+        editStack.spacing = 12
+        for (field, placeholder, keyboard) in editFields {
+            field.placeholder = placeholder
+            field.keyboardType = keyboard
+            field.delegate = self
+            field.borderStyle = .none
+            field.backgroundColor = WorkoutTheme.background
+            field.textColor = .label
+            field.layer.cornerRadius = Constants.Design.Radius.field
+            field.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
+            field.leftViewMode = .always
+            field.heightAnchor.constraint(equalToConstant: Constants.Design.Size.inputHeight).isActive = true
+            editStack.addArrangedSubview(detailLabel(placeholder))
+            editStack.addArrangedSubview(field)
+        }
+        editStack.addArrangedSubview(changeRepWeightButton)
+        let root = UIStackView(arrangedSubviews: [
+            heading, panel([metrics]), panel([detailLabel("Personal Best", prominent: true), records]),
+            info, RepButton, panel([editTitle, editStack]), deleteRepButton
+        ])
+        root.axis = .vertical
+        root.spacing = Constants.Design.Spacing.large
+        root.translatesAutoresizingMaskIntoConstraints = false
+        scrollViewBase.addSubview(root)
+        NSLayoutConstraint.activate([
+            root.topAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.topAnchor, constant: 24),
+            root.bottomAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.bottomAnchor, constant: -32),
+            root.leadingAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.leadingAnchor, constant: 20),
+            root.trailingAnchor.constraint(equalTo: scrollViewBase.contentLayoutGuide.trailingAnchor, constant: -20),
+            root.widthAnchor.constraint(equalTo: scrollViewBase.frameLayoutGuide.widthAnchor, constant: -40)
+        ])
+    }
+
+    private func metric(title: String, value: UILabel) -> UIView {
+        value.font = .systemFont(ofSize: 20, weight: .bold)
+        value.textColor = .label
+        value.textAlignment = .center
+        value.numberOfLines = 2
+        let caption = detailLabel(title)
+        caption.font = .systemFont(ofSize: 11, weight: .semibold)
+        caption.textAlignment = .center
+        let stack = UIStackView(arrangedSubviews: [caption, value])
+        stack.axis = .vertical
+        stack.spacing = 6
+        return stack
+    }
+
+    @objc private func confirmDeleteRep() {
+        let alert = UIAlertController(title: "Delete Set?", message: "This action cannot be undone.", preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Delete", style: .destructive) { [weak self] _ in self?.deleteRep() })
+        present(alert, animated: true)
     }
 
     @objc private func executechangerepweight() {
@@ -295,8 +367,6 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
             repButtonString = phase_3
             RepButton.setTitle(repButtonString, for: .normal)
             setupUI()
-            
-            
         }
 
     }
