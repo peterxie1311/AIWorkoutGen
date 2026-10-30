@@ -429,10 +429,10 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         heading.font = .systemFont(ofSize: 22, weight: .bold)
         let stack = UIStackView(arrangedSubviews: [heading, content])
         stack.axis = .vertical
-        stack.spacing = 16
+        stack.spacing = Constants.Design.Spacing.large
         let card = UIView()
         card.backgroundColor = WorkoutTheme.surface
-        card.layer.cornerRadius = 22
+        card.layer.cornerRadius = Constants.Design.Radius.card
         card.layer.cornerCurve = .continuous
         card.addSubview(stack)
         stack.translatesAutoresizingMaskIntoConstraints = false
@@ -465,7 +465,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         field.textColor = .label
         field.font = .systemFont(ofSize: 16)
         field.backgroundColor = WorkoutTheme.background
-        field.layer.cornerRadius = 12
+        field.layer.cornerRadius = Constants.Design.Radius.field
         field.layer.borderWidth = 1
         field.layer.borderColor = UIColor.separator.resolvedColor(with: traitCollection).cgColor
         field.setContentHuggingPriority(.defaultLow, for: .horizontal)
@@ -520,7 +520,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         root.addArrangedSubview(section("Meal Macros", content: totalsLabel))
 
         ingredientRows.axis = .vertical
-        ingredientRows.spacing = 8
+        ingredientRows.spacing = Constants.Design.Spacing.small
         ingredientsLabel.textColor = .secondaryLabel
         ingredientsLabel.font = .systemFont(ofSize: 15)
         let ingredientsStack = UIStackView(arrangedSubviews: [ingredientsLabel, ingredientRows])
@@ -634,7 +634,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
             row.alignment = .center
             row.spacing = 10
             row.backgroundColor = WorkoutTheme.background
-            row.layer.cornerRadius = 12
+            row.layer.cornerRadius = Constants.Design.Radius.field
             row.isLayoutMarginsRelativeArrangement = true
             row.layoutMargins = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
             ingredientRows.addArrangedSubview(row)
