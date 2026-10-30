@@ -7,6 +7,9 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
     }
 
     private let ingredientsLabel = UILabel()
+    private let ingredientRows = UIStackView()
+    private let totalsLabel = UILabel()
+    private var editingIndex: Int?
     private let assumptionsLabel = UILabel()
     private let confidenceLabel = UILabel()
 
@@ -181,7 +184,9 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
                 imageName: pictureName.text ?? ""
             )
 
-            foodIngredientsArray.append(macro)
+            if let index = editingIndex { foodIngredientsArray[index] = macro } else { foodIngredientsArray.append(macro) }
+            editingIndex = nil
+            AddFoodIngredientButton.setTitle("Add Ingredient", for: .normal)
             updateIngredientsLabel(assumptions: [], confidenceLevel: "")
         }
     }
@@ -227,6 +232,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
             ) else { return }
 
             self.fillFieldsFromSavedFood(food)
+            self.addIngredient()
         }
     }
 
@@ -416,203 +422,215 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         }
     }
 
-    private func setupUI() {
-        let texfieldsArray: [TextField] = [
-            TextField(
-                labelName: "Food Name",
-                keyboardType: .alphabet,
-                uiTextfield: foodNameField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            ),
-
-            TextField(
-                labelName: "Amount Of Food (Grams)",
-                keyboardType: .alphabet,
-                uiTextfield: foodGramsField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            ),
-
-            TextField(
-                labelName: "Protein (Grams)",
-                keyboardType: .alphabet,
-                uiTextfield: proteinGramField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            ),
-
-            TextField(
-                labelName: "Carbs (Grams)",
-                keyboardType: .alphabet,
-                uiTextfield: carbGramField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            ),
-
-            TextField(
-                labelName: "Calories",
-                keyboardType: .alphabet,
-                uiTextfield: calorieGramField,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            ),
-
-            TextField(
-                labelName: "Amount Of Fat (Grams)",
-                keyboardType: .alphabet,
-                uiTextfield: fatGramsLabel,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            ),
-
-            TextField(
-                labelName: "Picture Name:",
-                keyboardType: .alphabet,
-                uiTextfield: pictureName,
-                useLabelNameAsPlaceHolder: false,
-                delegate: self
-            )
-        ]
-
-        let textfields = workoutDesigns.createRoundedSquareViewWithTextFields(
-            textFields: texfieldsArray
-        )
-
-        ingredientsLabel.font = UIFont.systemFont(ofSize: 20)
-        ingredientsLabel.numberOfLines = 0
-        ingredientsLabel.lineBreakMode = .byWordWrapping
-        ingredientsLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        assumptionsLabel.lineBreakMode = .byWordWrapping
-        assumptionsLabel.numberOfLines = 0
-        assumptionsLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        confidenceLabel.lineBreakMode = .byWordWrapping
-        confidenceLabel.numberOfLines = 0
-        confidenceLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        proteinGramField.keyboardType = .decimalPad
-        carbGramField.keyboardType = .decimalPad
-        calorieGramField.keyboardType = .numberPad
-        foodGramsField.keyboardType = .decimalPad
-        foodNameField.keyboardType = .default
-        fatGramsLabel.keyboardType = .decimalPad
-
-        pictureName.keyboardType = .default
-        pictureName.placeholder = "Select icon"
-
-        let swipeDown = UISwipeGestureRecognizer(
-            target: self,
-            action: #selector(dismissKeyboard)
-        )
-        swipeDown.direction = .down
-        view.addGestureRecognizer(swipeDown)
-
-        addFoodLineButton.addTarget(
-            self,
-            action: #selector(addFoodLine),
-            for: .touchUpInside
-        )
-
-        AddFoodIngredientButton.addTarget(
-            self,
-            action: #selector(addIngredient),
-            for: .touchUpInside
-        )
-
-        queryChatGptButton.addTarget(
-            self,
-            action: #selector(queryChat),
-            for: .touchUpInside
-        )
-
-        addSavedFoodButton.addTarget(
-            self,
-            action: #selector(addSavedFoods),
-            for: .touchUpInside
-        )
-
-        addFoodLineButton.isUserInteractionEnabled = true
-        addFoodLineButton.isEnabled = true
-        addFoodLineButton.translatesAutoresizingMaskIntoConstraints = false
-        queryChatGptButton.translatesAutoresizingMaskIntoConstraints = false
-        AddFoodIngredientButton.translatesAutoresizingMaskIntoConstraints = false
-        addSavedFoodButton.translatesAutoresizingMaskIntoConstraints = false
-
-        let stackView = UIStackView(arrangedSubviews: [
-            savedFoods,
-            ingredientsLabel,
-            assumptionsLabel,
-            confidenceLabel,
-            textfields,
-            AddFoodIngredientButton,
-            addFoodLineButton,
-            queryChatGptButton,
-            addSavedFoodButton
-        ])
-
-        stackView.axis = .vertical
-        stackView.spacing = 10
-        stackView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.alignment = .fill
-        stackView.distribution = .fill
-
-        let scrollView = UIScrollView()
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.keyboardDismissMode = .interactive
-        view.addSubview(scrollView)
-
-        let contentView = UIView()
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.addSubview(contentView)
-        contentView.addSubview(stackView)
-
+    private func section(_ title: String, content: UIView) -> UIView {
+        let heading = UILabel()
+        heading.text = title
+        heading.textColor = .label
+        heading.font = .systemFont(ofSize: 22, weight: .bold)
+        let stack = UIStackView(arrangedSubviews: [heading, content])
+        stack.axis = .vertical
+        stack.spacing = 16
+        let card = UIView()
+        card.backgroundColor = WorkoutTheme.surface
+        card.layer.cornerRadius = 22
+        card.layer.cornerCurve = .continuous
+        card.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-
-            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
-
-            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
-
-            stackView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
-            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
-            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
-            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20)
+            stack.topAnchor.constraint(equalTo: card.topAnchor, constant: 20),
+            stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -20),
+            stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 18),
+            stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -18)
         ])
+        return card
     }
 
-    private func updateIngredientsLabel(
-        assumptions: [String],
-        confidenceLevel: String
-    ) {
-        guard !foodIngredientsArray.isEmpty else {
-            ingredientsLabel.text = "No ingredients added"
-            return
+    private func styledField(_ field: UITextField, placeholder: String, keyboard: UIKeyboardType = .default) -> UIView {
+        field.placeholder = placeholder
+        field.keyboardType = keyboard
+        field.textColor = .label
+        field.font = .systemFont(ofSize: 16)
+        field.backgroundColor = WorkoutTheme.background
+        field.layer.cornerRadius = 12
+        field.layer.borderWidth = 1
+        field.layer.borderColor = UIColor.white.withAlphaComponent(0.10).cgColor
+        field.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let wrapper = UIView()
+        wrapper.addSubview(field)
+        field.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            field.topAnchor.constraint(equalTo: wrapper.topAnchor),
+            field.bottomAnchor.constraint(equalTo: wrapper.bottomAnchor),
+            field.leadingAnchor.constraint(equalTo: wrapper.leadingAnchor),
+            field.trailingAnchor.constraint(equalTo: wrapper.trailingAnchor),
+            field.heightAnchor.constraint(equalToConstant: 48)
+        ])
+        // Keep the text inset without custom UITextField subclasses.
+        field.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
+        field.leftViewMode = .always
+        return wrapper
+    }
+
+    private func setupUI() {
+        title = "Add Food"
+        let scroll = UIScrollView()
+        scroll.keyboardDismissMode = .interactive
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scroll)
+        NSLayoutConstraint.activate([
+            scroll.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
+            scroll.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+        ])
+        let root = UIStackView()
+        root.axis = .vertical
+        root.spacing = 14
+        root.translatesAutoresizingMaskIntoConstraints = false
+        scroll.addSubview(root)
+        NSLayoutConstraint.activate([
+            root.topAnchor.constraint(equalTo: scroll.contentLayoutGuide.topAnchor, constant: 16),
+            root.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor, constant: -24),
+            root.leadingAnchor.constraint(equalTo: scroll.contentLayoutGuide.leadingAnchor, constant: 16),
+            root.trailingAnchor.constraint(equalTo: scroll.contentLayoutGuide.trailingAnchor, constant: -16),
+            root.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor, constant: -32)
+        ])
+
+        savedFoods.heightAnchor.constraint(equalToConstant: 174).isActive = true
+        root.addArrangedSubview(savedFoods)
+
+        totalsLabel.font = .systemFont(ofSize: 14, weight: .semibold)
+        totalsLabel.textColor = .label
+        totalsLabel.textAlignment = .center
+        totalsLabel.numberOfLines = 0
+        root.addArrangedSubview(section("Meal Macros", content: totalsLabel))
+
+        ingredientRows.axis = .vertical
+        ingredientRows.spacing = 8
+        ingredientsLabel.textColor = .secondaryLabel
+        ingredientsLabel.font = .systemFont(ofSize: 15)
+        let ingredientsStack = UIStackView(arrangedSubviews: [ingredientsLabel, ingredientRows])
+        ingredientsStack.axis = .vertical
+        ingredientsStack.spacing = 10
+        root.addArrangedSubview(section("Ingredients Added", content: ingredientsStack))
+
+        let fields = UIStackView()
+        fields.axis = .vertical
+        fields.spacing = 10
+        fields.addArrangedSubview(styledField(foodNameField, placeholder: "Food name"))
+        fields.addArrangedSubview(styledField(foodGramsField, placeholder: "Serving size (g)", keyboard: .decimalPad))
+        fields.addArrangedSubview(styledField(pictureName, placeholder: "Food icon"))
+        let macroRow1 = UIStackView(arrangedSubviews: [
+            styledField(proteinGramField, placeholder: "Protein (g)", keyboard: .decimalPad),
+            styledField(carbGramField, placeholder: "Carbs (g)", keyboard: .decimalPad)
+        ])
+        macroRow1.axis = .horizontal
+        macroRow1.spacing = 10
+        macroRow1.distribution = .fillEqually
+        let macroRow2 = UIStackView(arrangedSubviews: [
+            styledField(fatGramsLabel, placeholder: "Fat (g)", keyboard: .decimalPad),
+            styledField(calorieGramField, placeholder: "Calories", keyboard: .decimalPad)
+        ])
+        macroRow2.axis = .horizontal
+        macroRow2.spacing = 10
+        macroRow2.distribution = .fillEqually
+        fields.addArrangedSubview(macroRow1)
+        fields.addArrangedSubview(macroRow2)
+
+        AddFoodIngredientButton.addTarget(self, action: #selector(addIngredient), for: .touchUpInside)
+        queryChatGptButton.addTarget(self, action: #selector(queryChat), for: .touchUpInside)
+        addFoodLineButton.addTarget(self, action: #selector(addFoodLine), for: .touchUpInside)
+        addSavedFoodButton.addTarget(self, action: #selector(addSavedFoods), for: .touchUpInside)
+        [AddFoodIngredientButton, queryChatGptButton, addFoodLineButton, addSavedFoodButton].forEach {
+            $0.heightAnchor.constraint(equalToConstant: 50).isActive = true
         }
+        let actionRow = UIStackView(arrangedSubviews: [AddFoodIngredientButton, queryChatGptButton])
+        actionRow.axis = .horizontal
+        actionRow.spacing = 10
+        actionRow.distribution = .fillEqually
+        fields.addArrangedSubview(actionRow)
+        root.addArrangedSubview(section("Add Ingredient", content: fields))
+        root.addArrangedSubview(addFoodLineButton)
+        root.addArrangedSubview(addSavedFoodButton)
+        assumptionsLabel.numberOfLines = 0
+        assumptionsLabel.textColor = .secondaryLabel
+        confidenceLabel.numberOfLines = 0
+        confidenceLabel.textColor = .secondaryLabel
+        root.addArrangedSubview(assumptionsLabel)
+        root.addArrangedSubview(confidenceLabel)
+        let tap = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tap.cancelsTouchesInView = false
+        view.addGestureRecognizer(tap)
+    }
 
-        var text = "Ingredients Added:\n"
+    @objc private func editIngredient(_ sender: UIButton) {
+        let index = sender.tag
+        guard foodIngredientsArray.indices.contains(index) else { return }
+        let item = foodIngredientsArray[index]
+        editingIndex = index
+        foodNameField.text = item.foodname
+        foodGramsField.text = String(format: "%.1f", item.foodgrams)
+        proteinGramField.text = String(format: "%.1f", item.protein)
+        carbGramField.text = String(format: "%.1f", item.carbs)
+        fatGramsLabel.text = String(format: "%.1f", item.fats)
+        calorieGramField.text = String(format: "%.0f", item.calories)
+        pictureName.text = item.imageName
+        AddFoodIngredientButton.setTitle("Update Ingredient", for: .normal)
+    }
 
-        for ingredient in foodIngredientsArray {
-            text += "\(ingredient.foodname) - \(ingredient.foodgrams)g\n"
+    @objc private func removeIngredient(_ sender: UIButton) {
+        guard foodIngredientsArray.indices.contains(sender.tag) else { return }
+        foodIngredientsArray.remove(at: sender.tag)
+        editingIndex = nil
+        AddFoodIngredientButton.setTitle("Add Ingredient", for: .normal)
+        updateIngredientsLabel(assumptions: [], confidenceLevel: "")
+    }
+
+    private func updateIngredientsLabel(assumptions: [String], confidenceLevel: String) {
+        ingredientRows.arrangedSubviews.forEach {
+            ingredientRows.removeArrangedSubview($0)
+            $0.removeFromSuperview()
         }
-
-        ingredientsLabel.text = text
-
-        var assumptionsText = ""
-
-        assumptions.forEach {
-            assumptionsText += "\($0),"
+        ingredientsLabel.text = foodIngredientsArray.isEmpty ? "No ingredients added yet" : nil
+        ingredientsLabel.isHidden = !foodIngredientsArray.isEmpty
+        for (index, item) in foodIngredientsArray.enumerated() {
+            let image = UIImageView(image: UIImage(named: item.imageName) ?? UIImage(named: "default_food"))
+            image.contentMode = .scaleAspectFit
+            image.widthAnchor.constraint(equalToConstant: 36).isActive = true
+            image.heightAnchor.constraint(equalToConstant: 42).isActive = true
+            let name = UILabel()
+            name.text = item.foodname
+            name.textColor = .label
+            name.font = .systemFont(ofSize: 15, weight: .medium)
+            name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            let amount = UILabel()
+            amount.text = String(format: "%.0fg", item.foodgrams)
+            amount.textColor = .secondaryLabel
+            let edit = UIButton(type: .system)
+            edit.setImage(UIImage(systemName: "square.and.pencil"), for: .normal)
+            edit.tag = index
+            edit.addTarget(self, action: #selector(editIngredient(_:)), for: .touchUpInside)
+            let remove = UIButton(type: .system)
+            remove.setImage(UIImage(systemName: "xmark.circle"), for: .normal)
+            remove.tintColor = .secondaryLabel
+            remove.tag = index
+            remove.addTarget(self, action: #selector(removeIngredient(_:)), for: .touchUpInside)
+            let row = UIStackView(arrangedSubviews: [image, name, amount, edit, remove])
+            row.axis = .horizontal
+            row.alignment = .center
+            row.spacing = 10
+            row.backgroundColor = WorkoutTheme.background
+            row.layer.cornerRadius = 12
+            row.isLayoutMarginsRelativeArrangement = true
+            row.layoutMargins = UIEdgeInsets(top: 8, left: 10, bottom: 8, right: 10)
+            ingredientRows.addArrangedSubview(row)
         }
-
-        assumptionsLabel.text = "Assumptions:\(assumptionsText)"
-        confidenceLabel.text = "Confidence:\(confidenceLevel)"
+        let protein = foodIngredientsArray.reduce(0) { $0 + $1.protein }
+        let carbs = foodIngredientsArray.reduce(0) { $0 + $1.carbs }
+        let fat = foodIngredientsArray.reduce(0) { $0 + $1.fats }
+        let calories = foodIngredientsArray.reduce(0) { $0 + $1.calories }
+        totalsLabel.text = String(format: "Protein %.1fg    Carbs %.1fg\nFat %.1fg    Calories %.0f", protein, carbs, fat, calories)
+        assumptionsLabel.text = assumptions.isEmpty ? nil : "Assumptions: " + assumptions.joined(separator: ", ")
+        confidenceLabel.text = confidenceLevel.isEmpty ? nil : "Confidence: " + confidenceLevel
     }
 }
-
