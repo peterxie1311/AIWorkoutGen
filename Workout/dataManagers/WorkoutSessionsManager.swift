@@ -154,6 +154,7 @@ class WorkoutSessionManager {
                             localSetrep.startTime = dto.startTime
                             localSetrep.weight = Int64(dto.weight)
                             localSetrep.workoutName = dto.workoutName
+                            localSetrep.iconName = ExerciseIcon.resolved(dto.iconName, exerciseName: dto.workoutName ?? "").rawValue
                             localSetrep.completed = dto.completed
                             localSetrep.moddate = dto.moddate
 
@@ -173,7 +174,8 @@ class WorkoutSessionManager {
                             weight: Int64(dto.weight),
                             uuid: dto.repid,
                             weight_basis: dto.weight_basis ?? "",
-                            context:context
+                            context:context,
+                            iconName: dto.iconName
                         )
 
                         newSetrep.duration_sec = Float(dto.duration_sec)
@@ -201,7 +203,8 @@ class WorkoutSessionManager {
                         weight: Int64(dto.weight),
                         uuid: dto.repid,
                         weight_basis: dto.weight_basis ?? "",
-                        context:context
+                        context:context,
+                        iconName: dto.iconName
                     )
 
                     setrep.duration_sec = Float(dto.duration_sec)
@@ -317,7 +320,7 @@ class WorkoutSessionManager {
                     }
                     let setreps = groupedSets.map{key,sets in
                         SetrepDTO(
-                            workoutName: key.workoutName, rep_qty: key.reps, weight: Int(key.weight), set_qty: sets.count, weight_basis: key.weight_basis
+                            workoutName: key.workoutName, rep_qty: key.reps, weight: Int(key.weight), set_qty: sets.count, weight_basis: key.weight_basis, iconName: sets.first?.iconName
                         )
                         
                     }
