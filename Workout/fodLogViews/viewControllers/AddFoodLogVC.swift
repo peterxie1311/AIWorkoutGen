@@ -445,6 +445,20 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         return card
     }
 
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.hasDifferentColorAppearance(comparedTo: traitCollection) == true {
+            refreshAdaptiveBorders(in: view)
+        }
+    }
+
+    private func refreshAdaptiveBorders(in parent: UIView) {
+        if parent is UITextField {
+            parent.layer.borderColor = UIColor.separator.resolvedColor(with: traitCollection).cgColor
+        }
+        parent.subviews.forEach { refreshAdaptiveBorders(in: $0) }
+    }
+
     private func styledField(_ field: UITextField, placeholder: String, keyboard: UIKeyboardType = .default) -> UIView {
         field.placeholder = placeholder
         field.keyboardType = keyboard
@@ -453,7 +467,7 @@ class AddFoodLogViewController: UIViewController, UITextFieldDelegate, UIPickerV
         field.backgroundColor = WorkoutTheme.background
         field.layer.cornerRadius = 12
         field.layer.borderWidth = 1
-        field.layer.borderColor = UIColor.white.withAlphaComponent(0.10).cgColor
+        field.layer.borderColor = UIColor.separator.resolvedColor(with: traitCollection).cgColor
         field.setContentHuggingPriority(.defaultLow, for: .horizontal)
         let wrapper = UIView()
         wrapper.addSubview(field)
