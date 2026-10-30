@@ -43,6 +43,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 //        print(FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask))
 //        print(container.persistentStoreDescriptions.first?.url as Any)
 
+        container.persistentStoreDescriptions.forEach {
+            $0.shouldMigrateStoreAutomatically = true
+            $0.shouldInferMappingModelAutomatically = true
+        }
         container.loadPersistentStores { (_, error) in
             if let error = error as NSError? {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
