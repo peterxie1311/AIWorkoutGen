@@ -25,7 +25,7 @@ final class FoodlogCardView: UIView {
         addSubview(container)
         container.translatesAutoresizingMaskIntoConstraints = false
         stackView.axis = .vertical
-        stackView.spacing = 8
+        stackView.spacing = Constants.Design.Spacing.small
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
         
@@ -46,7 +46,7 @@ final class FoodlogCardView: UIView {
     
     private func style(){
         WorkoutTheme.card(container)
-        container.layer.cornerRadius = 18
+        container.layer.cornerRadius = Constants.Design.Radius.compactCard
         container.layer.masksToBounds = true
     }
     
@@ -253,7 +253,7 @@ private final class FoodEntryRowView: UIView {
         
         let stackView = UIStackView(arrangedSubviews: [row1,progressBar,progressBar2,foodCarbsAndPercentage])
         stackView.axis = .vertical
-        stackView.spacing = 8
+        stackView.spacing = Constants.Design.Spacing.small
         stackView.translatesAutoresizingMaskIntoConstraints = false
         
         foregroundContainer.addSubview(stackView)
@@ -302,12 +302,12 @@ private final class FoodEntryRowView: UIView {
         //delete button
         backgroundContainer.backgroundColor = .systemRed
         
-        backgroundContainer.layer.cornerRadius = 18
+        backgroundContainer.layer.cornerRadius = Constants.Design.Radius.compactCard
         backgroundContainer.layer.masksToBounds = true
         
-        foregroundContainer.layer.cornerRadius = 18
+        foregroundContainer.layer.cornerRadius = Constants.Design.Radius.compactCard
         foregroundContainer.layer.masksToBounds = true
-        //container.layer.cornerRadius = 18
+        //container.layer.cornerRadius = Constants.Design.Radius.compactCard
         //container.layer.masksToBounds = true
         
         foodNameAndProtein.textColor = .label
