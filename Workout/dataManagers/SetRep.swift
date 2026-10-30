@@ -20,7 +20,8 @@ extension Setrep {
             workoutName: self.workoutName,
             completed: self.completed,
             moddate: self.moddate,
-            weight_basis: self.weight_basis
+            weight_basis: self.weight_basis,
+            iconName: self.iconName
         )
     }
 }
