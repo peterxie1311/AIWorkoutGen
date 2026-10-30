@@ -179,9 +179,22 @@ class RepViewController: KeyboardAwareViewController ,UITextFieldDelegate{
         nameLabel.textColor = .label
         nameLabel.numberOfLines = 0
         let subtitle = detailLabel(WeightBasis.isEmpty ? "Exercise details" : WeightBasis.capitalized)
-        let heading = UIStackView(arrangedSubviews: [nameLabel, subtitle])
-        heading.axis = .vertical
-        heading.spacing = 6
+        let icon = ExerciseIcon.resolved(setRep.iconName, exerciseName: WorkoutName)
+        let illustration = UIImageView(image: UIImage(named: icon.rawValue))
+        illustration.contentMode = .scaleAspectFit
+        illustration.clipsToBounds = true
+        illustration.layer.cornerRadius = Constants.Design.Radius.compactCard
+        illustration.backgroundColor = WorkoutTheme.surface
+        illustration.widthAnchor.constraint(equalToConstant: 104).isActive = true
+        illustration.heightAnchor.constraint(equalToConstant: 136).isActive = true
+        illustration.accessibilityLabel = "\(WorkoutName) muscle illustration"
+        let headingLabels = UIStackView(arrangedSubviews: [nameLabel, subtitle])
+        headingLabels.axis = .vertical
+        headingLabels.spacing = 6
+        let heading = UIStackView(arrangedSubviews: [illustration, headingLabels])
+        heading.axis = .horizontal
+        heading.alignment = .center
+        heading.spacing = 16
 
         weight_label.text = "\(weight) kg"
         rep_qtyLabel.text = "\(rep_qty) reps"
