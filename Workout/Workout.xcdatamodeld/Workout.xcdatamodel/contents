@@ -31,6 +31,7 @@
         <attribute name="savedFoodref" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
     </entity>
     <entity name="Setrep" representedClassName="Setrep" syncable="YES" codeGenerationType="class">
+        <attribute name="iconName" optional="YES" attributeType="String"/>
         <attribute name="completed" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="duration_sec" optional="YES" attributeType="Float" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="finishTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
