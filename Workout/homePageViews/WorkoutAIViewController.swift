@@ -137,11 +137,17 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
         loadViewDatas()
     }
     
+    @objc private func openHistoryChat() {
+        navigationController?.pushViewController(HistoryChatViewController(), animated: true)
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
       //  initObserver()
         title = "Train"
         navigationItem.backButtonTitle = "Back"
+        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Ask AI", style: .plain,
+                                                           target: self, action: #selector(openHistoryChat))
         view.backgroundColor = WorkoutTheme.background
         stackScrollView.showsVerticalScrollIndicator = false
         view.addSubview(stackScrollView)
@@ -212,4 +218,3 @@ class WorkoutAIViewController: UIViewController,UITextFieldDelegate {
     */
 
 }
-

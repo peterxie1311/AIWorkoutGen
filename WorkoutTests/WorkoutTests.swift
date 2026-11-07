@@ -278,3 +278,38 @@ private final class SettingsRPCStub: URLProtocol {
 }
 
 
+
+final class HistoryChatLookupTests: XCTestCase {
+    func testFoodTotalsIncludeRowsOutsideFirstPage() throws {
+        let recent = Array(repeating: HistoryChatContext.Row(
+            date: "2026-11-07 12:00", name: "Yogurt", calories: 100, protein: 10), count: 24)
+        let old = HistoryChatContext.Row(date: "2025-05-01 08:00", name: "Eggs", calories: 150, protein: 12)
+        let history = HistoryChatContext(workouts: [], food: recent + [old],
+                                         today: "2026-11-07", timeZone: "Australia/Brisbane")
+        let first = try history.lookup(.init(kind: "food"))
+        XCTAssertEqual(first.rows.count, 20)
+        XCTAssertEqual(first.matchingRows, 25)
+        XCTAssertEqual(first.nextOffset, 20)
+        XCTAssertEqual(first.calories, 2550)
+        XCTAssertEqual(first.proteinGrams, 252)
+        XCTAssertEqual(first.loggedDays, 2)
+        let next = try history.lookup(.init(kind: "food", offset: first.nextOffset))
+        XCTAssertEqual(next.rows.last?.name, "Eggs")
+        XCTAssertNil(next.nextOffset)
+    }
+
+    func testOldWorkoutRangeAndCompletedSets() throws {
+        let history = HistoryChatContext(workouts: [
+            .init(date: "2026-11-07 15:00", name: "Bench press", session: 1, sessionCompleted: true, setCompleted: true),
+            .init(date: "2025-05-01 07:00", name: "Bench press", session: 2, sessionCompleted: true, setCompleted: true, reps: 8, weight: 17.5),
+            .init(date: "2025-05-01 06:59", name: "Bench press", session: 2, sessionCompleted: true, setCompleted: false)
+        ], food: [], today: "2026-11-07", timeZone: "Australia/Brisbane")
+        let page = try history.lookup(.init(kind: "workouts", from: "2025-05-01",
+                                           through: "2025-05-01", contains: "bench"))
+        XCTAssertEqual(page.matchingRows, 2)
+        XCTAssertEqual(page.completedSessions, 1)
+        XCTAssertEqual(page.completedSets, 1)
+        XCTAssertEqual(page.rows.first?.weight, 17.5)
+        XCTAssertThrowsError(try history.lookup(.init(kind: "workouts", from: "2026-02-30")))
+    }
+}
