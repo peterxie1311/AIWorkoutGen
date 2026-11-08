@@ -243,9 +243,30 @@ final class AccountSettingsSyncTests: XCTestCase {
             _ = try await DBConnector.shared.fetchSettings(
                 i_sessionid: UUID().uuidString, using: session)
             XCTFail("HTTP failures must not look like an empty account.")
-        } catch SettingsSyncError.http(let status) {
-            XCTAssertEqual(status, 401)
+        } catch let error as APIResponseError {
+            XCTAssertEqual(error.statusCode, 401)
+            XCTAssertFalse(error.requiresReauthentication)
         }
+    }
+
+    func testExpiredSettingsSessionIsRecognizedFromServerMessage() async throws {
+        let session = stubSession(status: 400, body: #"{"message":"Please log in again."}"#)
+        defer { session.invalidateAndCancel() }
+        do {
+            _ = try await DBConnector.shared.fetchSettings(
+                i_sessionid: UUID().uuidString, using: session)
+            XCTFail("An expired session must fail the fetch.")
+        } catch let error as APIResponseError {
+            XCTAssertTrue(error.requiresReauthentication)
+        }
+    }
+
+    func testEmptySettingsResponseDecodesAsSuccessfulFetch() async throws {
+        let session = stubSession(status: 200, body: "[]")
+        defer { session.invalidateAndCancel() }
+        let rows = try await DBConnector.shared.fetchSettings(
+            i_sessionid: UUID().uuidString, using: session)
+        XCTAssertTrue(rows.isEmpty)
     }
 
     func testUpsertHandlesVoidResponse() async throws {

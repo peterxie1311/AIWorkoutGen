@@ -1,10 +1,9 @@
 import UIKit
-import CoreData
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     private var openingTask: Task<Void, Never>?
-    var isOpeningWorkout: Bool { openingTask != nil }
+    private(set) var isOpeningWorkout = false
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
@@ -32,86 +31,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             openWorkout()
         }
     }
-    private func clearAllCoreData() throws {
-        SettingsManager.shared.resetSettingsSync()
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
-            throw NSError(
-                domain: "SceneDelegate",
-                code: 1,
-                userInfo: [
-                    NSLocalizedDescriptionKey: "Could not access local storage."
-                ]
-            )
-        }
-
-        let context = appDelegate.persistentContainer.viewContext
-
-        do {
-            for entity in appDelegate.persistentContainer
-                .managedObjectModel.entities {
-
-                guard let name = entity.name else { continue }
-
-                let request = NSFetchRequest<NSManagedObject>(
-                    entityName: name
-                )
-                request.includesSubentities = false
-
-                for object in try context.fetch(request) {
-                    context.delete(object)
-                }
-            }
-
-            try context.save()
-        } catch {
-            context.rollback()
-            throw error
-        }
-
-        SettingsManager.shared.settings.removeAll()
-
-        // Login needs these settings to exist.
-        for entry in SettingsManager.shared.defaultSettings {
-            SettingsManager.shared.addSetting(
-                name: entry[0],
-                value: entry[1]
-            )
-        }
-
-        DBConnector.shared.loadSessionToken()
-        workoutAIservice.shared.loadSessionApiKey()
+    func showExpiredSessionLogon(message: String) {
+        showLogon(message: message)
     }
 
-    private func showLogon() {
+    private func showLogon(message: String? = nil) {
         openingTask?.cancel()
         openingTask = nil
-        do {
-            try clearAllCoreData()
-        } catch {
-            let controller = UIViewController()
-            controller.view.backgroundColor = WorkoutTheme.background
-            window?.rootViewController = controller
-
-            let alert = UIAlertController(
-                title: "Could not clear local data",
-                message: error.localizedDescription,
-                preferredStyle: .alert
-            )
-
-            alert.addAction(UIAlertAction(
-                title: "Retry",
-                style: .default
-            ) { [weak self] _ in
-                self?.showLogon()
-            })
-
-            DispatchQueue.main.async {
-                controller.present(alert, animated: true)
-            }
-            return
-        }
-
+        isOpeningWorkout = false
         let logon = LogonViewController()
+        logon.sessionMessage = message
         logon.onLogon = { [weak self] in
             self?.openWorkout()
         }
@@ -133,6 +62,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             spinner.centerYAnchor.constraint(equalTo: loading.view.centerYAnchor)
         ])
         spinner.startAnimating()
+        isOpeningWorkout = true
         window?.rootViewController = loading
 
         openingTask = Task { @MainActor [weak self] in
@@ -154,7 +84,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             let navigation = UINavigationController(rootViewController: WorkoutAIViewController())
             WorkoutTheme.applyNavigation(to: navigation)
             self.window?.rootViewController = navigation
-            self.openingTask = nil
+            self.isOpeningWorkout = false
 
             if settingsSyncFailed {
                 let alert = UIAlertController(
@@ -163,13 +93,18 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                     preferredStyle: .alert)
                 alert.addAction(UIAlertAction(title: "OK", style: .default))
                 alert.addAction(UIAlertAction(title: "Retry", style: .default) { [weak self] _ in
+                    self?.openingTask?.cancel()
+                    self?.openingTask = nil
                     self?.openWorkout()
                 })
                 navigation.present(alert, animated: true)
             }
             APIMessageAlert.presentNext()
             await WorkoutSessionManager.shared.syncWorkoutSessionEntries()
+            guard !Task.isCancelled else { return }
             await FoodLogManager.shared.syncFoodLogEntries()
+            guard !Task.isCancelled else { return }
+            self.openingTask = nil
         }
     }
 

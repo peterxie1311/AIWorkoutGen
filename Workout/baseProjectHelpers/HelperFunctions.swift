@@ -72,6 +72,11 @@ struct APIResponseError: LocalizedError {
     let statusCode: Int
     let serverMessage: String?
 
+    var requiresReauthentication: Bool {
+        serverMessage?.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
+            .caseInsensitiveCompare("Please log in again") == .orderedSame
+    }
+
     var errorDescription: String? {
         serverMessage ?? "The request failed (HTTP \(statusCode))."
     }
@@ -95,11 +100,12 @@ enum APIResponse {
         private enum CodingKeys: String, CodingKey { case message, error }
     }
 
-    static func data(for request: URLRequest, using session: URLSession = .shared) async throws -> Data {
+    static func data(for request: URLRequest, using session: URLSession = .shared,
+                     handlesExpiredSession: Bool = false) async throws -> Data {
         do {
             let (data, response) = try await session.data(for: request)
             try Task.checkCancellation()
-            try check(data, response: response, request: request)
+            try check(data, response: response, request: request, handlesExpiredSession: handlesExpiredSession)
             return data
         } catch let error as APIResponseError {
             throw error
@@ -116,7 +122,8 @@ enum APIResponse {
         print("[API] \(request.httpMethod ?? "GET") \(endpoint): \(message)")
     }
 
-    static func check(_ data: Data, response: URLResponse?, request: URLRequest) throws {
+    static func check(_ data: Data, response: URLResponse?, request: URLRequest,
+                      handlesExpiredSession: Bool = false) throws {
         guard let http = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
@@ -136,7 +143,9 @@ enum APIResponse {
             let error = APIResponseError(statusCode: http.statusCode, serverMessage: message)
             let alertMessage = error.localizedDescription
             logFailure(request: request, message: "HTTP \(http.statusCode) \(message ?? "")")
-            Task { @MainActor in APIMessageAlert.enqueue(alertMessage) }
+            if !handlesExpiredSession || !error.requiresReauthentication {
+                Task { @MainActor in APIMessageAlert.enqueue(alertMessage) }
+            }
             throw error
         }
 

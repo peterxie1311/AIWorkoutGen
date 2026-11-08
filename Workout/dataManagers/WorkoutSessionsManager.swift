@@ -265,10 +265,12 @@ class WorkoutSessionManager {
         let container = await appDelegate.persistentContainer
         
         do {
+            try Task.checkCancellation()
             let uploadArr = try await container.performBackgroundTask{context in
                 try self.compareAndUpdateWorkoutData(dbWorkouts: dbWorkouts, context: context)
             }
             
+            try Task.checkCancellation()
             if !uploadArr.isEmpty{
                  await DBConnector.shared.insertWorkouts(i_ws: uploadArr)
             }

@@ -135,6 +135,7 @@ class FoodLogManager {
             return
         }
 
+        guard !Task.isCancelled else { return }
         let localIds = Set(foodLogLine.map { $0.foodID })
         let dbIds = Set(foodlogArray.map { $0.foodID })
 
@@ -152,6 +153,7 @@ class FoodLogManager {
 
         // db -> local
         for dbItem in foodlogArray {
+            guard !Task.isCancelled else { return }
             if !localIds.contains(dbItem.foodID) {
                 await addFoodLogEntry(
                     i_date: dbItem.date,
@@ -167,7 +169,7 @@ class FoodLogManager {
             }
         }
 
-        if !uploadFoodLogLines.isEmpty {
+        if !Task.isCancelled, !uploadFoodLogLines.isEmpty {
             let arr = uploadFoodLogLines.map{$0.toPayloadRequest()}
             await DBConnector.shared.insertFoodLog(i_flls: arr)
         }
