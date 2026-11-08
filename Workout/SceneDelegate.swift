@@ -4,6 +4,7 @@ import CoreData
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
     private var openingTask: Task<Void, Never>?
+    var isOpeningWorkout: Bool { openingTask != nil }
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession,
                options connectionOptions: UIScene.ConnectionOptions) {
@@ -139,7 +140,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             var settingsSyncFailed = false
             do {
                 try await SettingsManager.shared.syncSettings()
-            } catch let error as APIResponseError where error.serverMessage != nil {
+            } catch is APIResponseError {
                 // The shared API alert already shows the server message.
             } catch {
                 settingsSyncFailed = true
@@ -166,6 +167,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 })
                 navigation.present(alert, animated: true)
             }
+            APIMessageAlert.presentNext()
             await WorkoutSessionManager.shared.syncWorkoutSessionEntries()
             await FoodLogManager.shared.syncFoodLogEntries()
         }

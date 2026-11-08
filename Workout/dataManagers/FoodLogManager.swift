@@ -125,7 +125,13 @@ class FoodLogManager {
 
     func syncFoodLogEntries() async {
         loadFoodLogArrays()
-        guard let foodlogArray = try? await DBConnector.shared.fetchFoodLogs() else {
+        let foodlogArray: [FoodLogLinePayload]
+        do {
+            foodlogArray = try await DBConnector.shared.fetchFoodLogs()
+        } catch {
+            if !Task.isCancelled, !(error is APIResponseError) {
+                print("[Food log sync] Fetch failed: \(error)")
+            }
             return
         }
 

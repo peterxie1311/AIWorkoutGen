@@ -96,28 +96,52 @@ enum APIResponse {
     }
 
     static func data(for request: URLRequest, using session: URLSession = .shared) async throws -> Data {
-        let (data, response) = try await session.data(for: request)
-        try Task.checkCancellation()
-        try check(data, response: response)
-        return data
+        do {
+            let (data, response) = try await session.data(for: request)
+            try Task.checkCancellation()
+            try check(data, response: response, request: request)
+            return data
+        } catch let error as APIResponseError {
+            throw error
+        } catch {
+            if !Task.isCancelled {
+                logFailure(request: request, message: error.localizedDescription)
+            }
+            throw error
+        }
     }
 
-    static func check(_ data: Data, response: URLResponse?) throws {
+    static func logFailure(request: URLRequest, message: String) {
+        let endpoint = request.url?.path ?? "Unknown endpoint"
+        print("[API] \(request.httpMethod ?? "GET") \(endpoint): \(message)")
+    }
+
+    static func check(_ data: Data, response: URLResponse?, request: URLRequest) throws {
         guard let http = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
         }
 
         let body = try? JSONDecoder().decode(MessageBody.self, from: data)
-        let message = [body?.message, body?.error?.message]
+        var message = [body?.message, body?.error?.message]
             .compactMap { $0 }
             .first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
 
-        if let message {
-            Task { @MainActor in APIMessageAlert.enqueue(message) }
+        if let authorization = request.value(forHTTPHeaderField: "Authorization"),
+           authorization.hasPrefix("Bearer "), authorization.count > "Bearer ".count {
+            let token = String(authorization.dropFirst("Bearer ".count))
+            message = message?.replacingOccurrences(of: token, with: "[redacted]")
         }
 
         guard (200...299).contains(http.statusCode) else {
-            throw APIResponseError(statusCode: http.statusCode, serverMessage: message)
+            let error = APIResponseError(statusCode: http.statusCode, serverMessage: message)
+            let alertMessage = error.localizedDescription
+            logFailure(request: request, message: "HTTP \(http.statusCode) \(message ?? "")")
+            Task { @MainActor in APIMessageAlert.enqueue(alertMessage) }
+            throw error
+        }
+
+        if let message {
+            Task { @MainActor in APIMessageAlert.enqueue(message) }
         }
     }
 }
@@ -125,22 +149,23 @@ enum APIResponse {
 @MainActor
 enum APIMessageAlert {
     private static var pending: [String] = []
-    private static var visibleMessage: String?
+    private static weak var visibleAlert: UIAlertController?
     private static var retryScheduled = false
 
     static func enqueue(_ message: String) {
-        guard visibleMessage != message, !pending.contains(message) else { return }
+        guard visibleAlert?.message != message, !pending.contains(message) else { return }
         pending.append(message)
         presentNext()
     }
 
     static func presentNext() {
-        guard let message = pending.first, visibleMessage == nil,
+        guard let message = pending.first,
               let window = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene })
                 .filter({ $0.activationState == .foregroundActive })
                 .compactMap({ $0.keyWindow }).first,
-              let root = window.rootViewController else { return }
+              let root = window.rootViewController,
+              (window.windowScene?.delegate as? SceneDelegate)?.isOpeningWorkout != true else { return }
 
         var presenter = root
         while let presented = presenter.presentedViewController {
@@ -149,19 +174,23 @@ enum APIMessageAlert {
 
         guard !(presenter is UIAlertController),
               presenter.transitionCoordinator == nil,
+              !presenter.isBeingPresented, !presenter.isBeingDismissed,
               presenter.viewIfLoaded?.window === window else {
             retryPresentation()
             return
         }
 
-        pending.removeFirst()
-        visibleMessage = message
         let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            visibleMessage = nil
             retryPresentation()
         })
         presenter.present(alert, animated: true)
+        guard presenter.presentedViewController === alert || alert.presentingViewController != nil else {
+            retryPresentation()
+            return
+        }
+        pending.removeFirst()
+        visibleAlert = alert
     }
 
     private static func retryPresentation() {

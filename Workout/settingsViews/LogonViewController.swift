@@ -186,7 +186,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
 
                 passwordField.text = nil
                 onLogon?()
-            } catch let error as APIResponseError where error.serverMessage != nil {
+            } catch is APIResponseError {
                 // The shared API alert already shows the server message.
             } catch {
                 showError(error.localizedDescription)

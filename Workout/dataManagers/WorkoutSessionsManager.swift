@@ -249,7 +249,13 @@ class WorkoutSessionManager {
     
     func syncWorkoutSessionEntries() async {
         let startTime = Date()
-        guard let dbWorkouts = try? await DBConnector.shared.fetchWorkoutSessions() else {
+        let dbWorkouts: [WorkoutSessionUploadDTO]
+        do {
+            dbWorkouts = try await DBConnector.shared.fetchWorkoutSessions()
+        } catch {
+            if !Task.isCancelled, !(error is APIResponseError) {
+                print("[Workout sync] Fetch failed: \(error)")
+            }
             return
         }
         guard let appDelegate = await UIApplication.shared.delegate as? AppDelegate else {
@@ -351,7 +357,7 @@ class WorkoutSessionManager {
                         }
                     }
                 return "Workout Plan succesfully generated!"
-            } catch let error as APIResponseError where error.serverMessage != nil {
+            } catch is APIResponseError {
                 return nil
             } catch let e {
                 return e.localizedDescription

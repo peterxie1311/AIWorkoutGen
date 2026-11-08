@@ -407,7 +407,7 @@ class workoutAIservice {
                 return [macroEstimateDefault]
             }
 
-        } catch let error as APIResponseError where error.serverMessage != nil {
+        } catch is APIResponseError {
             return [macroEstimateDefault]
         } catch {
             print("Network error!")
@@ -444,7 +444,7 @@ class workoutAIservice {
             return
         }
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { [request] data, response, error in
             if let error = error {
                 completion(.failure(error))
                 print("Error: \(error)")
@@ -452,7 +452,7 @@ class workoutAIservice {
             }
 
             do {
-                try APIResponse.check(data ?? Data(), response: response)
+                try APIResponse.check(data ?? Data(), response: response, request: request)
             } catch {
                 completion(.failure(error))
                 return

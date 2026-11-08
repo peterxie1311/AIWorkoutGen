@@ -111,8 +111,8 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
             } catch {
                 self?.messages.removeLast()
                 if self?.draft.isEmpty == true { self?.input.text = question }
-                let hasServerMessage = (error as? APIResponseError)?.serverMessage != nil
-                self?.showStatus(Task.isCancelled || hasServerMessage ? nil : error.localizedDescription)
+                let hasAPIPopup = error is APIResponseError
+                self?.showStatus(Task.isCancelled || hasAPIPopup ? nil : error.localizedDescription)
             }
             self?.requestTask = nil
             self?.send.configuration?.showsActivityIndicator = false
