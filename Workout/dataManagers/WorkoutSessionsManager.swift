@@ -249,7 +249,9 @@ class WorkoutSessionManager {
     
     func syncWorkoutSessionEntries() async {
         let startTime = Date()
-        let dbWorkouts = await DBConnector.shared.fetchWorkoutSessions()
+        guard let dbWorkouts = try? await DBConnector.shared.fetchWorkoutSessions() else {
+            return
+        }
         guard let appDelegate = await UIApplication.shared.delegate as? AppDelegate else {
             return
         }
@@ -304,7 +306,7 @@ class WorkoutSessionManager {
         i_sessions: Int,
         //i_vc: UIViewController,
         i_customisations: String
-    ) async -> String {
+    ) async -> String? {
             do {
 
                 let sortedWorkouts = workoutSessions.sorted {
@@ -349,8 +351,8 @@ class WorkoutSessionManager {
                         }
                     }
                 return "Workout Plan succesfully generated!"
-            } catch let e as chatGPTError{
-                return "Status Code: \(e.statusCode)  Message:\(e.message)"
+            } catch let error as APIResponseError where error.serverMessage != nil {
+                return nil
             } catch let e {
                 return e.localizedDescription
             }

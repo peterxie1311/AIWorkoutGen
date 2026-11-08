@@ -58,21 +58,6 @@ struct Message: Decodable {
     let content: String
 }
 
-struct OpenAIErrorResponse: Decodable {
-    let error: OpenAIError
-}
-
-struct OpenAIError: Decodable {
-    let message: String
-    let type: String
-    let param: String?
-    let code: String?
-}
-
-struct chatGPTError:LocalizedError{
-    let statusCode:Int
-    let message:String
-}
 struct HistoryChatMessage {
     enum Role: String { case user, assistant }
     let role: Role
@@ -80,7 +65,7 @@ struct HistoryChatMessage {
 }
 
 enum HistoryChatError: LocalizedError {
-    case missingKey, historyUnavailable, invalidLookup, invalidResponse, requestFailed(Int)
+    case missingKey, historyUnavailable, invalidLookup, invalidResponse
 
     var errorDescription: String? {
         switch self {
@@ -88,9 +73,6 @@ enum HistoryChatError: LocalizedError {
         case .historyUnavailable: return "Workout and food history could not be opened."
         case .invalidLookup: return "The history lookup was invalid."
         case .invalidResponse: return "The AI did not return a usable reply. Please try again."
-        case .requestFailed(401): return "Your GPT API Key was rejected. Check it in Settings."
-        case .requestFailed(429): return "The AI is rate limited or out of quota. Try again later."
-        case .requestFailed(let status): return "The AI request failed (HTTP \(status)). Please try again."
         }
     }
 }
@@ -187,11 +169,7 @@ class workoutAIservice {
                 "parallel_tool_calls": false,
                 "max_completion_tokens": 1000
             ])
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else { throw HistoryChatError.invalidResponse }
-            guard (200...299).contains(http.statusCode) else {
-                throw HistoryChatError.requestFailed(http.statusCode)
-            }
+            let data = try await APIResponse.data(for: request)
             guard let body = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let choices = body["choices"] as? [[String: Any]],
                   let reply = choices.first?["message"] as? [String: Any] else {
@@ -300,41 +278,26 @@ class workoutAIservice {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
         
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let http = response as? HTTPURLResponse else {
-           
-                return []
-            }
-            
-            guard (200...299).contains(http.statusCode) else {
-                // error handelling WOO!
-                let e = try JSONDecoder().decode(OpenAIErrorResponse.self,from:data)
-                throw chatGPTError(statusCode: http.statusCode, message: e.error.message)
-            }
-            
-            
-            let chatResponse = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
-            
-            guard let jsonString = chatResponse.choices.first?.message.content
-            else {
-                return []
-            }
+        let data = try await APIResponse.data(for: request)
+        let chatResponse = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
 
-            let cleanedJSONString = jsonString
-                .replacingOccurrences(of: "```json", with: "")
-                .replacingOccurrences(of: "```", with: "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard let jsonData = cleanedJSONString.data(using: .utf8)
-            else {
-                return []
-            }
-            
-
-            return try JSONDecoder().decode([WorkoutSessionDTO].self, from: jsonData)
+        guard let jsonString = chatResponse.choices.first?.message.content
+        else {
+            return []
         }
+
+        let cleanedJSONString = jsonString
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let jsonData = cleanedJSONString.data(using: .utf8)
+        else {
+            return []
+        }
+
+
+        return try JSONDecoder().decode([WorkoutSessionDTO].self, from: jsonData)
     }
     
     //cleaned up version
@@ -406,21 +369,7 @@ class workoutAIservice {
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let http = response as? HTTPURLResponse else {
-                await MainActor.run {
-                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "Invalid response.")
-                }
-                return [macroEstimateDefault]
-            }
-
-            guard (200...299).contains(http.statusCode) else {
-                await MainActor.run {
-                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "\(http.statusCode)")
-                }
-                return [macroEstimateDefault]
-            }
+            let data = try await APIResponse.data(for: request)
 
             do {
                 guard
@@ -458,6 +407,8 @@ class workoutAIservice {
                 return [macroEstimateDefault]
             }
 
+        } catch let error as APIResponseError where error.serverMessage != nil {
+            return [macroEstimateDefault]
         } catch {
             print("Network error!")
             await MainActor.run {
@@ -500,12 +451,11 @@ class workoutAIservice {
                 return
             }
 
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-                if response.statusCode != 200 {
-                    completion(.failure(NSError(domain: "Invalid response", code: response.statusCode, userInfo: nil)))
-                    return
-                }
+            do {
+                try APIResponse.check(data ?? Data(), response: response)
+            } catch {
+                completion(.failure(error))
+                return
             }
 
             if let data = data {

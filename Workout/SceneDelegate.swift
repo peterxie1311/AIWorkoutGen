@@ -139,6 +139,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             var settingsSyncFailed = false
             do {
                 try await SettingsManager.shared.syncSettings()
+            } catch let error as APIResponseError where error.serverMessage != nil {
+                // The shared API alert already shows the server message.
             } catch {
                 settingsSyncFailed = true
             }
@@ -176,6 +178,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         } else if window?.rootViewController is LogonViewController {
             openWorkout()
         }
+    }
+
+    func sceneDidBecomeActive(_ scene: UIScene) {
+        APIMessageAlert.presentNext()
     }
 
     func sceneDidEnterBackground(_ scene: UIScene) {

@@ -59,14 +59,12 @@ enum SettingsSyncError: LocalizedError {
     case missingSession
     case sessionChanged
     case localStorage
-    case http(Int)
 
     var errorDescription: String? {
         switch self {
         case .missingSession: return "Log on before syncing settings."
         case .sessionChanged: return "The account changed while settings were syncing."
         case .localStorage: return "Settings could not be saved on this device."
-        case .http(let status): return "Settings could not sync (HTTP \(status)). Please try again."
         }
     }
 }
@@ -166,28 +164,7 @@ class DBConnector {
             "i_password": i_password
         ])
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-
-        guard (200...299).contains(http.statusCode) else {
-            struct APIError: Decodable {
-                let message: String
-            }
-
-            let message = (try? JSONDecoder().decode(
-                APIError.self,
-                from: data
-            ))?.message ?? "Login failed (HTTP \(http.statusCode))."
-
-            throw NSError(
-                domain: "DBConnector.Login",
-                code: http.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: message]
-            )
-        }
+        let data = try await APIResponse.data(for: request)
 
         let sessionID = try JSONDecoder().decode(UUID.self, from: data)
         session_token = sessionID.uuidString
@@ -213,15 +190,7 @@ class DBConnector {
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 20
         request.httpBody = body
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        guard (200...299).contains(http.statusCode) else {
-            // Never log request/response bodies: settings can contain API keys.
-            throw SettingsSyncError.http(http.statusCode)
-        }
-        return data
+        return try await APIResponse.data(for: request, using: session)
     }
 
     func insertWorkouts(i_ws: [WorkoutSessionUploadDTO]) async {
@@ -236,17 +205,9 @@ class DBConnector {
                                                i_payload: i_ws)
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-                print(response)
-            }
-            if let body = String(data: data, encoding: .utf8) {
-                print("Supabase response body:")
-                print(body)
-            }
+            _ = try await APIResponse.data(for: request)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     
@@ -261,21 +222,13 @@ class DBConnector {
                                                i_payload: i_ws)
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-                print(response)
-            }
-            if let body = String(data: data, encoding: .utf8) {
-                print("Supabase response body:")
-                print(body)
-            }
+            _ = try await APIResponse.data(for: request)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     
-    func fetchWorkoutSessions() async -> [WorkoutSessionUploadDTO] {
+    func fetchWorkoutSessions() async throws -> [WorkoutSessionUploadDTO] {
         let functionName = "get_workout_sessions"
         let url = URL(string: "\(projectString)\(functionName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
@@ -283,28 +236,15 @@ class DBConnector {
             "i_sessionid": session_token
         ]
         
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-                
-            }
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let result = try decoder.decode([WorkoutSessionUploadDTO].self, from: data)
-            return result
-            
-        } catch {
-            print("❌ Fetch error:", error)
-            return []
-        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let data = try await APIResponse.data(for: request)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([WorkoutSessionUploadDTO].self, from: data)
     }
     
     
-    func fetchFoodLogs() async -> [FoodLogLinePayload] {
+    func fetchFoodLogs() async throws -> [FoodLogLinePayload] {
         
         let functionName = "getfoodlinesync"
         let url = URL(string: "\(projectString)\(functionName)")!
@@ -313,24 +253,11 @@ class DBConnector {
             "i_sessionid": session_token
         ]
         
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-            }
-            
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let result = try decoder.decode([FoodLogLinePayload].self, from: data)
-            return result
-            
-        } catch {
-            print("❌ Fetch error:", error)
-            return []
-        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let data = try await APIResponse.data(for: request)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([FoodLogLinePayload].self, from: data)
     }
     
 
@@ -347,13 +274,9 @@ class DBConnector {
 
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-            }
-
+            _ = try await APIResponse.data(for: request)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     
@@ -369,13 +292,9 @@ class DBConnector {
 
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-            }
-
+            _ = try await APIResponse.data(for: request)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     

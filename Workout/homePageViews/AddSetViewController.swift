@@ -126,7 +126,9 @@ class AddSetViewController: KeyboardAwareViewController, UITextFieldDelegate {
                 i_sessions: cntSessions,
                 i_customisations: cust
             )
-            HelperFunctions.showAlert(on: self, title: "Create Workout Plan", message: retInfo)
+            if let retInfo {
+                HelperFunctions.showAlert(on: self, title: "Create Workout Plan", message: retInfo)
+            }
         }
     }
 

@@ -125,7 +125,9 @@ class FoodLogManager {
 
     func syncFoodLogEntries() async {
         loadFoodLogArrays()
-        let foodlogArray = await DBConnector.shared.fetchFoodLogs()
+        guard let foodlogArray = try? await DBConnector.shared.fetchFoodLogs() else {
+            return
+        }
 
         let localIds = Set(foodLogLine.map { $0.foodID })
         let dbIds = Set(foodlogArray.map { $0.foodID })
