@@ -175,7 +175,7 @@ class FoodLogManager {
         }
     }
 
-    func addFoodLogEntry  (
+    func addFoodLogEntry(
         i_date: Date,
         i_calories: Double,
         i_carbs: Double,
@@ -186,107 +186,91 @@ class FoodLogManager {
         i_foodlineId: UUID? = nil,
         i_foodheadId: UUID? = nil
     ) async {
-        guard let context = viewContext else { return }
-
-        loadFoodLogArrays()
-        
-        let foodlineID = i_foodlineId ?? UUID()
-        if let firstHead = foodLogHead.first(where: { head in
-            guard let date = head.date else { return false }
-
-            let sameDay = Calendar.current.isDate(date, inSameDayAs: i_date)
-
-            if let id = i_foodheadId {
-                return sameDay && head.foodHeadID == id
-            } else {
-                return sameDay
+        do {
+            let context = try foodWriteContext()
+            let payload = try stageFoodLogEntry(
+                date: i_date, calories: i_calories, carbs: i_carbs, fat: i_fat, food: i_food,
+                grams: i_grams, protein: i_protein, foodID: i_foodlineId, headID: i_foodheadId,
+                in: context
+            )
+            try context.save()
+            if i_foodlineId == nil {
+                await DBConnector.shared.insertFoodLog(i_flls: [payload])
             }
-        }) {
-
-            var calcCaloriesTotals = i_calories
-            var calcCarbsTotals = i_carbs
-            var calcFatTotals = i_fat
-            var calcProteinTotals = i_protein
-
-            for line in foodLogLine where line.foodHeadID == firstHead.foodHeadID {
-                calcCaloriesTotals += line.calories
-                calcCarbsTotals += line.carbs
-                calcFatTotals += line.fat
-                calcProteinTotals += line.protein
-            }
-            
-            firstHead.calories = calcCaloriesTotals
-            firstHead.carbs = calcCarbsTotals
-            firstHead.fat = calcFatTotals
-            firstHead.protein = calcProteinTotals
-            
-            let dbPayload  = FoodLogLinePayloadRequest(i_foodheadid: firstHead.foodHeadID ?? UUID(),
-                                                       i_foodlineid: foodlineID,
-                                                       i_calories: i_calories,
-                                                       i_carbs: i_carbs,
-                                                       i_fat: i_fat,
-                                                       i_food: i_food,
-                                                       i_grams: i_grams,
-                                                       i_protein: i_protein,
-                                                       i_date: i_date)
-            _ = FoodLogLine.make(in: context, from: dbPayload)
-            do {
-                if i_foodlineId == nil {
-                    await DBConnector.shared.insertFoodLog(i_flls: [dbPayload])
-                }
-                try context.save()
-                NotificationCenter.default.post(
-                    name: NSNotification.Name(Constants.reloadFoodLogTrigger),
-                    object: nil
-                )
-                loadFoodLogArrays()
-            } catch {
-                print("Failed to add new Food Log Entry!!")
-            }
-        } else {
-            let newFoodLogHead = FoodLogHead(context: context)
-            newFoodLogHead.calories = i_calories
-            newFoodLogHead.carbs = i_carbs
-            newFoodLogHead.fat = i_fat
-            newFoodLogHead.date = i_date
-            newFoodLogHead.protein = i_protein
-            newFoodLogHead.foodHeadID = i_foodheadId ?? UUID()
-            
-            let dbPayload  = FoodLogLinePayloadRequest(i_foodheadid: newFoodLogHead.foodHeadID!,
-                                                       i_foodlineid: foodlineID,
-                                                       i_calories: i_calories,
-                                                       i_carbs: i_carbs,
-                                                       i_fat: i_fat,
-                                                       i_food: i_food,
-                                                       i_grams: i_grams,
-                                                       i_protein: i_protein,
-                                                       i_date: i_date)
-            _ = FoodLogLine.make(in: context, from: dbPayload)
-
-//            let newFoodLine = FoodLogLine(context: context)
-//            newFoodLine.calories = i_calories
-//            newFoodLine.carbs = i_carbs
-//            newFoodLine.fat = i_fat
-//            newFoodLine.food = i_food
-//            newFoodLine.grams = i_grams
-//            newFoodLine.protein = i_protein
-//            newFoodLine.foodHeadID = newFoodLogHead.foodHeadID
-//            newFoodLine.foodID = foodlineID
-//            newFoodLine.date = i_date
-
-            do {
-                try context.save()
-                if i_foodlineId == nil {
-                    await DBConnector.shared.insertFoodLog(i_flls: [dbPayload])
-                }
-                NotificationCenter.default.post(
-                    name: NSNotification.Name(Constants.reloadFoodLogTrigger),
-                    object: nil
-                )
-                loadFoodLogArrays()
-            } catch {
-                print("Error saving new Food Log Entry!!")
-            }
+            reloadAfterFoodSave()
+        } catch {
+            print("Failed to add food log entry: \(error)")
         }
+    }
+
+    /// Save the reviewed rows together before attempting cloud sync.
+    func addReviewedFoodLogs(_ proposal: HistoryChatContext.FoodLogProposal,
+                             session: String) async throws -> Bool {
+        guard !LogonViewController.requiresLogon(session),
+              SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value == session else {
+            throw SettingsSyncError.sessionChanged
+        }
+        let context = try foodWriteContext()
+        let payloads = try proposal.entries.map { entry in
+            try stageFoodLogEntry(date: entry.date, calories: entry.calories, carbs: entry.carbs,
+                                  fat: entry.fat, food: entry.food, grams: entry.grams,
+                                  protein: entry.protein, in: context)
+        }
+        try context.save()
+        let synced = await DBConnector.shared.insertFoodLog(i_flls: payloads, expectedSession: session)
+        reloadAfterFoodSave()
+        return synced
+    }
+
+    private func foodWriteContext() throws -> NSManagedObjectContext {
+        guard let coordinator = viewContext?.persistentStoreCoordinator else {
+            throw SettingsSyncError.localStorage
+        }
+        let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        context.persistentStoreCoordinator = coordinator
+        return context
+    }
+
+    private func stageFoodLogEntry(date: Date, calories: Double, carbs: Double, fat: Double,
+                                   food: String, grams: Double, protein: Double, foodID: UUID? = nil,
+                                   headID: UUID? = nil,
+                                   in context: NSManagedObjectContext) throws -> FoodLogLinePayloadRequest {
+        guard let day = Calendar.current.dateInterval(of: .day, for: date) else {
+            throw SettingsSyncError.localStorage
+        }
+        let heads: NSFetchRequest<FoodLogHead> = FoodLogHead.fetchRequest()
+        let dateRange = NSPredicate(format: "date >= %@ AND date < %@", day.start as NSDate, day.end as NSDate)
+        if let headID {
+            heads.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                dateRange, NSPredicate(format: "foodHeadID == %@", headID as NSUUID)
+            ])
+        } else {
+            heads.predicate = dateRange
+        }
+        let existingHead = try context.fetch(heads).first
+        let head = existingHead ?? FoodLogHead(context: context)
+        let resolvedHeadID = head.foodHeadID ?? headID ?? UUID()
+        head.foodHeadID = resolvedHeadID
+        if existingHead == nil { head.date = date }
+
+        let lines: NSFetchRequest<FoodLogLine> = FoodLogLine.fetchRequest()
+        lines.predicate = NSPredicate(format: "foodHeadID == %@", resolvedHeadID as NSUUID)
+        let existingLines = try context.fetch(lines)
+        head.calories = existingLines.reduce(calories) { $0 + $1.calories }
+        head.carbs = existingLines.reduce(carbs) { $0 + $1.carbs }
+        head.fat = existingLines.reduce(fat) { $0 + $1.fat }
+        head.protein = existingLines.reduce(protein) { $0 + $1.protein }
+
+        let payload = FoodLogLinePayloadRequest(
+            i_foodheadid: resolvedHeadID, i_foodlineid: foodID ?? UUID(), i_calories: calories,
+            i_carbs: carbs, i_fat: fat, i_food: food, i_grams: grams, i_protein: protein, i_date: date
+        )
+        _ = FoodLogLine.make(in: context, from: payload)
+        return payload
+    }
+
+    private func reloadAfterFoodSave() {
+        loadFoodLogArrays()
+        NotificationCenter.default.post(name: NSNotification.Name(Constants.reloadFoodLogTrigger), object: nil)
     }
 }

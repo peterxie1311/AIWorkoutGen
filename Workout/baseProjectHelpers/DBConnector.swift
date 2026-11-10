@@ -329,8 +329,10 @@ class DBConnector {
     }
     
 
-    func insertFoodLog(i_flls: [FoodLogLinePayloadRequest]) async {
+    @discardableResult
+    func insertFoodLog(i_flls: [FoodLogLinePayloadRequest], expectedSession: String? = nil) async -> Bool {
         let sessionID = await session_token
+        guard expectedSession == nil || sessionID == expectedSession else { return false }
         
         let postgresqlFuncName = "addfoodlogentries"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
@@ -344,8 +346,10 @@ class DBConnector {
         do {
             request.httpBody = try encoder.encode(payload)
             _ = try await sessionData(for: request, sessionID: sessionID)
+            return true
         } catch {
             print("Database request failed:", (error as NSError).code)
+            return false
         }
     }
     

@@ -334,3 +334,38 @@ final class HistoryChatLookupTests: XCTestCase {
         XCTAssertThrowsError(try history.lookup(.init(kind: "workouts", from: "2026-02-30")))
     }
 }
+
+final class HistoryChatFoodProposalTests: XCTestCase {
+    private let history = HistoryChatContext(workouts: [], food: [],
+                                             today: "2026-11-10", timeZone: "Australia/Brisbane")
+
+    func testProposalUsesLocalDayAndPreservesReviewedValues() throws {
+        let proposal = try history.proposeFoodLogs(arguments: """
+        {"entries":[{"date":"2026-11-09","food":"Chicken breast","grams":200,
+        "calories":330.5,"protein":62,"carbs":0,"fat":7.2}]}
+        """)
+        let entry = try XCTUnwrap(proposal.entries.first)
+        XCTAssertEqual(entry.day, "2026-11-09")
+        XCTAssertEqual(entry.date, ISO8601DateFormatter().date(from: "2026-11-09T02:00:00Z"))
+        XCTAssertEqual(entry.food, "Chicken breast")
+        XCTAssertEqual(entry.grams, 200)
+        XCTAssertEqual(entry.calories, 330.5)
+        XCTAssertEqual(entry.protein, 62)
+        XCTAssertEqual(entry.carbs, 0)
+        XCTAssertEqual(entry.fat, 7.2)
+        XCTAssertTrue(history.food.isEmpty)
+    }
+
+    func testInvalidEntryRejectsTheWholeProposal() {
+        XCTAssertThrowsError(try history.proposeFoodLogs(arguments: """
+        {"entries":[
+          {"date":"2026-11-09","food":"Chicken","grams":200,"calories":330,"protein":62,"carbs":0,"fat":7},
+          {"date":"2026-02-30","food":"Rice","grams":100,"calories":130,"protein":3,"carbs":28,"fat":0}
+        ]}
+        """))
+        XCTAssertThrowsError(try history.proposeFoodLogs(arguments: """
+        {"entries":[{"date":"2026-11-09","food":"Chicken","grams":200,
+        "calories":330,"protein":-2,"carbs":0,"fat":7}]}
+        """))
+    }
+}

@@ -62,16 +62,43 @@ struct HistoryChatMessage {
     enum Role: String { case user, assistant }
     let role: Role
     let text: String
+    var foodReview: FoodReview? = nil
+
+    struct FoodReview {
+        enum State: String {
+            case pending = "Awaiting approval"
+            case saving = "Saving…"
+            case saved = "Added"
+            case savedLocally = "Added on this device · Sync pending"
+        }
+
+        let id = UUID()
+        let proposal: HistoryChatContext.FoodLogProposal
+        let session: String
+        var state = State.pending
+    }
+
+    var modelText: String {
+        guard let foodReview else { return text }
+        let entries = foodReview.proposal.entries.map(\.reviewText).joined(separator: "\n")
+        return "\(text)\nFood log review status: \(foodReview.state.rawValue)\n\(entries)"
+    }
+}
+
+enum HistoryChatReply {
+    case text(String)
+    case foodProposal(HistoryChatContext.FoodLogProposal)
 }
 
 enum HistoryChatError: LocalizedError {
-    case missingKey, historyUnavailable, invalidLookup, invalidResponse
+    case missingKey, historyUnavailable, invalidLookup, invalidResponse, invalidFoodProposal
 
     var errorDescription: String? {
         switch self {
         case .missingKey: return "Add your GPT API Key in Settings to use chat."
         case .historyUnavailable: return "Workout and food history could not be opened."
         case .invalidLookup: return "The history lookup was invalid."
+        case .invalidFoodProposal: return "The AI returned invalid food log details. Please try again."
         case .invalidResponse: return "The AI did not return a usable reply. Please try again."
         }
     }
@@ -105,9 +132,9 @@ class workoutAIservice {
                 .value ?? ""
     }
     
-    /// Separate from workout generation: tool calls can only read the supplied snapshot.
+    /// History tools read the supplied snapshot or return a draft for user review.
     @MainActor
-    func chatAboutHistory(_ conversation: [HistoryChatMessage]) async throws -> String {
+    func chatAboutHistory(_ conversation: [HistoryChatMessage]) async throws -> HistoryChatReply {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw HistoryChatError.missingKey }
         let history = try await HistoryChatContext.load()
@@ -127,13 +154,19 @@ class workoutAIservice {
             Use summaryOnly for totals. For detailed comparisons, narrow by date or exercise/food name
             and use nextOffset for additional pages. Say when the answer is based on only part of the results.
             Use date ranges and numbers from the tool, distinguish estimates, and never invent entries.
+            Use propose_food_logs only when the user's request asks to add or log food. Estimate the
+            portion and nutrition if needed, using totals for the portion and grams for all macros.
+            Resolve relative dates in the user's time zone and use today if no date was specified.
+            Ask a brief clarifying question if the food or portion is too ambiguous to estimate.
+            A proposal is only a draft. The user must tap Add in the app. Never claim a draft was saved.
+            For requests that only ask for an estimate, give a normal text reply.
             Ask a brief clarifying question when necessary. Be concise and conversational.
             """
         ]]
         messages += conversation.suffix(12).map {
-            ["role": $0.role.rawValue, "content": $0.text]
+            ["role": $0.role.rawValue, "content": $0.modelText]
         }
-        let tool: [String: Any] = [
+        let lookupTool: [String: Any] = [
             "type": "function",
             "function": [
                 "name": "lookup_history",
@@ -154,6 +187,35 @@ class workoutAIservice {
             ] as [String: Any]
         ]
 
+        let foodFields: [String: [String: String]] = [
+            "date": ["type": "string", "description": "Local calendar day in YYYY-MM-DD."],
+            "food": ["type": "string", "description": "Food name, including any important portion assumptions."],
+            "grams": ["type": "number", "description": "Total weight of the portion in grams."],
+            "calories": ["type": "number", "description": "Total energy of the portion in kcal."],
+            "protein": ["type": "number", "description": "Total protein in grams."],
+            "carbs": ["type": "number", "description": "Total carbohydrates in grams."],
+            "fat": ["type": "number", "description": "Total fat in grams."]
+        ]
+        let entrySchema: [String: Any] = [
+            "type": "object",
+            "properties": foodFields,
+            "required": foodFields.keys.sorted(),
+            "additionalProperties": false
+        ]
+        let proposalTool: [String: Any] = [
+            "type": "function",
+            "function": [
+                "name": "propose_food_logs",
+                "description": "Show up to 12 estimated food entries in a review card. This never saves data.",
+                "parameters": [
+                    "type": "object",
+                    "properties": ["entries": ["type": "array", "items": entrySchema] as [String: Any]],
+                    "required": ["entries"],
+                    "additionalProperties": false
+                ] as [String: Any]
+            ] as [String: Any]
+        ]
+
         for round in 0...8 {
             try Task.checkCancellation()
             var request = URLRequest(url: url)
@@ -164,10 +226,10 @@ class workoutAIservice {
             request.httpBody = try JSONSerialization.data(withJSONObject: [
                 "model": "gpt-4o",
                 "messages": messages,
-                "tools": [tool],
+                "tools": [lookupTool, proposalTool],
                 "tool_choice": round == 8 ? "none" : "auto",
                 "parallel_tool_calls": false,
-                "max_completion_tokens": 1000
+                "max_completion_tokens": 1600
             ])
             let data = try await APIResponse.data(for: request)
             guard let body = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -179,10 +241,20 @@ class workoutAIservice {
                 guard round < 8, calls.count == 1, let call = calls.first,
                       let id = call["id"] as? String,
                       let function = call["function"] as? [String: Any],
-                      function["name"] as? String == "lookup_history",
+                      let name = function["name"] as? String,
                       let arguments = function["arguments"] as? String else {
                     throw HistoryChatError.invalidResponse
                 }
+                if name == "propose_food_logs" {
+                    if let proposal = try? history.proposeFoodLogs(arguments: arguments) {
+                        return .foodProposal(proposal)
+                    }
+                    messages.append(["role": "assistant", "tool_calls": calls])
+                    messages.append(["role": "tool", "tool_call_id": id, "content":
+                        #"{"error":"Invalid food draft. Provide 1–12 entries, each with a valid YYYY-MM-DD date, food name, positive grams and finite non-negative kcal and macros."}"#])
+                    continue
+                }
+                guard name == "lookup_history" else { throw HistoryChatError.invalidResponse }
                 messages.append(["role": "assistant", "tool_calls": calls])
                 let result: String
                 if let query = try? JSONDecoder().decode(HistoryChatContext.Query.self, from: Data(arguments.utf8)),
@@ -198,7 +270,7 @@ class workoutAIservice {
                 }
             } else if let answer = reply["content"] as? String,
                       !answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return answer
+                return .text(answer)
             } else {
                 throw HistoryChatError.invalidResponse
             }
