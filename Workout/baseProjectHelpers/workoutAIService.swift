@@ -116,6 +116,7 @@ private struct NutritionSearchInput: Decodable {
 }
 
 enum USDANutritionLookup {
+    private static let cache = NSCache<NSString, NSString>()
     struct Match: Decodable {
         let fdcId: Int
         let description: String
@@ -156,6 +157,8 @@ enum USDANutritionLookup {
     }
     static func search(_ term: String, apiKey: String) async throws -> String {
         let query = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = query.lowercased() as NSString
+        if let cached = cache.object(forKey: cacheKey) { return cached as String }
         guard (2...120).contains(query.count), !apiKey.isEmpty,
               var parts = URLComponents(string: "https://api.nal.usda.gov/fdc/v1/foods/search") else {
             throw HistoryChatError.invalidLookup
@@ -180,7 +183,9 @@ enum USDANutritionLookup {
         ] }
         let result: [String: Any] = ["source": "USDA FoodData Central", "query": query,
             "results": results, "note": "Nutrients are per 100g. Confirm cooking method, skin, and portion. Ask for clarification when matches differ."]
-        return String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
+        let encoded = String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
+        cache.setObject(encoded as NSString, forKey: cacheKey)
+        return encoded
     }
 }
 
