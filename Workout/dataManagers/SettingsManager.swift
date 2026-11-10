@@ -10,6 +10,7 @@ class SettingsManager {
     static let name:String = "Name"
     static let enableNotifications:String = "Enable Notifications"
     static let gptAPIKey:String = "GPT API Key"
+    static let usdaAPIKey:String = "USDA API Key"
     static let excludeWorkout:String = "Exclude Workout"
     static let calorieGoal:String = "Calorie Goal"
     static let proteinGoal:String = "Protein Goal"
@@ -141,6 +142,7 @@ class SettingsManager {
         [name,Constants.string_default],
         [enableNotifications,Constants.string_numDefault],
         [gptAPIKey,Constants.string_default],
+        [usdaAPIKey, ""],
         [excludeWorkout,Constants.string_default],
         [calorieGoal,Constants.string_numDefault],
         [proteinGoal,Constants.string_numDefault],
