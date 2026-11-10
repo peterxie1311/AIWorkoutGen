@@ -23,6 +23,7 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
         table.dataSource = self
         table.register(UITableViewCell.self, forCellReuseIdentifier: "Message")
         table.register(FoodLogReviewCell.self, forCellReuseIdentifier: "FoodLogReview")
+        table.register(FoodClarificationCell.self, forCellReuseIdentifier: "FoodClarification")
         table.separatorStyle = .none
         table.backgroundColor = .clear
         table.keyboardDismissMode = .interactive
@@ -110,6 +111,8 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
                 switch answer {
                 case .text(let text):
                     self?.messages.append(HistoryChatMessage(role: .assistant, text: text))
+                case .foodQuestion(let question, let options):
+                    self?.messages.append(HistoryChatMessage(role: .assistant, text: question, foodChoices: options))
                 case .foodProposal(let proposal):
                     let review = HistoryChatMessage.FoodReview(proposal: proposal, session: session)
                     self?.messages.append(HistoryChatMessage(
@@ -130,6 +133,12 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
             self?.updateSendState()
         }
         updateSendState()
+    }
+
+    private func selectFood(_ choice: String) {
+        guard requestTask == nil else { return }
+        input.text = choice
+        sendMessage()
     }
 
     private func addFoodLogs(reviewID: UUID) {
@@ -173,6 +182,13 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let message = messages[indexPath.row]
+        if let options = message.foodChoices,
+           let cell = tableView.dequeueReusableCell(withIdentifier: "FoodClarification", for: indexPath) as? FoodClarificationCell {
+            cell.configure(question: message.text, options: options) { [weak self] selected in
+                self?.selectFood(selected)
+            }
+            return cell
+        }
         if let review = message.foodReview,
            let cell = tableView.dequeueReusableCell(withIdentifier: "FoodLogReview", for: indexPath) as? FoodLogReviewCell {
             cell.configure(title: message.text, review: review) { [weak self] in
@@ -252,5 +268,42 @@ private final class FoodLogReviewCell: UITableViewCell {
         label.adjustsFontForContentSizeCategory = true
         label.numberOfLines = 0
         return label
+    }
+}
+
+private final class FoodClarificationCell: UITableViewCell {
+    private let stack = UIStackView()
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        backgroundColor = .clear
+        stack.axis = .vertical
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
+        ])
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    func configure(question: String, options: [String], onSelect: @escaping (String) -> Void) {
+        stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let heading = UILabel()
+        heading.text = question
+        heading.font = .preferredFont(forTextStyle: .body)
+        heading.numberOfLines = 0
+        stack.addArrangedSubview(heading)
+        for option in options {
+            var config = UIButton.Configuration.bordered()
+            config.title = option
+            let button = UIButton(configuration: config, primaryAction: UIAction { _ in onSelect(option) })
+            button.contentHorizontalAlignment = .leading
+            button.titleLabel?.numberOfLines = 0
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            stack.addArrangedSubview(button)
+        }
     }
 }
