@@ -18,6 +18,38 @@ final class WorkoutTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+
+    func testUSDANutritionRejectsIncompleteAndBranded() throws {
+        let json = """
+        {"foods":[
+          {"fdcId":1,"description":"Chicken cooked","dataType":"Foundation","foodNutrients":[
+            {"nutrientId":1008,"unitName":"KCAL","value":200},
+            {"nutrientId":1003,"unitName":"G","value":26},
+            {"nutrientId":1004,"unitName":"G","value":10},
+            {"nutrientId":1005,"unitName":"G","value":0}]},
+          {"fdcId":2,"description":"Chicken raw","dataType":"Foundation","foodNutrients":[
+            {"nutrientId":1003,"unitName":"G","value":20}]},
+          {"fdcId":3,"description":"Branded chicken","dataType":"Branded","foodNutrients":[
+            {"nutrientId":1008,"unitName":"KCAL","value":200},
+            {"nutrientId":1003,"unitName":"G","value":26},
+            {"nutrientId":1004,"unitName":"G","value":10},
+            {"nutrientId":1005,"unitName":"G","value":0}]}
+        ]}
+        """
+        let matches = try USDANutritionLookup.parse(Data(json.utf8))
+        XCTAssertEqual(matches.count, 1)
+        XCTAssertEqual(matches.first?.description, "Chicken cooked")
+        XCTAssertEqual(matches.first?.nutrientsPer100g["calories"], 200)
+        XCTAssertEqual(USDANutritionLookup.scaled(try XCTUnwrap(matches.first), grams: 237)?["calories"], 474)
+    }
+
+    func testUSDANutritionRejectsInvalidWeightAndMalformedResponse() throws {
+        let match = USDANutritionLookup.Match(fdcId: 1, description: "Chicken",
+            dataType: "Foundation", nutrientsPer100g: ["calories": 200])
+        XCTAssertNil(USDANutritionLookup.scaled(match, grams: -1))
+        XCTAssertNil(USDANutritionLookup.scaled(match, grams: .nan))
+        XCTAssertThrowsError(try USDANutritionLookup.parse(Data("{}".utf8)))
+    }
     func testExample() throws {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
