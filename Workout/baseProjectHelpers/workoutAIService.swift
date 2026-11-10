@@ -122,6 +122,9 @@ enum USDANutritionLookup {
         let description: String
         let dataType: String
         let nutrientsPer100g: [String: Double]
+        let brand: String?
+        let servingSize: Double?
+        let servingSizeUnit: String?
     }
     static func parse(_ data: Data) throws -> [Match] {
         guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -129,7 +132,7 @@ enum USDANutritionLookup {
         return foods.compactMap { food -> Match? in
             guard let id = food["fdcId"] as? Int, id > 0,
                   let description = food["description"] as? String, !description.isEmpty,
-                  let type = food["dataType"] as? String, type != "Branded" else { return nil }
+                  let type = food["dataType"] as? String else { return nil }
             var nutrients: [String: Double] = [:]
             for item in food["foodNutrients"] as? [[String: Any]] ?? [] {
                 guard let id = item["nutrientId"] as? Int,
@@ -148,7 +151,10 @@ enum USDANutritionLookup {
                 }
             }
             guard ["calories", "protein", "fat", "carbs"].allSatisfy({ nutrients[$0] != nil }) else { return nil }
-            return Match(fdcId: id, description: description, dataType: type, nutrientsPer100g: nutrients)
+            return Match(fdcId: id, description: description, dataType: type, nutrientsPer100g: nutrients,
+                         brand: food["brandOwner"] as? String ?? food["brandName"] as? String,
+                         servingSize: food["servingSize"] as? Double,
+                         servingSizeUnit: food["servingSizeUnit"] as? String)
         }
     }
     static func scaled(_ match: Match, grams: Double) -> [String: Double]? {
@@ -170,19 +176,25 @@ enum USDANutritionLookup {
         request.timeoutInterval = 15
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "query": query, "pageSize": 12, "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)"]
+            "query": query, "pageSize": 12, "dataType": ["Branded", "Foundation", "SR Legacy", "Survey (FNDDS)"]
         ])
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw HistoryChatError.invalidResponse
         }
         let matches = try parse(data)
-        let results: [[String: Any]] = matches.map { [
-            "fdcId": $0.fdcId, "description": $0.description, "dataType": $0.dataType,
-            "nutrientsPer100g": $0.nutrientsPer100g
-        ] }
+        let results: [[String: Any]] = matches.map { match in
+            var item: [String: Any] = [
+                "fdcId": match.fdcId, "description": match.description,
+                "dataType": match.dataType, "nutrientsPer100g": match.nutrientsPer100g
+            ]
+            if let brand = match.brand { item["brand"] = brand }
+            if let size = match.servingSize { item["servingSize"] = size }
+            if let unit = match.servingSizeUnit { item["servingSizeUnit"] = unit }
+            return item
+        }
         let result: [String: Any] = ["source": "USDA FoodData Central", "query": query,
-            "results": results, "note": "Nutrients are per 100g. Confirm cooking method, skin, and portion. Ask for clarification when matches differ."]
+            "results": results, "note": "Search-result nutrients are per 100g. For branded foods check exact brand, flavour, package size, and dry versus prepared weight. Serving-size fields are product metadata; do not assume one packet is 100g."]
         let encoded = String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
         cache.setObject(encoded as NSString, forKey: cacheKey)
         return encoded
@@ -240,7 +252,7 @@ class workoutAIservice {
             Use summaryOnly for totals. For detailed comparisons, narrow by date or exercise/food name
             and use nextOffset for additional pages. Say when the answer is based on only part of the results.
             Use date ranges and numbers from the tool, distinguish estimates, and never invent entries.
-            For every new food nutrition estimate, first call search_nutrition_database. Use the USDA result as the source of nutrition values, never assume the first search hit is correct. Match cooking state, skin, cut, and brand. If ambiguous, ask the user a short question presenting 2-4 numbered plausible matches before proposing food. Allow the user to specify another option. If the database is unavailable or no suitable record exists, explain this and ask whether the user wants a clearly labeled AI estimate instead. Never present an AI estimate as verified USDA data.
+            For every new food nutrition estimate, first call search_nutrition_database. Use the USDA result as the source of nutrition values, never assume the first search hit is correct. For named packaged foods, search exact brand and flavour first and prefer an exact branded match. If no exact branded match exists, say so rather than silently substituting generic food. Match cooking state, skin, cut, and brand. If ambiguous, ask the user a short question presenting 2-4 numbered plausible matches before proposing food. Allow the user to specify another option. If the database is unavailable or no suitable record exists, explain this and ask whether the user wants a clearly labeled AI estimate instead. Never present an AI estimate as verified USDA data.
             Use propose_food_logs only when the user's request asks to add or log food. Estimate the
             portion and nutrition if needed, using totals for the portion and grams for all macros.
             Resolve relative dates in the user's time zone and use today if no date was specified.
@@ -323,7 +335,7 @@ class workoutAIservice {
             "type": "function",
             "function": [
                 "name": "search_nutrition_database",
-                "description": "Search USDA FoodData Central for nutrition records. Use for every new food estimate before proposing or reporting macros. Results contain per-100g values; clarify ambiguous preparation or product matches with the user.",
+                "description": "Search USDA FoodData Central for nutrition records. Use for every new food estimate before proposing or reporting macros. Search branded packaged foods and generic USDA records. Results include per-100g values and available brand and serving metadata; verify the exact product.",
                 "parameters": [
                     "type": "object",
                     "properties": [
