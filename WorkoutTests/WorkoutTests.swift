@@ -19,7 +19,7 @@ final class WorkoutTests: XCTestCase {
     }
 
 
-    func testUSDANutritionRejectsIncompleteAndBranded() throws {
+    func testUSDANutritionRejectsIncompleteAndIncludesBranded() throws {
         let json = """
         {"foods":[
           {"fdcId":1,"description":"Chicken cooked","dataType":"Foundation","foodNutrients":[
@@ -37,15 +37,17 @@ final class WorkoutTests: XCTestCase {
         ]}
         """
         let matches = try USDANutritionLookup.parse(Data(json.utf8))
-        XCTAssertEqual(matches.count, 1)
+        XCTAssertEqual(matches.count, 2)
         XCTAssertEqual(matches.first?.description, "Chicken cooked")
+        XCTAssertEqual(matches.last?.dataType, "Branded")
         XCTAssertEqual(matches.first?.nutrientsPer100g["calories"], 200)
         XCTAssertEqual(USDANutritionLookup.scaled(try XCTUnwrap(matches.first), grams: 237)?["calories"], 474)
     }
 
     func testUSDANutritionRejectsInvalidWeightAndMalformedResponse() throws {
         let match = USDANutritionLookup.Match(fdcId: 1, description: "Chicken",
-            dataType: "Foundation", nutrientsPer100g: ["calories": 200])
+            dataType: "Foundation", nutrientsPer100g: ["calories": 200],
+            brand: nil, servingSize: nil, servingSizeUnit: nil)
         XCTAssertNil(USDANutritionLookup.scaled(match, grams: -1))
         XCTAssertNil(USDANutritionLookup.scaled(match, grams: .nan))
         XCTAssertThrowsError(try USDANutritionLookup.parse(Data("{}".utf8)))
