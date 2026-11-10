@@ -399,10 +399,10 @@ class workoutAIservice {
                         do {
                             result = try await USDANutritionLookup.search(input.query, apiKey: usdaKey)
                         } catch {
-                            result = "{\\"error\\":\\"Nutrition database unavailable. Ask the user whether to proceed with an explicitly labeled estimate.\\"}"
+                            result = #"{\"error\":\"Nutrition database unavailable. Ask the user whether to proceed with an explicitly labeled estimate.\"}"#
                         }
                     } else {
-                        result = "{\\"error\\":\\"Invalid nutrition search query\\"}"
+                        result = #"{\"error\":\"Invalid nutrition search query\"}"#
                     }
                     messages.append(["role": "tool", "tool_call_id": id, "content": result])
                     continue
