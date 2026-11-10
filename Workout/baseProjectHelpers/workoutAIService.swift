@@ -68,8 +68,7 @@ struct HistoryChatMessage {
         enum State: String {
             case pending = "Awaiting approval"
             case saving = "Saving…"
-            case saved = "Added"
-            case savedLocally = "Added on this device · Sync pending"
+            case saved = "Added to food log"
         }
 
         let id = UUID()

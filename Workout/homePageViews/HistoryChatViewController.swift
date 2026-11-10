@@ -140,8 +140,8 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
         table.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
         Task { @MainActor in
             do {
-                let synced = try await FoodLogManager.shared.addReviewedFoodLogs(review.proposal, session: review.session)
-                messages[index].foodReview?.state = synced ? .saved : .savedLocally
+                try await FoodLogManager.shared.addReviewedFoodLogs(review.proposal, session: review.session)
+                messages[index].foodReview?.state = .saved
             } catch {
                 messages[index].foodReview?.state = .pending
                 HelperFunctions.showAlert(on: self, title: "Could not add food logs", message: error.localizedDescription)

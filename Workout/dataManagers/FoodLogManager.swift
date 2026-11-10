@@ -205,7 +205,7 @@ class FoodLogManager {
 
     /// Save the reviewed rows together before attempting cloud sync.
     func addReviewedFoodLogs(_ proposal: HistoryChatContext.FoodLogProposal,
-                             session: String) async throws -> Bool {
+                             session: String) async throws {
         guard !LogonViewController.requiresLogon(session),
               SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value == session else {
             throw SettingsSyncError.sessionChanged
@@ -217,9 +217,8 @@ class FoodLogManager {
                                   protein: entry.protein, in: context)
         }
         try context.save()
-        let synced = await DBConnector.shared.insertFoodLog(i_flls: payloads, expectedSession: session)
+        await DBConnector.shared.insertFoodLog(i_flls: payloads)
         reloadAfterFoodSave()
-        return synced
     }
 
     private func foodWriteContext() throws -> NSManagedObjectContext {
