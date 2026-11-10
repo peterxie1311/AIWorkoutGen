@@ -108,55 +108,72 @@ private struct NutritionSearchInput: Decodable {
     let query: String
 }
 
-private enum USDANutritionLookup {
-    // USDA DEMO_KEY has strict rate limits. A dedicated key should be configured for production.
-    static func search(_ term: String) async throws -> String {
+enum USDANutritionLookup {
+    struct Match: Decodable {
+        let fdcId: Int
+        let description: String
+        let dataType: String
+        let nutrientsPer100g: [String: Double]
+    }
+    static func parse(_ data: Data) throws -> [Match] {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let foods = root["foods"] as? [[String: Any]] else { throw HistoryChatError.invalidResponse }
+        return foods.compactMap { food -> Match? in
+            guard let id = food["fdcId"] as? Int, id > 0,
+                  let description = food["description"] as? String, !description.isEmpty,
+                  let type = food["dataType"] as? String, type != "Branded" else { return nil }
+            var nutrients: [String: Double] = [:]
+            for item in food["foodNutrients"] as? [[String: Any]] ?? [] {
+                guard let id = item["nutrientId"] as? Int,
+                      let value = item["value"] as? Double, value.isFinite, value >= 0,
+                      let unit = (item["unitName"] as? String)?.uppercased() else { continue }
+                if unit == "G" {
+                    switch id {
+                    case 1003: nutrients["protein"] = value
+                    case 1004: nutrients["fat"] = value
+                    case 1005: nutrients["carbs"] = value
+                    case 1079: nutrients["fiber"] = value
+                    default: break
+                    }
+                } else if unit == "KCAL" && [1008, 2047, 2048].contains(id) {
+                    if nutrients["calories"] == nil { nutrients["calories"] = value }
+                }
+            }
+            guard ["calories", "protein", "fat", "carbs"].allSatisfy({ nutrients[$0] != nil }) else { return nil }
+            return Match(fdcId: id, description: description, dataType: type, nutrientsPer100g: nutrients)
+        }
+    }
+    static func scaled(_ match: Match, grams: Double) -> [String: Double]? {
+        guard grams.isFinite, grams > 0, grams <= 100_000 else { return nil }
+        return match.nutrientsPer100g.mapValues { ($0 * grams / 100 * 10).rounded() / 10 }
+    }
+    static func search(_ term: String, apiKey: String) async throws -> String {
         let query = term.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard (2...120).contains(query.count),
-              let url = URL(string: "https://api.nal.usda.gov/fdc/v1/foods/search?api_key=DEMO_KEY") else {
+        guard (2...120).contains(query.count), !apiKey.isEmpty,
+              var parts = URLComponents(string: "https://api.nal.usda.gov/fdc/v1/foods/search") else {
             throw HistoryChatError.invalidLookup
         }
+        parts.queryItems = [URLQueryItem(name: "api_key", value: apiKey)]
+        guard let url = parts.url else { throw HistoryChatError.invalidResponse }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 15
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
-            "query": query, "pageSize": 8,
-            "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)", "Branded"]
+            "query": query, "pageSize": 12, "dataType": ["Foundation", "SR Legacy", "Survey (FNDDS)"]
         ])
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let http = response as? HTTPURLResponse, http.statusCode == 200,
-              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let foods = json["foods"] as? [[String: Any]] else {
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             throw HistoryChatError.invalidResponse
         }
-        let nutrientIDs: [Int: String] = [1008: "calories", 1003: "protein", 1004: "fat", 1005: "carbs", 1079: "fiber", 2047: "calories", 2048: "calories"]
-        let results: [[String: Any]] = foods.map { food in
-            var nutrients: [String: Double] = [:]
-            for nutrient in food["foodNutrients"] as? [[String: Any]] ?? [] {
-                guard let id = nutrient["nutrientId"] as? Int,
-                      let name = nutrientIDs[id],
-                      let value = nutrient["value"] as? Double,
-                      value.isFinite, value >= 0 else { continue }
-                if name == "calories" && nutrients[name] != nil { continue }
-                nutrients[name] = value
-            }
-            return [
-                "fdcId": food["fdcId"] ?? 0,
-                "description": food["description"] ?? "",
-                "dataType": food["dataType"] ?? "",
-                "brand": food["brandOwner"] ?? "",
-                "nutrientsPer100g": nutrients
-            ]
-        }
-        let output: [String: Any] = [
-            "source": "USDA FoodData Central",
-            "query": query,
-            "results": results,
-            "note": "Values are per 100 g only where the record supports a mass basis. Check dataType, preparation, and brand. Do not invent missing nutrients. For branded foods, serving basis may differ; verify before scaling."
-        ]
-        let encoded = try JSONSerialization.data(withJSONObject: output)
-        return String(decoding: encoded, as: UTF8.self)
+        let matches = try parse(data)
+        let results: [[String: Any]] = matches.map { [
+            "fdcId": $0.fdcId, "description": $0.description, "dataType": $0.dataType,
+            "nutrientsPer100g": $0.nutrientsPer100g
+        ] }
+        let result: [String: Any] = ["source": "USDA FoodData Central", "query": query,
+            "results": results, "note": "Nutrients are per 100g. Confirm cooking method, skin, and portion. Ask for clarification when matches differ."]
+        return String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
     }
 }
 
@@ -194,6 +211,7 @@ class workoutAIservice {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw HistoryChatError.missingKey }
         let history = try await HistoryChatContext.load()
+        let usdaKey = SettingsManager.shared.getSetting(name: SettingsManager.usdaAPIKey)?.value.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard let url = URL(string: endpoint) else { throw HistoryChatError.invalidResponse }
 
         var messages: [[String: Any]] = [[
@@ -210,7 +228,7 @@ class workoutAIservice {
             Use summaryOnly for totals. For detailed comparisons, narrow by date or exercise/food name
             and use nextOffset for additional pages. Say when the answer is based on only part of the results.
             Use date ranges and numbers from the tool, distinguish estimates, and never invent entries.
-            For every new food nutrition estimate, first call search_nutrition_database. Use the USDA result as the source of nutrition values, never assume the first search hit is correct. Match cooking state, skin, cut, and brand. If ambiguous, ask the user a short question presenting plausible matches before proposing food. If the database is unavailable or no suitable record exists, explain this and ask whether the user wants a clearly labeled AI estimate instead. Never present an AI estimate as verified USDA data.
+            For every new food nutrition estimate, first call search_nutrition_database. Use the USDA result as the source of nutrition values, never assume the first search hit is correct. Match cooking state, skin, cut, and brand. If ambiguous, ask the user a short question presenting 2-4 numbered plausible matches before proposing food. Allow the user to specify another option. If the database is unavailable or no suitable record exists, explain this and ask whether the user wants a clearly labeled AI estimate instead. Never present an AI estimate as verified USDA data.
             Use propose_food_logs only when the user's request asks to add or log food. Estimate the
             portion and nutrition if needed, using totals for the portion and grams for all macros.
             Resolve relative dates in the user's time zone and use today if no date was specified.
@@ -289,6 +307,8 @@ class workoutAIservice {
             ] as [String: Any]
         ]
 
+        var nutritionLookups = 0
+        let estimateConsent = conversation.suffix(3).contains { $0.role == .user && $0.text.localizedCaseInsensitiveContains("estimate without") }
         for round in 0...8 {
             try Task.checkCancellation()
             var request = URLRequest(url: url)
@@ -319,6 +339,11 @@ class workoutAIservice {
                     throw HistoryChatError.invalidResponse
                 }
                 if name == "propose_food_logs" {
+                    if nutritionLookups == 0 && !estimateConsent {
+                        messages.append(["role": "assistant", "tool_calls": calls])
+                        messages.append(["role": "tool", "tool_call_id": id, "content": #"{\"error\":\"Search USDA before proposing food logs.\"}"#])
+                        continue
+                    }
                     if let proposal = try? history.proposeFoodLogs(arguments: arguments) {
                         return .foodProposal(proposal)
                     }
@@ -328,12 +353,13 @@ class workoutAIservice {
                     continue
                 }
                 if name == "search_nutrition_database" {
+                    nutritionLookups += 1
                     messages.append(["role": "assistant", "tool_calls": calls])
                     let result: String
                     if let argumentsData = arguments.data(using: .utf8),
                        let input = try? JSONDecoder().decode(NutritionSearchInput.self, from: argumentsData) {
                         do {
-                            result = try await USDANutritionLookup.search(input.query)
+                            result = try await USDANutritionLookup.search(input.query, apiKey: usdaKey)
                         } catch {
                             result = "{\\"error\\":\\"Nutrition database unavailable. Ask the user whether to proceed with an explicitly labeled estimate.\\"}"
                         }
