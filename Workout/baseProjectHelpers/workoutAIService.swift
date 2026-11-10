@@ -223,7 +223,7 @@ class workoutAIservice {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw HistoryChatError.missingKey }
         let history = try await HistoryChatContext.load()
-        let usdaKey = SettingsManager.shared.getSetting(name: SettingsManager.usdaAPIKey)?.value.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let usdaKey = SettingsManager.shared.getSetting(name: SettingsManager.usdaAPIKey)?.value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard let url = URL(string: endpoint) else { throw HistoryChatError.invalidResponse }
 
         var messages: [[String: Any]] = [[
