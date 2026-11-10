@@ -63,6 +63,7 @@ struct HistoryChatMessage {
     let role: Role
     let text: String
     var foodReview: FoodReview? = nil
+    var foodChoices: [String]? = nil
 
     struct FoodReview {
         enum State: String {
@@ -87,6 +88,7 @@ struct HistoryChatMessage {
 enum HistoryChatReply {
     case text(String)
     case foodProposal(HistoryChatContext.FoodLogProposal)
+    case foodQuestion(String, [String])
 }
 
 enum HistoryChatError: LocalizedError {
@@ -103,6 +105,11 @@ enum HistoryChatError: LocalizedError {
     }
 }
 
+
+private struct FoodClarificationInput: Decodable {
+    let question: String
+    let options: [String]
+}
 
 private struct NutritionSearchInput: Decodable {
     let query: String
@@ -291,6 +298,22 @@ class workoutAIservice {
             ] as [String: Any]
         ]
 
+        let clarificationTool: [String: Any] = [
+            "type": "function",
+            "function": [
+                "name": "ask_food_clarification",
+                "description": "Ask the user to select from 2-4 plausible food matches. Never invent database matches.",
+                "parameters": [
+                    "type": "object",
+                    "properties": [
+                        "question": ["type": "string"],
+                        "options": ["type": "array", "items": ["type": "string"], "minItems": 2, "maxItems": 4]
+                    ],
+                    "required": ["question", "options"],
+                    "additionalProperties": false
+                ] as [String: Any]
+            ] as [String: Any]
+        ]
         let nutritionTool: [String: Any] = [
             "type": "function",
             "function": [
@@ -319,7 +342,7 @@ class workoutAIservice {
             request.httpBody = try JSONSerialization.data(withJSONObject: [
                 "model": "gpt-4o",
                 "messages": messages,
-                "tools": [lookupTool, nutritionTool, proposalTool],
+                "tools": [lookupTool, nutritionTool, clarificationTool, proposalTool],
                 "tool_choice": round == 8 ? "none" : "auto",
                 "parallel_tool_calls": false,
                 "max_completion_tokens": 1600
@@ -336,6 +359,16 @@ class workoutAIservice {
                       let function = call["function"] as? [String: Any],
                       let name = function["name"] as? String,
                       let arguments = function["arguments"] as? String else {
+                    throw HistoryChatError.invalidResponse
+                }
+                if name == "ask_food_clarification" {
+                    if let data = arguments.data(using: .utf8),
+                       let payload = try? JSONDecoder().decode(FoodClarificationInput.self, from: data),
+                       (2...4).contains(payload.options.count),
+                       !payload.question.isEmpty,
+                       payload.options.allSatisfy({ !$0.isEmpty && $0.count <= 150 }) {
+                        return .foodQuestion(payload.question, payload.options)
+                    }
                     throw HistoryChatError.invalidResponse
                 }
                 if name == "propose_food_logs" {
