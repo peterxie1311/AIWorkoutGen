@@ -18,6 +18,40 @@ final class WorkoutTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+
+    func testUSDANutritionRejectsIncompleteAndIncludesBranded() throws {
+        let json = """
+        {"foods":[
+          {"fdcId":1,"description":"Chicken cooked","dataType":"Foundation","foodNutrients":[
+            {"nutrientId":1008,"unitName":"KCAL","value":200},
+            {"nutrientId":1003,"unitName":"G","value":26},
+            {"nutrientId":1004,"unitName":"G","value":10},
+            {"nutrientId":1005,"unitName":"G","value":0}]},
+          {"fdcId":2,"description":"Chicken raw","dataType":"Foundation","foodNutrients":[
+            {"nutrientId":1003,"unitName":"G","value":20}]},
+          {"fdcId":3,"description":"Branded chicken","dataType":"Branded","foodNutrients":[
+            {"nutrientId":1008,"unitName":"KCAL","value":200},
+            {"nutrientId":1003,"unitName":"G","value":26},
+            {"nutrientId":1004,"unitName":"G","value":10},
+            {"nutrientId":1005,"unitName":"G","value":0}]}
+        ]}
+        """
+        let matches = try USDANutritionLookup.parse(Data(json.utf8))
+        XCTAssertEqual(matches.count, 2)
+        XCTAssertEqual(matches.first?.description, "Chicken cooked")
+        XCTAssertEqual(matches.last?.dataType, "Branded")
+        XCTAssertEqual(matches.first?.nutrientsPer100g["calories"], 200)
+        XCTAssertEqual(USDANutritionLookup.scaled(try XCTUnwrap(matches.first), grams: 237)?["calories"], 474)
+    }
+
+    func testUSDANutritionRejectsInvalidWeightAndMalformedResponse() throws {
+        let match = USDANutritionLookup.Match(fdcId: 1, description: "Chicken",
+            dataType: "Foundation", nutrientsPer100g: ["calories": 200],
+            brand: nil, servingSize: nil, servingSizeUnit: nil)
+        XCTAssertNil(USDANutritionLookup.scaled(match, grams: -1))
+        XCTAssertNil(USDANutritionLookup.scaled(match, grams: .nan))
+        XCTAssertThrowsError(try USDANutritionLookup.parse(Data("{}".utf8)))
+    }
     func testExample() throws {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
@@ -243,9 +277,30 @@ final class AccountSettingsSyncTests: XCTestCase {
             _ = try await DBConnector.shared.fetchSettings(
                 i_sessionid: UUID().uuidString, using: session)
             XCTFail("HTTP failures must not look like an empty account.")
-        } catch SettingsSyncError.http(let status) {
-            XCTAssertEqual(status, 401)
+        } catch let error as APIResponseError {
+            XCTAssertEqual(error.statusCode, 401)
+            XCTAssertFalse(error.requiresReauthentication)
         }
+    }
+
+    func testExpiredSettingsSessionIsRecognizedFromServerMessage() async throws {
+        let session = stubSession(status: 400, body: #"{"message":"Please log in again."}"#)
+        defer { session.invalidateAndCancel() }
+        do {
+            _ = try await DBConnector.shared.fetchSettings(
+                i_sessionid: UUID().uuidString, using: session)
+            XCTFail("An expired session must fail the fetch.")
+        } catch let error as APIResponseError {
+            XCTAssertTrue(error.requiresReauthentication)
+        }
+    }
+
+    func testEmptySettingsResponseDecodesAsSuccessfulFetch() async throws {
+        let session = stubSession(status: 200, body: "[]")
+        defer { session.invalidateAndCancel() }
+        let rows = try await DBConnector.shared.fetchSettings(
+            i_sessionid: UUID().uuidString, using: session)
+        XCTAssertTrue(rows.isEmpty)
     }
 
     func testUpsertHandlesVoidResponse() async throws {
@@ -311,5 +366,40 @@ final class HistoryChatLookupTests: XCTestCase {
         XCTAssertEqual(page.completedSets, 1)
         XCTAssertEqual(page.rows.first?.weight, 17.5)
         XCTAssertThrowsError(try history.lookup(.init(kind: "workouts", from: "2026-02-30")))
+    }
+}
+
+final class HistoryChatFoodProposalTests: XCTestCase {
+    private let history = HistoryChatContext(workouts: [], food: [],
+                                             today: "2026-11-10", timeZone: "Australia/Brisbane")
+
+    func testProposalUsesLocalDayAndPreservesReviewedValues() throws {
+        let proposal = try history.proposeFoodLogs(arguments: """
+        {"entries":[{"date":"2026-11-09","food":"Chicken breast","grams":200,
+        "calories":330.5,"protein":62,"carbs":0,"fat":7.2}]}
+        """)
+        let entry = try XCTUnwrap(proposal.entries.first)
+        XCTAssertEqual(entry.day, "2026-11-09")
+        XCTAssertEqual(entry.date, ISO8601DateFormatter().date(from: "2026-11-09T02:00:00Z"))
+        XCTAssertEqual(entry.food, "Chicken breast")
+        XCTAssertEqual(entry.grams, 200)
+        XCTAssertEqual(entry.calories, 330.5)
+        XCTAssertEqual(entry.protein, 62)
+        XCTAssertEqual(entry.carbs, 0)
+        XCTAssertEqual(entry.fat, 7.2)
+        XCTAssertTrue(history.food.isEmpty)
+    }
+
+    func testInvalidEntryRejectsTheWholeProposal() {
+        XCTAssertThrowsError(try history.proposeFoodLogs(arguments: """
+        {"entries":[
+          {"date":"2026-11-09","food":"Chicken","grams":200,"calories":330,"protein":62,"carbs":0,"fat":7},
+          {"date":"2026-02-30","food":"Rice","grams":100,"calories":130,"protein":3,"carbs":28,"fat":0}
+        ]}
+        """))
+        XCTAssertThrowsError(try history.proposeFoodLogs(arguments: """
+        {"entries":[{"date":"2026-11-09","food":"Chicken","grams":200,
+        "calories":330,"protein":-2,"carbs":0,"fat":7}]}
+        """))
     }
 }

@@ -4,6 +4,7 @@ import CoreData
 /// Session-key entry for the app's existing sync identity.
 final class LogonViewController: UIViewController, UITextFieldDelegate {
     var onLogon: (() -> Void)?
+    var sessionMessage: String?
     private let userNameField = UITextField()
     private let passwordField = UITextField()
     private let errorLabel = UILabel()
@@ -39,7 +40,11 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         title.accessibilityTraits = .header
 
         let subtitle = UILabel()
-        subtitle.text = "Log on with your session key to continue your training."
+        if let sessionMessage {
+            subtitle.text = "\(sessionMessage) Sign in with your original account to sync the data saved on this device."
+        } else {
+            subtitle.text = "Sign in with your username and password. If this device has saved data, use the account it belongs to."
+        }
         subtitle.font = .preferredFont(forTextStyle: .body)
         subtitle.adjustsFontForContentSizeCategory = true
         subtitle.textColor = .secondaryLabel
@@ -51,6 +56,7 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
         fieldLabel.adjustsFontForContentSizeCategory = true
 
         userNameField.placeholder = "User Name"
+        userNameField.text = DBConnector.shared.localAccountUsername
         userNameField.accessibilityLabel = "User Name"
         userNameField.accessibilityIdentifier = "logon.userName"
         userNameField.font = .preferredFont(forTextStyle: .body)
@@ -162,6 +168,23 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
             return
         }
 
+        if DBConnector.shared.needsLegacyAccountConfirmation {
+            let alert = UIAlertController(
+                title: "Sync saved data?",
+                message: "Continue only if this is the same account you previously used on this device.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+            alert.addAction(UIAlertAction(title: "Sign In and Sync", style: .default) { [weak self] _ in
+                self?.signIn(username: username, password: password)
+            })
+            present(alert, animated: true)
+            return
+        }
+        signIn(username: username, password: password)
+    }
+
+    private func signIn(username: String, password: String) {
         clearError()
         view.endEditing(true)
 
@@ -186,6 +209,8 @@ final class LogonViewController: UIViewController, UITextFieldDelegate {
 
                 passwordField.text = nil
                 onLogon?()
+            } catch is APIResponseError {
+                // The shared API alert already shows the server message.
             } catch {
                 showError(error.localizedDescription)
             }

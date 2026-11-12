@@ -5,7 +5,7 @@
 //  Created by Peter Xie on 11/4/2026.
 // currently designed for supabase but coded like this so we can move platforms when needed
 
-import Foundation
+import UIKit
 
 /// Wire names match the settings RPC. Keep dates when copying between stores.
 struct AccountSettingDTO: Codable, Equatable {
@@ -59,14 +59,12 @@ enum SettingsSyncError: LocalizedError {
     case missingSession
     case sessionChanged
     case localStorage
-    case http(Int)
 
     var errorDescription: String? {
         switch self {
         case .missingSession: return "Log on before syncing settings."
         case .sessionChanged: return "The account changed while settings were syncing."
         case .localStorage: return "Settings could not be saved on this device."
-        case .http(let status): return "Settings could not sync (HTTP \(status)). Please try again."
         }
     }
 }
@@ -132,7 +130,19 @@ class DBConnector {
     private let method_DELETE = "DELETE"
     private let method_GET = "GET"
     //private let session_token = "ae13ea87-5f4e-4a36-a71a-693b6a3f2539" // THIS IS JUST FOR TEMP SYNC
-    private var session_token = ""
+    @MainActor private var session_token = ""
+    private static let localAccountKey = "LocalSyncAccountUsername"
+    private static let confirmLegacyAccountKey = "ConfirmLegacySyncAccount"
+
+    @MainActor
+    var needsLegacyAccountConfirmation: Bool {
+        localAccountUsername == nil && UserDefaults.standard.bool(forKey: Self.confirmLegacyAccountKey)
+    }
+
+    @MainActor
+    var localAccountUsername: String? {
+        UserDefaults.standard.string(forKey: Self.localAccountKey)
+    }
     
     @MainActor
     func loadSessionToken() {
@@ -154,6 +164,12 @@ class DBConnector {
     
     @MainActor
     func login(i_username: String, i_password: String) async throws {
+        if let owner = localAccountUsername, owner != i_username {
+            throw NSError(domain: "DBConnector.Login", code: 1, userInfo: [
+                NSLocalizedDescriptionKey: "Sign in with the account already used to sync data on this device."
+            ])
+        }
+
         let url = URL(string: "\(projectString)login")!
         var request = initRequest(i_url: url, i_method: method_POST)
 
@@ -166,36 +182,59 @@ class DBConnector {
             "i_password": i_password
         ])
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-
-        guard (200...299).contains(http.statusCode) else {
-            struct APIError: Decodable {
-                let message: String
-            }
-
-            let message = (try? JSONDecoder().decode(
-                APIError.self,
-                from: data
-            ))?.message ?? "Login failed (HTTP \(http.statusCode))."
-
-            throw NSError(
-                domain: "DBConnector.Login",
-                code: http.statusCode,
-                userInfo: [NSLocalizedDescriptionKey: message]
-            )
-        }
+        let data = try await APIResponse.data(for: request)
 
         let sessionID = try JSONDecoder().decode(UUID.self, from: data)
-        session_token = sessionID.uuidString
-        SettingsManager.shared.updateSetting(name: SettingsManager.sessionKey, newValue: session_token)
+        let token = sessionID.uuidString
+        SettingsManager.shared.updateSetting(name: SettingsManager.sessionKey, newValue: token)
+        guard SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value == token else {
+            throw SettingsSyncError.localStorage
+        }
+        UserDefaults.standard.set(i_username, forKey: Self.localAccountKey)
+        UserDefaults.standard.removeObject(forKey: Self.confirmLegacyAccountKey)
+        session_token = token
     }
+    private func sessionData(for request: URLRequest, sessionID: String,
+                             using session: URLSession = .shared,
+                             requiresCurrentSession: Bool = true) async throws -> Data {
+        try Task.checkCancellation()
+        if requiresCurrentSession {
+            guard await isCurrentSession(sessionID) else { throw SettingsSyncError.sessionChanged }
+        }
+        do {
+            let data = try await APIResponse.data(for: request, using: session, handlesExpiredSession: true)
+            if requiresCurrentSession {
+                guard await isCurrentSession(sessionID) else { throw SettingsSyncError.sessionChanged }
+            }
+            return data
+        } catch let error as APIResponseError where error.requiresReauthentication {
+            await expireSession(sessionID, message: error.localizedDescription)
+            throw error
+        }
+    }
+
+    @MainActor
+    private func isCurrentSession(_ sessionID: String) -> Bool {
+        !LogonViewController.requiresLogon(session_token) && session_token == sessionID
+    }
+
+    @MainActor
+    private func expireSession(_ sessionID: String, message: String) {
+        guard isCurrentSession(sessionID) else { return }
+        session_token = ""
+        if localAccountUsername == nil {
+            UserDefaults.standard.set(true, forKey: Self.confirmLegacyAccountKey)
+        }
+        SettingsManager.shared.resetSettingsSync()
+        SettingsManager.shared.updateSetting(name: SettingsManager.sessionKey, newValue: "")
+        for case let scene as UIWindowScene in UIApplication.shared.connectedScenes {
+            (scene.delegate as? SceneDelegate)?.showExpiredSessionLogon(message: message)
+        }
+    }
+
     func fetchSettings(i_sessionid: String, using session: URLSession = .shared) async throws -> [AccountSettingDTO] {
         let body = try JSONEncoder().encode(["i_sessionid": i_sessionid])
-        let data = try await settingsRequest(function: "getsettings", body: body, session: session)
+        let data = try await settingsRequest(function: "getsettings", body: body, sessionID: i_sessionid, session: session)
         return try JSONDecoder().decode([AccountSettingDTO].self, from: data)
     }
 
@@ -204,27 +243,22 @@ class DBConnector {
         guard !i_payload.isEmpty else { return }
         let body = try JSONEncoder().encode(SettingsUpdatePayload(
             i_sessionid: i_sessionid, i_payload: i_payload))
-        _ = try await settingsRequest(function: "insupdatesettings", body: body, session: session)
+        _ = try await settingsRequest(function: "insupdatesettings", body: body, sessionID: i_sessionid, session: session)
     }
 
-    private func settingsRequest(function: String, body: Data, session: URLSession) async throws -> Data {
+    private func settingsRequest(function: String, body: Data, sessionID: String, session: URLSession) async throws -> Data {
         let url = URL(string: "\(projectString)\(function)")!
         var request = initRequest(i_url: url, i_method: method_POST)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 20
         request.httpBody = body
-        let (data, response) = try await session.data(for: request)
-        guard let http = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-        guard (200...299).contains(http.statusCode) else {
-            // Never log request/response bodies: settings can contain API keys.
-            throw SettingsSyncError.http(http.statusCode)
-        }
-        return data
+        // SettingsManager verifies the explicitly supplied session before and after the RPC.
+        return try await sessionData(for: request, sessionID: sessionID, using: session,
+                                     requiresCurrentSession: false)
     }
 
     func insertWorkouts(i_ws: [WorkoutSessionUploadDTO]) async {
+        let sessionID = await session_token
         
         let postgresqlFuncName = "insupdateworkoutsession"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
@@ -232,109 +266,71 @@ class DBConnector {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         print("trying to insert workouts")
-        let payload = AddWorkoutSessionPayload(i_sessionid: session_token,
+        let payload = AddWorkoutSessionPayload(i_sessionid: sessionID,
                                                i_payload: i_ws)
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-                print(response)
-            }
-            if let body = String(data: data, encoding: .utf8) {
-                print("Supabase response body:")
-                print(body)
-            }
+            _ = try await sessionData(for: request, sessionID: sessionID)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     
     func deleteworkouts(i_ws: [WorkoutSessionUploadDTO]) async {
+        let sessionID = await session_token
         let postgresqlFuncName = "deleteworkoutsession"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         print("trying to delete workouts")
-        let payload = AddWorkoutSessionPayload(i_sessionid: session_token,
+        let payload = AddWorkoutSessionPayload(i_sessionid: sessionID,
                                                i_payload: i_ws)
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-                print(response)
-            }
-            if let body = String(data: data, encoding: .utf8) {
-                print("Supabase response body:")
-                print(body)
-            }
+            _ = try await sessionData(for: request, sessionID: sessionID)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     
-    func fetchWorkoutSessions() async -> [WorkoutSessionUploadDTO] {
+    func fetchWorkoutSessions() async throws -> [WorkoutSessionUploadDTO] {
+        let sessionID = await session_token
         let functionName = "get_workout_sessions"
         let url = URL(string: "\(projectString)\(functionName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
         let body = [
-            "i_sessionid": session_token
+            "i_sessionid": sessionID
         ]
         
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-                
-            }
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let result = try decoder.decode([WorkoutSessionUploadDTO].self, from: data)
-            return result
-            
-        } catch {
-            print("❌ Fetch error:", error)
-            return []
-        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let data = try await sessionData(for: request, sessionID: sessionID)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([WorkoutSessionUploadDTO].self, from: data)
     }
     
     
-    func fetchFoodLogs() async -> [FoodLogLinePayload] {
+    func fetchFoodLogs() async throws -> [FoodLogLinePayload] {
+        let sessionID = await session_token
         
         let functionName = "getfoodlinesync"
         let url = URL(string: "\(projectString)\(functionName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
         let body = [
-            "i_sessionid": session_token
+            "i_sessionid": sessionID
         ]
         
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-            }
-            
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let result = try decoder.decode([FoodLogLinePayload].self, from: data)
-            return result
-            
-        } catch {
-            print("❌ Fetch error:", error)
-            return []
-        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let data = try await sessionData(for: request, sessionID: sessionID)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([FoodLogLinePayload].self, from: data)
     }
     
 
     func insertFoodLog(i_flls: [FoodLogLinePayloadRequest]) async {
+        let sessionID = await session_token
         
         let postgresqlFuncName = "addfoodlogentries"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
@@ -342,40 +338,33 @@ class DBConnector {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         
-        let payload = AddFoodLogEntriesRequest(i_sessionid: session_token,
+        let payload = AddFoodLogEntriesRequest(i_sessionid: sessionID,
                                                i_payload: i_flls)
 
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-            }
-
+            _ = try await sessionData(for: request, sessionID: sessionID)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     
     func deleteFoodLogs(i_ids:[FoodLogLinePayloadRequest]) async {
+        let sessionID = await session_token
         let postgresqlFuncName = "deletefoodlogentries"
         let url = URL(string: "\(projectString)\(postgresqlFuncName)")!
         var request = initRequest(i_url: url, i_method: method_POST)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         
-        let payload = AddFoodLogEntriesRequest(i_sessionid: session_token,
+        let payload = AddFoodLogEntriesRequest(i_sessionid: sessionID,
                                                i_payload: i_ids)
 
         do {
             request.httpBody = try encoder.encode(payload)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse {
-                print("Status:", http.statusCode)
-            }
-
+            _ = try await sessionData(for: request, sessionID: sessionID)
         } catch {
-            print("Error:", error)
+            print("Database request failed:", (error as NSError).code)
         }
     }
     

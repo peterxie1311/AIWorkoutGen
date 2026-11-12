@@ -10,6 +10,7 @@ class SettingsManager {
     static let name:String = "Name"
     static let enableNotifications:String = "Enable Notifications"
     static let gptAPIKey:String = "GPT API Key"
+    static let usdaAPIKey:String = "USDA API Key"
     static let excludeWorkout:String = "Exclude Workout"
     static let calorieGoal:String = "Calorie Goal"
     static let proteinGoal:String = "Protein Goal"
@@ -29,11 +30,11 @@ class SettingsManager {
 
     private var currentSession: String? {
         guard let value = getSetting(name: Self.sessionKey)?.value,
-              !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+              !LogonViewController.requiresLogon(value) else { return nil }
         return value
     }
 
-    /// Call when clearing account data, before another user can log on.
+    /// Cancel work that belongs to the previous session.
     func resetSettingsSync() {
         syncGeneration += 1
         syncTask?.cancel()
@@ -141,6 +142,7 @@ class SettingsManager {
         [name,Constants.string_default],
         [enableNotifications,Constants.string_numDefault],
         [gptAPIKey,Constants.string_default],
+        [usdaAPIKey, ""],
         [excludeWorkout,Constants.string_default],
         [calorieGoal,Constants.string_numDefault],
         [proteinGoal,Constants.string_numDefault],

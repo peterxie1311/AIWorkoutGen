@@ -30,6 +30,47 @@ struct HistoryChatContext: Sendable {
         var summaryOnly: Bool? = nil
     }
 
+    struct FoodLogDraft: Decodable {
+        let date: String
+        let food: String
+        let grams: Double
+        let calories: Double
+        let protein: Double
+        let carbs: Double
+        let fat: Double
+    }
+
+    struct FoodLogProposal {
+        struct Entry {
+            let date: Date
+            let day: String
+            let food: String
+            let grams: Double
+            let calories: Double
+            let protein: Double
+            let carbs: Double
+            let fat: Double
+
+            var reviewText: String {
+                "\(food) · \(day)\nAmount \(grams) g · Energy \(calories) kcal\nProtein \(protein) g · Carbs \(carbs) g · Fat \(fat) g"
+            }
+        }
+
+        let entries: [Entry]
+
+        private struct Arguments: Decodable {
+            let entries: [FoodLogDraft]
+        }
+
+        fileprivate init(entries: [Entry]) {
+            self.entries = entries
+        }
+
+        fileprivate static func decode(_ arguments: String) throws -> [FoodLogDraft] {
+            try JSONDecoder().decode(Arguments.self, from: Data(arguments.utf8)).entries
+        }
+    }
+
     struct ResultPage: Encodable {
         let matchingRows: Int
         let firstDay: String?
@@ -110,6 +151,33 @@ struct HistoryChatContext: Sendable {
                                       today: String(formatter.string(from: Date()).prefix(10)),
                                       timeZone: zone.identifier)
         }
+    }
+
+    func proposeFoodLogs(arguments: String) throws -> FoodLogProposal {
+        let drafts = try FoodLogProposal.decode(arguments)
+        guard (1...12).contains(drafts.count), let zone = TimeZone(identifier: timeZone) else {
+            throw HistoryChatError.invalidFoodProposal
+        }
+
+        let parser = DateFormatter()
+        parser.locale = Locale(identifier: "en_US_POSIX")
+        parser.calendar = Calendar(identifier: .gregorian)
+        parser.timeZone = zone
+        parser.dateFormat = "yyyy-MM-dd HH:mm"
+        // Use noon for day-only entries so the log and preview share the same local date.
+        return try FoodLogProposal(entries: drafts.map { draft in
+            let food = draft.food.trimmingCharacters(in: .whitespacesAndNewlines)
+            let values = [draft.grams, draft.calories, draft.protein, draft.carbs, draft.fat]
+            let dateText = "\(draft.date) 12:00"
+            guard !food.isEmpty, food.count <= 160, !food.contains(where: \.isNewline),
+                  draft.grams > 0, values.allSatisfy({ $0.isFinite && $0 >= 0 && $0 <= 100_000 }),
+                  let date = parser.date(from: dateText), parser.string(from: date) == dateText else {
+                throw HistoryChatError.invalidFoodProposal
+            }
+            return FoodLogProposal.Entry(date: date, day: draft.date, food: food, grams: draft.grams,
+                                         calories: draft.calories, protein: draft.protein,
+                                         carbs: draft.carbs, fat: draft.fat)
+        })
     }
 
     func lookup(_ query: Query) throws -> ResultPage {

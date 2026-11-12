@@ -249,7 +249,15 @@ class WorkoutSessionManager {
     
     func syncWorkoutSessionEntries() async {
         let startTime = Date()
-        let dbWorkouts = await DBConnector.shared.fetchWorkoutSessions()
+        let dbWorkouts: [WorkoutSessionUploadDTO]
+        do {
+            dbWorkouts = try await DBConnector.shared.fetchWorkoutSessions()
+        } catch {
+            if !Task.isCancelled, !(error is APIResponseError) {
+                print("[Workout sync] Fetch failed: \(error)")
+            }
+            return
+        }
         guard let appDelegate = await UIApplication.shared.delegate as? AppDelegate else {
             return
         }
@@ -257,10 +265,12 @@ class WorkoutSessionManager {
         let container = await appDelegate.persistentContainer
         
         do {
+            try Task.checkCancellation()
             let uploadArr = try await container.performBackgroundTask{context in
                 try self.compareAndUpdateWorkoutData(dbWorkouts: dbWorkouts, context: context)
             }
             
+            try Task.checkCancellation()
             if !uploadArr.isEmpty{
                  await DBConnector.shared.insertWorkouts(i_ws: uploadArr)
             }
@@ -304,7 +314,7 @@ class WorkoutSessionManager {
         i_sessions: Int,
         //i_vc: UIViewController,
         i_customisations: String
-    ) async -> String {
+    ) async -> String? {
             do {
 
                 let sortedWorkouts = workoutSessions.sorted {
@@ -349,8 +359,8 @@ class WorkoutSessionManager {
                         }
                     }
                 return "Workout Plan succesfully generated!"
-            } catch let e as chatGPTError{
-                return "Status Code: \(e.statusCode)  Message:\(e.message)"
+            } catch is APIResponseError {
+                return nil
             } catch let e {
                 return e.localizedDescription
             }

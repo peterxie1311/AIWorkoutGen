@@ -16,12 +16,14 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
 
         let introduction = WorkoutTheme.section(
             "Chat with your history",
-            subtitle: "Try “How much protein did I log this week?” or “How has my bench press changed?” Relevant workout and food records are sent to OpenAI when you ask."
+            subtitle: "Try “How much protein did I log this week?” or “Estimate and log 200 g of chicken for yesterday.” Relevant workout and food records are sent to OpenAI when you ask."
         )
         introduction.setContentCompressionResistancePriority(.required, for: .vertical)
 
         table.dataSource = self
         table.register(UITableViewCell.self, forCellReuseIdentifier: "Message")
+        table.register(FoodLogReviewCell.self, forCellReuseIdentifier: "FoodLogReview")
+        table.register(FoodClarificationCell.self, forCellReuseIdentifier: "FoodClarification")
         table.separatorStyle = .none
         table.backgroundColor = .clear
         table.keyboardDismissMode = .interactive
@@ -101,17 +103,29 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
         showStatus("Looking up your history…")
         send.configuration?.showsActivityIndicator = true
         let conversation = messages
+        let session = SettingsManager.shared.getSetting(name: SettingsManager.sessionKey)?.value ?? ""
         requestTask = Task { @MainActor [weak self] in
             do {
                 let answer = try await workoutAIservice.shared.chatAboutHistory(conversation)
                 try Task.checkCancellation()
-                self?.messages.append(HistoryChatMessage(role: .assistant, text: answer))
+                switch answer {
+                case .text(let text):
+                    self?.messages.append(HistoryChatMessage(role: .assistant, text: text))
+                case .foodQuestion(let question, let options):
+                    self?.messages.append(HistoryChatMessage(role: .assistant, text: question, foodChoices: options))
+                case .foodProposal(let proposal):
+                    let review = HistoryChatMessage.FoodReview(proposal: proposal, session: session)
+                    self?.messages.append(HistoryChatMessage(
+                        role: .assistant, text: "Review estimated food logs", foodReview: review
+                    ))
+                }
                 self?.showStatus(nil)
                 UIAccessibility.post(notification: .announcement, argument: "AI reply received.")
             } catch {
                 self?.messages.removeLast()
                 if self?.draft.isEmpty == true { self?.input.text = question }
-                self?.showStatus(Task.isCancelled ? nil : error.localizedDescription)
+                let hasAPIPopup = error is APIResponseError
+                self?.showStatus(Task.isCancelled || hasAPIPopup ? nil : error.localizedDescription)
             }
             self?.requestTask = nil
             self?.send.configuration?.showsActivityIndicator = false
@@ -119,6 +133,30 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
             self?.updateSendState()
         }
         updateSendState()
+    }
+
+    private func selectFood(_ choice: String) {
+        guard requestTask == nil else { return }
+        input.text = choice
+        sendMessage()
+    }
+
+    private func addFoodLogs(reviewID: UUID) {
+        guard let index = messages.firstIndex(where: { $0.foodReview?.id == reviewID }),
+              let review = messages[index].foodReview, review.state == .pending else { return }
+
+        messages[index].foodReview?.state = .saving
+        table.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+        Task { @MainActor in
+            do {
+                try await FoodLogManager.shared.addReviewedFoodLogs(review.proposal, session: review.session)
+                messages[index].foodReview?.state = .saved
+            } catch {
+                messages[index].foodReview?.state = .pending
+                HelperFunctions.showAlert(on: self, title: "Could not add food logs", message: error.localizedDescription)
+            }
+            table.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+        }
     }
 
     private func showStatus(_ text: String?) {
@@ -144,6 +182,20 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let message = messages[indexPath.row]
+        if let options = message.foodChoices,
+           let cell = tableView.dequeueReusableCell(withIdentifier: "FoodClarification", for: indexPath) as? FoodClarificationCell {
+            cell.configure(question: message.text, options: options) { [weak self] selected in
+                self?.selectFood(selected)
+            }
+            return cell
+        }
+        if let review = message.foodReview,
+           let cell = tableView.dequeueReusableCell(withIdentifier: "FoodLogReview", for: indexPath) as? FoodLogReviewCell {
+            cell.configure(title: message.text, review: review) { [weak self] in
+                self?.addFoodLogs(reviewID: review.id)
+            }
+            return cell
+        }
         let cell = tableView.dequeueReusableCell(withIdentifier: "Message", for: indexPath)
         var content = cell.defaultContentConfiguration()
         content.text = message.role == .user ? "You" : "AI"
@@ -156,5 +208,102 @@ final class HistoryChatViewController: UIViewController, UITableViewDataSource, 
         cell.selectionStyle = .none
         cell.backgroundColor = .clear
         return cell
+    }
+}
+
+
+private final class FoodLogReviewCell: UITableViewCell {
+    private let card = UIStackView()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        backgroundColor = .clear
+        card.axis = .vertical
+        card.spacing = 12
+        card.backgroundColor = .secondarySystemGroupedBackground
+        card.layer.cornerRadius = 12
+        card.isLayoutMarginsRelativeArrangement = true
+        card.layoutMargins = UIEdgeInsets(top: 14, left: 14, bottom: 14, right: 14)
+        card.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(card)
+        NSLayoutConstraint.activate([
+            card.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 6),
+            card.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -6),
+            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    func configure(title: String, review: HistoryChatMessage.FoodReview, onAdd: @escaping () -> Void) {
+        card.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let heading = label(title, style: .headline)
+        heading.textColor = WorkoutTheme.accent
+        heading.accessibilityTraits.insert(.header)
+        card.addArrangedSubview(heading)
+        for entry in review.proposal.entries {
+            card.addArrangedSubview(label(entry.reviewText, style: .body))
+        }
+
+        if review.state == .pending {
+            var configuration = UIButton.Configuration.filled()
+            configuration.title = "Add"
+            configuration.baseBackgroundColor = WorkoutTheme.accent
+            configuration.baseForegroundColor = WorkoutTheme.onAccent
+            let add = UIButton(configuration: configuration, primaryAction: UIAction { _ in onAdd() })
+            add.accessibilityLabel = "Add reviewed food logs"
+            add.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            card.addArrangedSubview(add)
+        } else {
+            card.addArrangedSubview(label(review.state.rawValue, style: .footnote))
+        }
+    }
+
+    private func label(_ text: String, style: UIFont.TextStyle) -> UILabel {
+        let label = UILabel()
+        label.text = text
+        label.font = .preferredFont(forTextStyle: style)
+        label.adjustsFontForContentSizeCategory = true
+        label.numberOfLines = 0
+        return label
+    }
+}
+
+private final class FoodClarificationCell: UITableViewCell {
+    private let stack = UIStackView()
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+        selectionStyle = .none
+        backgroundColor = .clear
+        stack.axis = .vertical
+        stack.spacing = 8
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 8),
+            stack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -8),
+            stack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor)
+        ])
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    func configure(question: String, options: [String], onSelect: @escaping (String) -> Void) {
+        stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let heading = UILabel()
+        heading.text = question
+        heading.font = .preferredFont(forTextStyle: .body)
+        heading.numberOfLines = 0
+        stack.addArrangedSubview(heading)
+        for option in options {
+            var config = UIButton.Configuration.bordered()
+            config.title = option
+            let button = UIButton(configuration: config, primaryAction: UIAction { _ in onSelect(option) })
+            button.contentHorizontalAlignment = .leading
+            button.titleLabel?.numberOfLines = 0
+            button.heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
+            stack.addArrangedSubview(button)
+        }
     }
 }

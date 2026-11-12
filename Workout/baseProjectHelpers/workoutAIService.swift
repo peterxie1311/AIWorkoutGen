@@ -58,40 +58,146 @@ struct Message: Decodable {
     let content: String
 }
 
-struct OpenAIErrorResponse: Decodable {
-    let error: OpenAIError
-}
-
-struct OpenAIError: Decodable {
-    let message: String
-    let type: String
-    let param: String?
-    let code: String?
-}
-
-struct chatGPTError:LocalizedError{
-    let statusCode:Int
-    let message:String
-}
 struct HistoryChatMessage {
     enum Role: String { case user, assistant }
     let role: Role
     let text: String
+    var foodReview: FoodReview? = nil
+    var foodChoices: [String]? = nil
+
+    struct FoodReview {
+        enum State: String {
+            case pending = "Awaiting approval"
+            case saving = "Saving…"
+            case saved = "Added to food log"
+        }
+
+        let id = UUID()
+        let proposal: HistoryChatContext.FoodLogProposal
+        let session: String
+        var state = State.pending
+    }
+
+    var modelText: String {
+        guard let foodReview else { return text }
+        let entries = foodReview.proposal.entries.map(\.reviewText).joined(separator: "\n")
+        return "\(text)\nFood log review status: \(foodReview.state.rawValue)\n\(entries)"
+    }
+}
+
+enum HistoryChatReply {
+    case text(String)
+    case foodProposal(HistoryChatContext.FoodLogProposal)
+    case foodQuestion(String, [String])
 }
 
 enum HistoryChatError: LocalizedError {
-    case missingKey, historyUnavailable, invalidLookup, invalidResponse, requestFailed(Int)
+    case missingKey, historyUnavailable, invalidLookup, invalidResponse, invalidFoodProposal
 
     var errorDescription: String? {
         switch self {
         case .missingKey: return "Add your GPT API Key in Settings to use chat."
         case .historyUnavailable: return "Workout and food history could not be opened."
         case .invalidLookup: return "The history lookup was invalid."
+        case .invalidFoodProposal: return "The AI returned invalid food log details. Please try again."
         case .invalidResponse: return "The AI did not return a usable reply. Please try again."
-        case .requestFailed(401): return "Your GPT API Key was rejected. Check it in Settings."
-        case .requestFailed(429): return "The AI is rate limited or out of quota. Try again later."
-        case .requestFailed(let status): return "The AI request failed (HTTP \(status)). Please try again."
         }
+    }
+}
+
+
+private struct FoodClarificationInput: Decodable {
+    let question: String
+    let options: [String]
+}
+
+private struct NutritionSearchInput: Decodable {
+    let query: String
+}
+
+enum USDANutritionLookup {
+    private static let cache = NSCache<NSString, NSString>()
+    struct Match: Decodable {
+        let fdcId: Int
+        let description: String
+        let dataType: String
+        let nutrientsPer100g: [String: Double]
+        let brand: String?
+        let servingSize: Double?
+        let servingSizeUnit: String?
+    }
+    static func parse(_ data: Data) throws -> [Match] {
+        guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let foods = root["foods"] as? [[String: Any]] else { throw HistoryChatError.invalidResponse }
+        return foods.compactMap { food -> Match? in
+            guard let id = food["fdcId"] as? Int, id > 0,
+                  let description = food["description"] as? String, !description.isEmpty,
+                  let type = food["dataType"] as? String else { return nil }
+            var nutrients: [String: Double] = [:]
+            for item in food["foodNutrients"] as? [[String: Any]] ?? [] {
+                guard let id = item["nutrientId"] as? Int,
+                      let value = item["value"] as? Double, value.isFinite, value >= 0,
+                      let unit = (item["unitName"] as? String)?.uppercased() else { continue }
+                if unit == "G" {
+                    switch id {
+                    case 1003: nutrients["protein"] = value
+                    case 1004: nutrients["fat"] = value
+                    case 1005: nutrients["carbs"] = value
+                    case 1079: nutrients["fiber"] = value
+                    default: break
+                    }
+                } else if unit == "KCAL" && [1008, 2047, 2048].contains(id) {
+                    if nutrients["calories"] == nil { nutrients["calories"] = value }
+                }
+            }
+            guard ["calories", "protein", "fat", "carbs"].allSatisfy({ nutrients[$0] != nil }) else { return nil }
+            return Match(fdcId: id, description: description, dataType: type, nutrientsPer100g: nutrients,
+                         brand: food["brandOwner"] as? String ?? food["brandName"] as? String,
+                         servingSize: food["servingSize"] as? Double,
+                         servingSizeUnit: food["servingSizeUnit"] as? String)
+        }
+    }
+    static func scaled(_ match: Match, grams: Double) -> [String: Double]? {
+        guard grams.isFinite, grams > 0, grams <= 100_000 else { return nil }
+        return match.nutrientsPer100g.mapValues { ($0 * grams / 100 * 10).rounded() / 10 }
+    }
+    static func search(_ term: String, apiKey: String) async throws -> String {
+        let query = term.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cacheKey = query.lowercased() as NSString
+        if let cached = cache.object(forKey: cacheKey) { return cached as String }
+        guard (2...120).contains(query.count), !apiKey.isEmpty,
+              var parts = URLComponents(string: "https://api.nal.usda.gov/fdc/v1/foods/search") else {
+            throw HistoryChatError.invalidLookup
+        }
+        parts.queryItems = [URLQueryItem(name: "api_key", value: apiKey)]
+        guard let url = parts.url else { throw HistoryChatError.invalidResponse }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.timeoutInterval = 15
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "query": query, "pageSize": 12, "dataType": ["Branded", "Foundation", "SR Legacy", "Survey (FNDDS)"]
+        ])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
+            throw HistoryChatError.invalidResponse
+        }
+        let matches = try parse(data)
+        let results: [[String: Any]] = matches.map { match in
+            var item: [String: Any] = [
+                "fdcId": match.fdcId, "description": match.description,
+                "dataType": match.dataType, "nutrientsPer100g": match.nutrientsPer100g
+            ]
+            if let brand = match.brand { item["brand"] = brand }
+            if let size = match.servingSize { item["servingSize"] = size }
+            if let unit = match.servingSizeUnit { item["servingSizeUnit"] = unit }
+            return item
+        }
+        let result: [String: Any] = ["source": "USDA FoodData Central", "query": query,
+            "results": results, "note": "Search-result nutrients are per 100g. For branded foods check exact brand, flavour, package size, and dry versus prepared weight. Serving-size fields are product metadata; do not assume one packet is 100g."]
+        let encoded = String(decoding: try JSONSerialization.data(withJSONObject: result), as: UTF8.self)
+        cache.setObject(encoded as NSString, forKey: cacheKey)
+        return encoded
     }
 }
 
@@ -123,12 +229,13 @@ class workoutAIservice {
                 .value ?? ""
     }
     
-    /// Separate from workout generation: tool calls can only read the supplied snapshot.
+    /// History tools read the supplied snapshot or return a draft for user review.
     @MainActor
-    func chatAboutHistory(_ conversation: [HistoryChatMessage]) async throws -> String {
+    func chatAboutHistory(_ conversation: [HistoryChatMessage]) async throws -> HistoryChatReply {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !key.isEmpty else { throw HistoryChatError.missingKey }
         let history = try await HistoryChatContext.load()
+        let usdaKey = SettingsManager.shared.getSetting(name: SettingsManager.usdaAPIKey)?.value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard let url = URL(string: endpoint) else { throw HistoryChatError.invalidResponse }
 
         var messages: [[String: Any]] = [[
@@ -145,13 +252,20 @@ class workoutAIservice {
             Use summaryOnly for totals. For detailed comparisons, narrow by date or exercise/food name
             and use nextOffset for additional pages. Say when the answer is based on only part of the results.
             Use date ranges and numbers from the tool, distinguish estimates, and never invent entries.
+            For every new food nutrition estimate, first call search_nutrition_database. Use the USDA result as the source of nutrition values, never assume the first search hit is correct. For named packaged foods, search exact brand and flavour first and prefer an exact branded match. If no exact branded match exists, say so rather than silently substituting generic food. Match cooking state, skin, cut, and brand. If ambiguous, ask the user a short question presenting 2-4 numbered plausible matches before proposing food. Allow the user to specify another option. If the database is unavailable or no suitable record exists, explain this and ask whether the user wants a clearly labeled AI estimate instead. Never present an AI estimate as verified USDA data.
+            Use propose_food_logs only when the user's request asks to add or log food. Estimate the
+            portion and nutrition if needed, using totals for the portion and grams for all macros.
+            Resolve relative dates in the user's time zone and use today if no date was specified.
+            Ask a brief clarifying question if the food or portion is too ambiguous to estimate.
+            A proposal is only a draft. The user must tap Add in the app. Never claim a draft was saved.
+            For requests that only ask for an estimate, give a normal text reply.
             Ask a brief clarifying question when necessary. Be concise and conversational.
             """
         ]]
         messages += conversation.suffix(12).map {
-            ["role": $0.role.rawValue, "content": $0.text]
+            ["role": $0.role.rawValue, "content": $0.modelText]
         }
-        let tool: [String: Any] = [
+        let lookupTool: [String: Any] = [
             "type": "function",
             "function": [
                 "name": "lookup_history",
@@ -172,6 +286,69 @@ class workoutAIservice {
             ] as [String: Any]
         ]
 
+        let foodFields: [String: [String: String]] = [
+            "date": ["type": "string", "description": "Local calendar day in YYYY-MM-DD."],
+            "food": ["type": "string", "description": "Food name, including any important portion assumptions."],
+            "grams": ["type": "number", "description": "Total weight of the portion in grams."],
+            "calories": ["type": "number", "description": "Total energy of the portion in kcal."],
+            "protein": ["type": "number", "description": "Total protein in grams."],
+            "carbs": ["type": "number", "description": "Total carbohydrates in grams."],
+            "fat": ["type": "number", "description": "Total fat in grams."]
+        ]
+        let entrySchema: [String: Any] = [
+            "type": "object",
+            "properties": foodFields,
+            "required": foodFields.keys.sorted(),
+            "additionalProperties": false
+        ]
+        let proposalTool: [String: Any] = [
+            "type": "function",
+            "function": [
+                "name": "propose_food_logs",
+                "description": "Show up to 12 estimated food entries in a review card. This never saves data.",
+                "parameters": [
+                    "type": "object",
+                    "properties": ["entries": ["type": "array", "items": entrySchema] as [String: Any]],
+                    "required": ["entries"],
+                    "additionalProperties": false
+                ] as [String: Any]
+            ] as [String: Any]
+        ]
+
+        let clarificationTool: [String: Any] = [
+            "type": "function",
+            "function": [
+                "name": "ask_food_clarification",
+                "description": "Ask the user to select from 2-4 plausible food matches. Never invent database matches.",
+                "parameters": [
+                    "type": "object",
+                    "properties": [
+                        "question": ["type": "string"],
+                        "options": ["type": "array", "items": ["type": "string"], "minItems": 2, "maxItems": 4]
+                    ],
+                    "required": ["question", "options"],
+                    "additionalProperties": false
+                ] as [String: Any]
+            ] as [String: Any]
+        ]
+        let nutritionTool: [String: Any] = [
+            "type": "function",
+            "function": [
+                "name": "search_nutrition_database",
+                "description": "Search USDA FoodData Central for nutrition records. Use for every new food estimate before proposing or reporting macros. Search branded packaged foods and generic USDA records. Results include per-100g values and available brand and serving metadata; verify the exact product.",
+                "parameters": [
+                    "type": "object",
+                    "properties": [
+                        "query": ["type": "string", "description": "Specific food name including raw/cooked, skin and brand when known"]
+                    ],
+                    "required": ["query"],
+                    "additionalProperties": false
+                ] as [String: Any]
+            ] as [String: Any]
+        ]
+
+        var nutritionLookups = 0
+        let estimateConsent = conversation.suffix(3).contains { $0.role == .user && $0.text.localizedCaseInsensitiveContains("estimate without") }
         for round in 0...8 {
             try Task.checkCancellation()
             var request = URLRequest(url: url)
@@ -182,16 +359,12 @@ class workoutAIservice {
             request.httpBody = try JSONSerialization.data(withJSONObject: [
                 "model": "gpt-4o",
                 "messages": messages,
-                "tools": [tool],
+                "tools": [lookupTool, nutritionTool, clarificationTool, proposalTool],
                 "tool_choice": round == 8 ? "none" : "auto",
                 "parallel_tool_calls": false,
-                "max_completion_tokens": 1000
+                "max_completion_tokens": 1600
             ])
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else { throw HistoryChatError.invalidResponse }
-            guard (200...299).contains(http.statusCode) else {
-                throw HistoryChatError.requestFailed(http.statusCode)
-            }
+            let data = try await APIResponse.data(for: request)
             guard let body = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let choices = body["choices"] as? [[String: Any]],
                   let reply = choices.first?["message"] as? [String: Any] else {
@@ -201,10 +374,52 @@ class workoutAIservice {
                 guard round < 8, calls.count == 1, let call = calls.first,
                       let id = call["id"] as? String,
                       let function = call["function"] as? [String: Any],
-                      function["name"] as? String == "lookup_history",
+                      let name = function["name"] as? String,
                       let arguments = function["arguments"] as? String else {
                     throw HistoryChatError.invalidResponse
                 }
+                if name == "ask_food_clarification" {
+                    if let data = arguments.data(using: .utf8),
+                       let payload = try? JSONDecoder().decode(FoodClarificationInput.self, from: data),
+                       (2...4).contains(payload.options.count),
+                       !payload.question.isEmpty,
+                       payload.options.allSatisfy({ !$0.isEmpty && $0.count <= 150 }) {
+                        return .foodQuestion(payload.question, payload.options)
+                    }
+                    throw HistoryChatError.invalidResponse
+                }
+                if name == "propose_food_logs" {
+                    if nutritionLookups == 0 && !estimateConsent {
+                        messages.append(["role": "assistant", "tool_calls": calls])
+                        messages.append(["role": "tool", "tool_call_id": id, "content": #"{\"error\":\"Search USDA before proposing food logs.\"}"#])
+                        continue
+                    }
+                    if let proposal = try? history.proposeFoodLogs(arguments: arguments) {
+                        return .foodProposal(proposal)
+                    }
+                    messages.append(["role": "assistant", "tool_calls": calls])
+                    messages.append(["role": "tool", "tool_call_id": id, "content":
+                        #"{"error":"Invalid food draft. Provide 1–12 entries, each with a valid YYYY-MM-DD date, food name, positive grams and finite non-negative kcal and macros."}"#])
+                    continue
+                }
+                if name == "search_nutrition_database" {
+                    nutritionLookups += 1
+                    messages.append(["role": "assistant", "tool_calls": calls])
+                    let result: String
+                    if let argumentsData = arguments.data(using: .utf8),
+                       let input = try? JSONDecoder().decode(NutritionSearchInput.self, from: argumentsData) {
+                        do {
+                            result = try await USDANutritionLookup.search(input.query, apiKey: usdaKey)
+                        } catch {
+                            result = #"{\"error\":\"Nutrition database unavailable. Ask the user whether to proceed with an explicitly labeled estimate.\"}"#
+                        }
+                    } else {
+                        result = #"{\"error\":\"Invalid nutrition search query\"}"#
+                    }
+                    messages.append(["role": "tool", "tool_call_id": id, "content": result])
+                    continue
+                }
+                guard name == "lookup_history" else { throw HistoryChatError.invalidResponse }
                 messages.append(["role": "assistant", "tool_calls": calls])
                 let result: String
                 if let query = try? JSONDecoder().decode(HistoryChatContext.Query.self, from: Data(arguments.utf8)),
@@ -220,7 +435,7 @@ class workoutAIservice {
                 }
             } else if let answer = reply["content"] as? String,
                       !answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return answer
+                return .text(answer)
             } else {
                 throw HistoryChatError.invalidResponse
             }
@@ -300,41 +515,26 @@ class workoutAIservice {
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
         
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let http = response as? HTTPURLResponse else {
-           
-                return []
-            }
-            
-            guard (200...299).contains(http.statusCode) else {
-                // error handelling WOO!
-                let e = try JSONDecoder().decode(OpenAIErrorResponse.self,from:data)
-                throw chatGPTError(statusCode: http.statusCode, message: e.error.message)
-            }
-            
-            
-            let chatResponse = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
-            
-            guard let jsonString = chatResponse.choices.first?.message.content
-            else {
-                return []
-            }
+        let data = try await APIResponse.data(for: request)
+        let chatResponse = try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
 
-            let cleanedJSONString = jsonString
-                .replacingOccurrences(of: "```json", with: "")
-                .replacingOccurrences(of: "```", with: "")
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
-            guard let jsonData = cleanedJSONString.data(using: .utf8)
-            else {
-                return []
-            }
-            
-
-            return try JSONDecoder().decode([WorkoutSessionDTO].self, from: jsonData)
+        guard let jsonString = chatResponse.choices.first?.message.content
+        else {
+            return []
         }
+
+        let cleanedJSONString = jsonString
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let jsonData = cleanedJSONString.data(using: .utf8)
+        else {
+            return []
+        }
+
+
+        return try JSONDecoder().decode([WorkoutSessionDTO].self, from: jsonData)
     }
     
     //cleaned up version
@@ -406,21 +606,7 @@ class workoutAIservice {
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody, options: [])
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-
-            guard let http = response as? HTTPURLResponse else {
-                await MainActor.run {
-                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "Invalid response.")
-                }
-                return [macroEstimateDefault]
-            }
-
-            guard (200...299).contains(http.statusCode) else {
-                await MainActor.run {
-                    HelperFunctions.showAlert(on: i_vc, title: "Network error!", message: "\(http.statusCode)")
-                }
-                return [macroEstimateDefault]
-            }
+            let data = try await APIResponse.data(for: request)
 
             do {
                 guard
@@ -458,6 +644,8 @@ class workoutAIservice {
                 return [macroEstimateDefault]
             }
 
+        } catch is APIResponseError {
+            return [macroEstimateDefault]
         } catch {
             print("Network error!")
             await MainActor.run {
@@ -493,19 +681,18 @@ class workoutAIservice {
             return
         }
 
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+        let task = URLSession.shared.dataTask(with: request) { [request] data, response, error in
             if let error = error {
                 completion(.failure(error))
                 print("Error: \(error)")
                 return
             }
 
-            if let response = response as? HTTPURLResponse {
-                print("Response status code: \(response.statusCode)")
-                if response.statusCode != 200 {
-                    completion(.failure(NSError(domain: "Invalid response", code: response.statusCode, userInfo: nil)))
-                    return
-                }
+            do {
+                try APIResponse.check(data ?? Data(), response: response, request: request)
+            } catch {
+                completion(.failure(error))
+                return
             }
 
             if let data = data {
